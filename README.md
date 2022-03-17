@@ -33,6 +33,16 @@ Configure passwordless root SSH authentication from the device where Ansible is 
 ssh-copy-id -f -i ./roles/hl.users/files/id_rsa_root.pub root@10.11.1.XX
 ```
 
+## Set Ansible User Password
+
+Create a file `vault.key` to store your Ansible Vault secret (see `ansible.cfg` for vault_password_file). Use Ansible Vault to create an encrypted file `./roles/hl.users/defaults/secure.yml` to store your user password:
+
+```
+ansible-vault create ./roles/hl.users/defaults/secure.yml
+```
+
+The variable for user password is `user_password`.
+
 ## Configuration with Ansible
 
 ### Configure PXE Hosts
