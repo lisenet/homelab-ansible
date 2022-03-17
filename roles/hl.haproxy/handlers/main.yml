@@ -1,0 +1,5 @@
+---
+- name: restart haproxy
+  service: 
+    name: "{{ systemd_service }}"
+    state: restarted

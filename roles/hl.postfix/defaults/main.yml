@@ -1,0 +1,19 @@
+---
+## Default variables for the role. These variables have the lowest
+## priority of any variables available, and can be easily overridden 
+## by any other variable, including inventory variables.
+
+packages:
+  - postfix
+  - cyrus-sasl-plain
+
+systemd_service: "postfix"
+firewall_port: "smtp"
+
+postfix_config_file: "main.cf"
+sasl_auth_file: "sasl_passwd"
+
+smtp_host: "defined in defaults/secure.yml as smtp_host"
+smtp_port: "defined in defaults/secure.yml as smtp_port"
+smtp_username: "defined in defaults/secure.yml as smtp_username"
+smtp_password:  "defined in defaults/secure.yml as smtp_password"

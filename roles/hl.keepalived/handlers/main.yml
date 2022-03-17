@@ -1,0 +1,5 @@
+---
+- name: restart keepalived
+  service: 
+    name: "{{ systemd_service }}"
+    state: restarted

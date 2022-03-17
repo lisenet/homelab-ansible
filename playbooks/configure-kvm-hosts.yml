@@ -1,0 +1,38 @@
+---
+- name: Create Users
+  hosts: kvm
+  remote_user: root
+  gather_facts: yes
+  roles:
+    - hl.users
+
+- name: Configure KVM Hosts
+  hosts: kvm
+  become: true
+  gather_facts: yes
+  roles:
+    - hl.sshd
+    - hl.resolvconf
+    - hl.timezone
+    - hl.hardening
+    - hl.common
+    - hl.node-exporter
+    - hl.handle-lid-switch
+    - hl.wakeonlan
+    - hl.libvirt
+    - hl.staticroute
+  vars:
+    sysctl_values:
+      - name: net.ipv4.ip_forward
+        value: 1 
+      - name: vm.swappiness
+        value: 1
+  tasks:
+    - name: Configure Sysctl Values
+      sysctl:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        state: present
+      loop: "{{ sysctl_values }}"
+...
+

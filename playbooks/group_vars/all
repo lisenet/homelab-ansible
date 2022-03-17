@@ -1,0 +1,12 @@
+homelab_address: "10.11.1.0"
+homelab_broadcast: "10.11.1.255"
+homelab_cidr_prefix: "24"
+homelab_dns1_server: "10.11.1.2"
+homelab_dns2_server: "10.11.1.3"
+homelab_dns3_server: "10.11.1.7"
+homelab_dns_forwarder_server: "10.11.1.7"
+homelab_domain_name: "hl.test"
+homelab_gateway: "10.11.1.1"
+homelab_reverse_zone: "1.11.10"
+homelab_subnet_mask: "255.255.255.0"
+

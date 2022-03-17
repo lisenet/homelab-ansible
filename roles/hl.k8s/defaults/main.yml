@@ -1,0 +1,64 @@
+---
+## Default variables for the role. These variables have the lowest
+## priority of any variables available, and can be easily overridden 
+## by any other variable, including inventory variables.
+
+k8s_version: "1.22.4"
+
+# nfs-utils is required to configure NFS based Persistent Volumes
+packages:
+  - kubectl-{{ k8s_version }}-0.x86_64
+  - kubeadm-{{ k8s_version }}-0.x86_64
+  - iproute-tc
+  - iptables-services
+  - nfs-utils
+
+dependencies:
+  - kubernetes-cni-0.8.7-0.x86_64
+  - kubelet-{{ k8s_version }}-0.x86_64
+
+systemd_service: "kubelet"
+
+packages_to_remove:
+  - firewalld
+  - nftables
+
+modules_config_file: "modules.conf"
+modules_directory: "/etc/modules-load.d"
+
+kubelet_file: "/etc/sysconfig/kubelet"
+k8s_repository_redhat: "https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64"
+k8s_gpg_key_redhat: "https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg"
+
+sysctl_config:
+  - name: net.ipv4.ip_forward
+    value: 1
+  - name: net.bridge.bridge-nf-call-iptables
+    value: 1
+  - name: net.bridge.bridge-nf-call-ip6tables
+    value: 1
+
+# 8443 - Kubernetes API server
+# 2379,2380 - etcd server client API
+# 2381 - etcd metrics API
+# 10250 - Kubelet API
+# 10251 - kube-scheduler
+# 10252 - kube-controller-manager
+k8s_firewall_ports_master:
+  - 6443
+  - 2379-2381
+  - 10250-10252
+
+# 10250 - Kubelet API
+# 30000-32767 - NodePort Services
+k8s_firewall_ports_node:
+  - 10250
+  - 30000-32767
+
+# 179 - Calico networking (BGP)
+k8s_firewall_ports_cni:
+  - 179
+
+# 7946 - MetalLB
+k8s_firewall_ports_metallb:
+  - 7946

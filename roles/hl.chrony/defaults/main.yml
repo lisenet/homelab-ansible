@@ -1,0 +1,15 @@
+---
+## Default variables for the role. These variables have the lowest
+## priority of any variables available, and can be easily overridden 
+## by any other variable, including inventory variables.
+
+packages:
+  - chrony
+
+systemd_service: "chronyd"
+firewall_port: "ntp"
+
+chrony_conf_file: "chrony.conf"
+
+chrony_peer1_server_address: "10.11.1.2"
+chrony_peer2_server_address: "10.11.1.3"

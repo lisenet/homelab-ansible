@@ -1,0 +1,50 @@
+---
+## Default variables for the role. These variables have the lowest
+## priority of any variables available, and can be easily overridden 
+## by any other variable, including inventory variables.
+
+password_minlen_login_defs: "10"
+password_mindays_login_defs: "1"
+accounts_tmout: "3600"
+accounts_fail_delay: "1"
+accounts_max_concurrent_login_sessions: "10"
+history_file_size: "20000"
+auth_root_ttys: ["console", "tty1", "tty2", "tty3", "tty4", "tty5", "tty6"]
+proc_mnt_options: "rw,nodev,nosuid,noexec,relatime,hidepid=2"
+
+packages_to_remove:
+  - ivtv-*
+  - iwl*firmware
+  - aic94xx-firmware
+
+services_to_disable:
+  - tuned
+  - kdump
+
+modules_to_disable:
+  - appletalk
+  - bluetooth
+  - bnep
+  - btusb
+  - net-pf-31
+  - dccp
+  - sctp
+  - rds
+  - tipc
+  - usb-storage
+  - cramfs
+  - freevxfs
+  - jffs2
+  - hfsplus
+  - squashfs
+
+malware_scanners_to_install:
+  - rkhunter
+
+# Security limits config
+limits_user_hard_nproc: "16384"
+limits_root_hard_nproc: "16384"
+limits_user_hard_nofile: "65536"
+limits_root_hard_nofile: "65536"
+limits_user_hard_fsize: "67108864"
+limits_root_hard_fsize: "67108864"

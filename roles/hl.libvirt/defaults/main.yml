@@ -1,0 +1,16 @@
+---
+## Default variables for the role. These variables have the lowest
+## priority of any variables available, and can be easily overridden 
+## by any other variable, including inventory variables.
+
+packages:
+  - qemu-kvm
+  - libvirt
+  - virt-install
+
+systemd_service: "libvirtd"
+
+libvirt_images_location: "/var/lib/libvirt/images"
+libvirt_networks_dir: "/etc/libvirt/qemu/networks"
+bridge_net_template: "ifcfg-br0.example"
+ethx_net_template: "ifcfg-ethx.example"

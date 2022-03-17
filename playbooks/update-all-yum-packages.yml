@@ -1,0 +1,13 @@
+---
+- name: Upgrade Packages
+  hosts: all
+  become: true
+  gather_facts: yes
+  tasks:
+    - name: RedHat | Upgrade all packages, excluding kernel
+      yum:
+        name: '*'
+        state: latest
+        exclude: 'kernel*'
+      when: ansible_os_family == 'RedHat'
+...

@@ -1,0 +1,157 @@
+---
+- name: RedHat | Include Secure Vars
+  include_vars:
+    file: ../defaults/secure.yml
+
+- name: RedHat | Install Packages
+  package:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ packages }}"
+
+- name: RedHat | Enable Service {{ firewall_port }} in Firewalld
+  firewalld:
+    immediate: yes
+    service: "{{ firewall_port }}"
+    permanent: yes
+    state: enabled
+
+- name: RedHat | Create Logs Directory
+  file:
+    path: "/var/log/named"
+    state: directory
+    owner: "{{ bind_user }}"
+    group: "{{ bind_user }}"
+    mode: 0750
+
+- name: RedHat | Set named_write_master_zones flag on and keep it persistent across reboots (SELinux)
+  seboolean:
+    name: named_write_master_zones
+    state: yes
+    persistent: yes
+
+- name: RedHat | Allow Bind to Bind (no pun intended) to TCP Port {{ bind_statistics_port }} (SELinux)
+  community.general.seport:
+    ports: "{{ bind_statistics_port }}"
+    proto: tcp
+    setype: dns_port_t
+    state: present
+
+- name: RedHat | Configure Master DNS Server
+  block:
+    - name: RedHat | Populate {{ bind_data_dir }} Internal Zone
+      template: 
+        src: "files/db.hl.test"
+        dest: "{{ bind_data_dir }}"
+        owner: "{{ bind_user }}"
+        group: "{{ bind_user }}"
+        mode: 0644
+        validate: "named-checkzone {{ homelab_domain_name }} %s"
+      notify:
+      - restart bind
+
+    - name: RedHat | Populate {{ bind_data_dir }} Reverse Zone
+      template: 
+        src: "files/db.1.11.10"
+        dest: "{{ bind_data_dir }}"
+        owner: "{{ bind_user }}"
+        group: "{{ bind_user }}"
+        mode: 0644
+        validate: "named-checkzone 1.11.10.in-addr.arpa %s"
+      notify:
+      - restart bind
+
+    - name: RedHat | Copy {{ bind_config_file }} Configuration File
+      template: 
+        src: "{{ bind_config_file }}.master.j2"
+        dest: "/etc/{{ bind_config_file }}"
+        owner: root
+        group: "{{ bind_user }}"
+        mode: 0640
+        validate: "named-checkconf %s"
+      notify:
+      - restart bind
+  when: "'dns1' in group_names"
+
+- name: RedHat | Configure Slave DNS Server
+  block:
+    - name: RedHat | Copy {{ bind_config_file }} Configuration File
+      template: 
+        src: "{{ bind_config_file }}.slave.j2"
+        dest: "/etc/{{ bind_config_file }}"
+        owner: root
+        group: "{{ bind_user }}"
+        mode: 0640
+        validate: "named-checkconf %s"
+      notify:
+      - restart bind
+  when: "'dns2' in group_names"
+
+- name: RedHat | Start and Enable Service {{ systemd_service }}
+  service:
+    name: "{{ systemd_service }}"
+    state: started
+    enabled: yes
+
+- name: RedHat | Install DNS Updater Key
+  template:
+    src: "rndc.key.j2"
+    dest: "/etc/rndc.key"
+    owner: root
+    group: "{{ bind_user }}"
+    mode: 0640
+  notify:
+  - restart bind
+
+#
+# Configure Bind Exporter systemd service
+#
+- name: RedHat | Create System Group {{ prometheus_user }}
+  group:
+    state: present
+    system: yes
+    name: "{{ prometheus_user }}"
+
+- name: RedHat | Create System User {{ prometheus_user }}
+  user:
+    state: present
+    system: yes
+    name: "{{ prometheus_user }}"
+    groups: "{{ prometheus_user }}"
+    shell: "/sbin/nologin"
+
+- name: RedHat | Enable Service {{ bind_exporter_port }} in Firewalld
+  firewalld:
+    immediate: yes
+    port: "{{ bind_exporter_port }}/tcp"
+    permanent: yes
+    state: enabled
+
+- name: RedHat | Unarchive a file that needs to be downloaded
+  unarchive:
+    src: "{{ bind_exporter_url }}"
+    dest: "/usr/local/bin"
+    remote_src: yes
+    owner: root
+    group: root
+    creates: "/usr/local/bin/{{ bind_exporter_binary }}"
+    extra_opts:
+      - "--strip-components"
+      - "1"
+
+- name: RedHat | Copy {{ bind_exporter_systemd_service }} Systemd File
+  template: 
+    src: "{{ bind_exporter_systemd_service }}.j2"
+    dest: "/etc/systemd/system/{{ bind_exporter_systemd_service }}"
+    owner: root
+    group: root
+    mode: 0644
+
+- name: RedHat | systemctl daemon-reload
+  command: systemctl daemon-reload 
+
+- name: RedHat | Start and Enable Service {{ bind_exporter_systemd_service }}
+  service:
+    name: "{{ bind_exporter_systemd_service }}"
+    state: started
+    enabled: yes

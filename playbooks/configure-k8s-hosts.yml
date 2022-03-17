@@ -1,0 +1,25 @@
+---
+- name: Create Users
+  hosts: k8s
+  remote_user: root
+  gather_facts: yes
+  roles:
+    - hl.users
+
+- name: Configure Kubernetes Hosts
+  hosts: k8s
+  become: true
+  gather_facts: yes
+  roles:
+    - hl.sshd
+    - hl.resolvconf
+    - hl.timezone
+    - hl.hardening
+    - hl.common
+    - hl.node-exporter
+    - hl.hostsfile
+    - hl.docker
+    - hl.k8s
+    - hl.k8s-cluster
+...
+

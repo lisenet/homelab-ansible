@@ -1,0 +1,26 @@
+---
+- name: Create Users
+  hosts: pxe
+  remote_user: root
+  gather_facts: yes
+  roles:
+    - hl.users
+
+- name: Configure PXE Boot Hosts
+  hosts: pxe
+  become: true
+  gather_facts: yes
+  roles:
+    - hl.pxe-boot-server
+    - hl.sshd
+    - hl.resolvconf
+    - hl.timezone
+    - hl.hardening
+    - hl.common
+    - hl.node-exporter
+    - hl.handle-lid-switch
+    - hl.wakeonlan
+  vars:
+    - download_pxe_boot_media: false
+    - download_packer_media: false
+...

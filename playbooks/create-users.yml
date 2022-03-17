@@ -1,0 +1,8 @@
+---
+- name: Create Users and Groups
+  hosts: all
+  remote_user: root
+  gather_facts: yes
+  roles:
+    - hl.users
+...

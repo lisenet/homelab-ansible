@@ -1,0 +1,7 @@
+NAME=ethx
+DEVICE=ethx
+ONBOOT=yes
+TYPE=Ethernet
+BOOTPROTO=none
+BRIDGE=br0
+ETHTOOL_OPTS="-s ${DEVICE} wol g"

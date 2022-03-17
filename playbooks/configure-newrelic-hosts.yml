@@ -1,0 +1,27 @@
+---
+- name: Linux | Configure NewRelic Agent
+  hosts: nri-agents
+  become: true
+  roles:
+    - name: newrelic.newrelic-infra
+      vars:
+        nrinfragent_state: latest
+        nrinfragent_service_enabled: yes
+        nrinfragent_service_state: started
+        nrinfragent_config:
+          license_key: "{{ newrelic_key }}"
+          log_file: "/var/log/nr-infra.log"
+          log_to_stdout: false
+          enable_process_metrics: false
+          metrics_process_sample_rate: -1
+          startup_connection_retries: -1
+          selinux_enable_semodule: false
+          dns_hostname_resolution: false
+  tasks:
+    - name: Linux | Remove Integrations from Monitoring
+      # This counts towards infrastructure integrations data ingestion
+      file:
+        path: "/etc/newrelic-infra/integrations.d/"
+        state: absent
+...
+

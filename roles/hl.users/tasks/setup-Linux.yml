@@ -1,0 +1,70 @@
+---
+- name: Linux | Include Secure Vars
+  include_vars:
+    file: ../defaults/secure.yml
+
+- name: Linux | Create Users
+  remote_user: root
+  block:
+    - name: RedHat | Create Users
+      user:
+        state: present
+        name: "{{ item.name }}"
+        groups: "{{ sudo_group_redhat }}"
+        shell: "/bin/bash"
+        password: "{{ user_password | password_hash('sha512') }}"
+        update_password: always
+      loop: "{{ users }}"
+
+    - name: RedHat | Configure sudo Rules
+      lineinfile:
+        state: present
+        path: "/etc/sudoers"
+        regexp: "^%{{ sudo_group_redhat }}"
+        line: "%{{ sudo_group_redhat }} ALL=(ALL) NOPASSWD: ALL"
+        validate: "/usr/sbin/visudo -cf %s"
+  when: (ansible_os_family == 'RedHat') or (ansible_os_family == 'Rocky')
+
+- name: Linux | Create Users
+  remote_user: root
+  block:
+    - name: Debian | Create Users
+      user:
+        state: present
+        name: "{{ item.name }}"
+        groups: "{{ sudo_group_debian }}"
+        shell: "/bin/bash"
+        password: "{{ user_password | password_hash('sha512') }}"
+        update_password: always
+      loop: "{{ users }}"
+
+    - name: Debian | Configure sudo Rules
+      lineinfile:
+        state: present
+        path: "/etc/sudoers"
+        regexp: "^%{{ sudo_group_debian }}"
+        line: "%{{ sudo_group_debian }} ALL=(ALL) NOPASSWD: ALL"
+        validate: "/usr/sbin/visudo -cf %s"
+  when: ansible_os_family == 'Debian'
+
+- name: Debian | Set root User Password
+  user:
+    state: present
+    name: root
+    password: "{{ user_password | password_hash('sha512') }}"
+    update_password: always
+
+- name: Linux | Create Authorised Keys
+  remote_user: root
+  authorized_key:
+    state: present
+    user: "{{ item.name }}"
+    key: "{{ lookup('file', 'files/id_rsa_' + item.name + '.pub') }}"
+  loop: "{{ users }}"
+
+- name: Linux | Create Authorised Keys for root
+  remote_user: root
+  authorized_key:
+    state: present
+    user: root
+    key: "{{ lookup('file', 'files/id_rsa_' + 'root' + '.pub') }}"

@@ -1,0 +1,19 @@
+---
+- name: RedHat | Install Packages
+  package: 
+    name: "{{ item }}"
+    state: present
+  loop: "{{ packages }}"
+
+- name: RedHat | Enable Service {{ firewall_port }} in Firewalld
+  firewalld:
+    immediate: yes
+    service: "{{ firewall_port }}"
+    permanent: yes
+    state: enabled
+
+- name: RedHat | Start and Enable Service {{ systemd_service }}
+  service:
+    name: "{{ systemd_service }}"
+    state: started
+    enabled: yes

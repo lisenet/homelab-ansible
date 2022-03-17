@@ -1,0 +1,31 @@
+---
+## Default variables for the role. These variables have the lowest
+## priority of any variables available, and can be easily overridden 
+## by any other variable, including inventory variables.
+
+packages:
+  - keepalived
+  - psmisc
+
+systemd_service: "keepalived"
+keepalived_config_file: "keepalived.conf"
+
+# Virtual IP to use with keepalived
+keepalived_vip: "10.11.1.30"
+
+# Unique identifier per VRRP instance (same across all servers on the instance)
+keepalived_virtual_router_id: "255"
+
+# Either true or false. False if HAProxy will not be deployed
+keepalived_with_haproxy: "true"
+
+# auth_pass: stored in ansible vault defaults/secure.yml
+
+# The host's kernel needs to be configured to allow a process to bind
+# to a non-local IP address. This is because non-active VRRP nodes will
+# not have the virtual IP configured on any interfaces.
+sysctl_config:
+  - name: net.ipv4.ip_forward
+    value: 1
+  - name: net.ipv4.ip_nonlocal_bind
+    value: 1

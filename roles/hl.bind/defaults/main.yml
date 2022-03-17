@@ -1,0 +1,30 @@
+---
+## Default variables for the role. These variables have the lowest
+## priority of any variables available, and can be easily overridden 
+## by any other variable, including inventory variables.
+
+packages:
+  - bind
+  - bind-utils
+  - tar
+
+systemd_service: "named"
+firewall_port: "dns"
+
+# rndc_key:
+# DNS update key, generated with `rndc-confgen -A hmac-sha256 -a -b 512 -r /dev/urandom`
+# stored in ansible vault defaults/secure.yml
+
+bind_user: "named"
+bind_log_file: "/var/log/{{ systemd_service }}/{{ systemd_service }}.log"
+bind_config_file: "named.conf"
+bind_rndc_key: "/etc/rndc.key"
+bind_data_dir: "/var/named/data"
+bind_statistics_port: "8053"
+
+# bind exporter variables
+prometheus_user: "prometheus"
+bind_exporter_port: "9153"
+bind_exporter_url: "https://github.com/prometheus-community/bind_exporter/releases/download/v0.5.0/bind_exporter-0.5.0.linux-amd64.tar.gz"
+bind_exporter_binary: "bind_exporter"
+bind_exporter_systemd_service: "bind_exporter.service"

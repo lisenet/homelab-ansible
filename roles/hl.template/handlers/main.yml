@@ -1,0 +1,6 @@
+---
+- name: restart name
+  service: 
+    name: "{{ systemd_service }}"
+    state: restarted
+

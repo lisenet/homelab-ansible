@@ -1,0 +1,42 @@
+---
+- name: RedHat | Install Packages
+  package:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ packages }}"
+
+- name: RedHat | Start and Enable Service {{ systemd_service }}
+  service:
+    name: "{{ systemd_service }}"
+    state: started
+    enabled: yes
+
+- name: RedHat | Destroy (stop) Default Network
+  command: virsh net-destroy default
+  ignore_errors: yes
+  notify:
+  - restart libvirtd
+
+- name: RedHat | Undefine (permanently remove) Default Network
+  command: virsh net-undefine default
+  args:
+    removes: "/var/lib/libvirt/dnsmasq/default.conf"
+  ignore_errors: yes
+  notify:
+  - restart libvirtd
+
+- name: RedHat | Deploy Network Example Files
+  template:
+    src: "{{ item }}"
+    dest: "/etc/sysconfig/network-scripts/{{ item }}"
+    owner: root
+    group: root
+    mode: 0644
+    force: yes
+  loop:
+  - "{{ bridge_net_template }}"
+  - "{{ ethx_net_template }}"
+
+- name: RedHat | Print Message
+  debug:
+    msg: "Bridge file /etc/sysconfig/network-scripts/{{ bridge_net_template }} has been deployed but no changes to system networking have been made."

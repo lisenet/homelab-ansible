@@ -1,0 +1,9 @@
+---
+## Default variables for the role. These variables have the lowest
+## priority of any variables available, and can be easily overridden 
+## by any other variable, including inventory variables.
+
+# Swap size is in MB
+swap_size: "1024"
+sysctl_swappiness: "10"
+swap_file: "/swapfile"

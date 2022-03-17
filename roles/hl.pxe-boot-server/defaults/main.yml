@@ -1,0 +1,109 @@
+---
+## Default variables for the role. These variables have the lowest
+## priority of any variables available, and can be easily overridden 
+## by any other variable, including inventory variables.
+
+packages:
+  - tftp-server
+  - syslinux
+  - vsftpd
+  - nfs-utils
+  - nginx
+
+systemd_services:
+  - tftp
+  - vsftpd
+  - nfs-server
+  - nginx
+
+firewall_ports: 
+  - tftp
+  - ftp
+  - nfs
+  - mountd
+  - rpc-bind
+  - http
+
+nfs_selinux_booleans:
+  - use_nfs_home_dirs
+  - nfsd_anon_write
+
+pasv_ftp_min_port: "60000"
+pasv_ftp_max_port: "60029"
+
+vsftpd_config_file: "vsftpd.conf"
+nginx_config_file: "nginx.conf"
+
+tftp_directory: "/var/lib/tftpboot"
+ftp_directory: "/var/ftp/pub"
+nfs_directory: "/var/nfs"
+nginx_directory: "/var/www/html"
+
+kickstart_file_rocky8_host: "rocky8-host-ks.cfg"
+kickstart_file_rocky8_packer: "rocky8-packer-ks.cfg"
+kickstart_file_centos7_packer: "centos7-packer-ks.cfg"
+kickstart_file_ubuntu1804server: "ubuntu1804-server.seed"
+kickstart_file_ubuntu1804desktop: "ubuntu1804-desktop.seed"
+
+networkboot_directory_rocky8: "Rocky8"
+networkboot_directory_centos7: "CentOS7"
+networkboot_directory_ubuntu1804server: "Ubuntu1804Server"
+networkboot_directory_ubuntu1804desktop: "Ubuntu1804Desktop"
+
+# Booleans to control whether media should be downloaded
+download_pxe_boot_media: true
+download_packer_media: true
+
+# The kernel and initrd files from the Bionic netboot.tar.gz archive
+ubuntu_netboot_linux: "http://archive.ubuntu.com/ubuntu/dists/bionic-updates/main/installer-amd64/current/images/netboot/ubuntu-installer/amd64/linux"
+ubuntu_netboot_initrd: "http://archive.ubuntu.com/ubuntu/dists/bionic-updates/main/installer-amd64/current/images/netboot/ubuntu-installer/amd64/initrd.gz"
+
+# These are used for PXE boot
+pxe_boot_media:
+  - name: "ubuntu1804server"
+    iso_url: "https://releases.ubuntu.com/18.04/ubuntu-18.04.6-live-server-amd64.iso"
+    iso_sha256: "6c647b1ab4318e8c560d5748f908e108be654bad1e165f7cf4f3c1fc43995934"
+    source_directory: "{{ nfs_directory }}/{{ networkboot_directory_ubuntu1804server }}/"
+    netboot_directory: "{{ tftp_directory }}/networkboot/{{ networkboot_directory_ubuntu1804server }}/"
+    setype: "nfs_t"
+    mounted_src: "/mnt/casper"
+    pxeboot_files:
+      - initrd
+      - vmlinuz
+  - name: "ubuntu1804desktop"
+    iso_url: "https://releases.ubuntu.com/18.04/ubuntu-18.04.6-desktop-amd64.iso"
+    iso_sha256: "f730be589aa1ba923ebe6eca573fa66d09ba14c4c104da2c329df652d42aff11"
+    source_directory: "{{ nfs_directory }}/{{ networkboot_directory_ubuntu1804desktop }}/"
+    netboot_directory: "{{ tftp_directory }}/networkboot/{{ networkboot_directory_ubuntu1804desktop }}/"
+    setype: "nfs_t"
+    mounted_src: "/mnt/casper"
+    pxeboot_files:
+      - initrd
+      - vmlinuz
+  - name: "centos7"
+    iso_url: "https://mirror.ox.ac.uk/sites/mirror.centos.org/7.9.2009/isos/x86_64/CentOS-7-x86_64-DVD-2009.iso"
+    iso_sha256: "e33d7b1ea7a9e2f38c8f693215dd85254c3a4fe446f93f563279715b68d07987"
+    source_directory: "{{ ftp_directory }}/pxe/{{ networkboot_directory_centos7 }}/"
+    netboot_directory: "{{ tftp_directory }}/networkboot/{{ networkboot_directory_centos7 }}/"
+    setype: "public_content_t"
+    mounted_src: "/mnt/images/pxeboot"
+    pxeboot_files:
+      - initrd.img
+      - vmlinuz
+  - name: "rocky8"
+    iso_url: "https://download.rockylinux.org/pub/rocky/8/isos/x86_64/Rocky-8.5-x86_64-dvd1.iso"
+    iso_sha256: "0081f8b969d0cef426530f6d618b962c7a01e71eb12a40581a83241f22dfdc25"
+    source_directory: "{{ ftp_directory }}/pxe/{{ networkboot_directory_rocky8 }}/"
+    netboot_directory: "{{ tftp_directory }}/networkboot/{{ networkboot_directory_rocky8 }}/"
+    setype: "public_content_t"
+    mounted_src: "/mnt/images/pxeboot"
+    pxeboot_files:
+      - initrd.img
+      - vmlinuz
+
+# These are used for Packer
+packer_media:
+  - iso_url: "https://download.rockylinux.org/pub/rocky/8/isos/x86_64/Rocky-8.5-x86_64-boot.iso"
+    iso_sha256: "5a0dc65d1308e47b51a49e23f1030b5ee0f0ece3702483a8a6554382e893333c"
+  - iso_url: "https://mirror.ox.ac.uk/sites/mirror.centos.org/7.9.2009/isos/x86_64/CentOS-7-x86_64-Minimal-2009.iso"
+    iso_sha256: "07b94e6b1a0b0260b94c83d6bb76b26bf7a310dc78d7a9c7432809fb9bc6194a"

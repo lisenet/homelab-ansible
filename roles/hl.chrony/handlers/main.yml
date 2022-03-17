@@ -1,0 +1,6 @@
+---
+- name: restart chrony
+  service: 
+    name: "{{ systemd_service }}"
+    state: restarted
+

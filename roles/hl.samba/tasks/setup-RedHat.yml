@@ -1,0 +1,58 @@
+---
+- name: RedHat | Install Packages
+  package: 
+    name: "{{ item }}"
+    state: present
+  loop: "{{ packages }}"
+
+- name: RedHat | Enable Service {{ firewall_port }} in Firewalld
+  firewalld:
+    immediate: yes
+    service: "{{ firewall_port }}"
+    permanent: yes
+    state: enabled
+
+- name: RedHat | Start and Enable Services
+  service:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  loop: "{{ systemd_services }}"
+
+- name: RedHat | Check Samba Ports
+  ignore_errors: yes
+  wait_for:
+    host: "{{ ansible_fqdn }}"
+    port: "{{ item }}"
+    timeout: 2
+  loop:
+    - "139"
+    - "445"
+
+- name: RedHat | Set Samba Server to Share All Files and Directories rw (SELinux)
+  ansible.posix.seboolean:
+    name: "{{ item }}"
+    state: yes
+    persistent: yes
+  loop: "{{ samba_selinux_booleans }}"
+
+- name: RedHat | Create Public Samba Share Directory {{ samba_share_directory }}
+  file:
+    path: "{{ samba_share_directory }}"
+    state: directory
+    owner: "{{ samba_guest_account }}"
+    group: "{{ samba_guest_account }}"
+    setype: "public_content_rw_t"
+    mode: 0777
+
+- name: RedHat | Create Samba Configuration File {{ samba_config_file }}
+  template:
+    src: "{{ samba_config_file }}.j2"
+    dest: "/etc/samba/{{ samba_config_file }}"
+    owner: root
+    group: root
+    mode: 0644
+    force: yes
+    validate: "testparm -s %s"
+  notify:
+    - restart smb

@@ -1,0 +1,47 @@
+---
+packages:
+  - haproxy
+  - tar
+
+systemd_service: "haproxy"
+
+haproxy_config_file: "haproxy.cfg"
+haproxy_socket: "/var/lib/haproxy/stats"
+haproxy_chroot: "/var/lib/haproxy"
+haproxy_user: "haproxy"
+haproxy_group: "haproxy"
+
+haproxy_stats_port: "8080"
+
+# Frontend settings
+haproxy_frontend_name: "kubernetes"
+haproxy_frontend_bind_address: "*"
+haproxy_frontend_port: "6443"
+haproxy_frontend_mode: "tcp"
+haproxy_frontend_option: "tcplog"
+
+# Backend settings
+haproxy_backend_name: "kubernetes-master-nodes"
+haproxy_backend_mode: "tcp"
+haproxy_backend_balance_method: "roundrobin"
+haproxy_backend_option: "tcp-check"
+
+# List of backend servers
+haproxy_backend_servers:
+  - name: srv31-master
+    address: 10.11.1.31:{{ haproxy_frontend_port }}
+  - name: srv32-master
+    address: 10.11.1.32:{{ haproxy_frontend_port }}
+  - name: srv33-master
+    address: 10.11.1.33:{{ haproxy_frontend_port }}
+
+# haproxy stats login
+haproxy_stats_user: "admin"
+haproxy_stats_password: "haproxy"
+
+# haproxy exporter variables
+prometheus_user: "prometheus"
+haproxy_exporter_port: "9101"
+haproxy_exporter_url: "https://github.com/prometheus/haproxy_exporter/releases/download/v0.13.0/haproxy_exporter-0.13.0.linux-amd64.tar.gz"
+haproxy_exporter_binary: "haproxy_exporter"
+haproxy_exporter_systemd_service: "haproxy_exporter.service"

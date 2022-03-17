@@ -1,0 +1,52 @@
+---
+- name: Debian | Install Packages
+  package:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ packages }}"
+
+#
+# Configure Pi-hole Exporter systemd service
+#
+- name: Debian | Create System Group {{ prometheus_user }}
+  group:
+    state: present
+    system: yes
+    name: "{{ prometheus_user }}"
+
+- name: Debian | Create System User {{ prometheus_user }}
+  user:
+    state: present
+    system: yes
+    name: "{{ prometheus_user }}"
+    groups: "{{ prometheus_user }}"
+    shell: "/sbin/nologin"
+
+- name: Debian | Unarchive a file that needs to be downloaded
+  unarchive:
+    src: "{{ pihole_exporter_url }}"
+    dest: "/usr/local/bin"
+    remote_src: yes
+    owner: root
+    group: root
+    creates: "/usr/local/bin/{{ pihole_exporter_binary }}"
+    extra_opts:
+      - "--strip-components"
+      - "1"
+
+- name: Debian | Copy {{ pihole_exporter_systemd_service }} Systemd File
+  template: 
+    src: "{{ pihole_exporter_systemd_service }}.j2"
+    dest: "/etc/systemd/system/{{ pihole_exporter_systemd_service }}"
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Debian | systemctl daemon-reload
+  command: systemctl daemon-reload 
+
+- name: Debian | Start and Enable Service {{ pihole_exporter_systemd_service }}
+  service:
+    name: "{{ pihole_exporter_systemd_service }}"
+    state: started
+    enabled: yes

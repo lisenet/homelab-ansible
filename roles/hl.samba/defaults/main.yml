@@ -1,0 +1,22 @@
+---
+## Default variables for the role. These variables have the lowest
+## priority of any variables available, and can be easily overridden 
+## by any other variable, including inventory variables.
+
+packages:
+  - samba
+  - samba-client
+
+systemd_services:
+  - smb
+  - nmb
+
+firewall_port: "samba"
+
+samba_selinux_booleans:
+  - samba_export_all_rw
+  - smbd_anon_write
+
+samba_config_file: "smb.conf"
+samba_share_directory: "/mnt/storage/samba"
+samba_guest_account: "nobody"

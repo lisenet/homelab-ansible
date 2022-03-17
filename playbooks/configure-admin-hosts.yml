@@ -1,0 +1,28 @@
+---
+- name: Create Users
+  hosts: admin
+  remote_user: root
+  gather_facts: yes
+  roles:
+    - hl.users
+
+- name: Configure Admin Hosts
+  hosts: admin
+  become: true
+  gather_facts: yes
+  roles:
+    - hl.sshd
+    - hl.resolvconf
+    - hl.timezone
+    - hl.hardening
+    - hl.common
+    - hl.node-exporter
+    - hl.swapfile
+    - hl.bind
+    - hl.dhcpd
+    - hl.haproxy
+    - hl.keepalived
+    - hl.postfix
+    - hl.chrony
+...
+

@@ -1,0 +1,15 @@
+---
+- name: vsftpd
+  service:
+    name: vsftpd
+    state: restarted
+
+- name: nfs-server
+  service:
+    name: nfs-server
+    state: restarted
+
+- name: nginx
+  service:
+    name: nginx
+    state: restarted

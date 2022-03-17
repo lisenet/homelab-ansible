@@ -1,0 +1,11 @@
+---
+- name: RedHat | Create Static VPN Route
+  become: true
+  template:
+    src: "{{ network_template }}"
+    dest: "/etc/sysconfig/network-scripts/route-br0"
+    owner: root
+    group: root
+    mode: 0644
+  ignore_errors: yes
+  when: "'kvm' in group_names"

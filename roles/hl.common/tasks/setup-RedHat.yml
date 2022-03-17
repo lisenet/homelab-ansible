@@ -1,0 +1,11 @@
+---
+- name: RedHat | Check System Requirements
+  fail:
+    msg: "The server is not a RedHat 8 server"
+  when: ansible_distribution_major_version != "8"
+
+- name: RedHat | Install Packages
+  package:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ packages }}"
