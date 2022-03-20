@@ -35,7 +35,7 @@
     gpgcheck: yes
     gpgkey: "{{ k8s_gpg_key_redhat }}"
     enabled: yes
-    #exclude: kubelet,kubeadm,kubectl
+    exclude: kubelet,kubeadm,kubectl
     skip_if_unavailable: yes
 
 - name: RedHat | Install Dependencies

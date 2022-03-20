@@ -7,8 +7,8 @@ prerequisites_packages:
   - yum-utils
 
 packages:
-  - docker-ce-20.10.11-3.el{{ ansible_distribution_major_version }}.x86_64
-  - docker-ce-cli-20.10.11-3.el{{ ansible_distribution_major_version }}.x86_64
+  - docker-ce-20.10.13-3.el{{ ansible_distribution_major_version }}.x86_64
+  - docker-ce-cli-20.10.13-3.el{{ ansible_distribution_major_version }}.x86_64
   - containerd.io-1.4.3-3.1.el{{ ansible_distribution_major_version }}.x86_64
 
 systemd_service: "docker"
