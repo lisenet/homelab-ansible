@@ -1,0 +1,15 @@
+---
+## Default variables for the role. These variables have the lowest
+## priority of any variables available, and can be easily overridden 
+## by any other variable, including inventory variables.
+
+packages:
+  - tar
+
+prometheus_user: "prometheus"
+
+mysqld_exporter_port: "9104"
+mysqld_exporter_url: "https://github.com/prometheus/mysqld_exporter/releases/download/v0.14.0/mysqld_exporter-0.14.0.linux-amd64.tar.gz"
+mysqld_exporter_binary: "mysqld_exporter"
+mysqld_exporter_systemd_service: "mysqld_exporter.service"
+mysqld_my_cnf_file: "/etc/.my-exporter.cnf"
