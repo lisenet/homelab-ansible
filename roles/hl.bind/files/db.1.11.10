@@ -3,7 +3,7 @@
 $ORIGIN .
 $TTL 3600	; 60 minutes
 1.11.10.in-addr.arpa	IN SOA	dns1.hl.test. root.hl.test. (
-				2022031600 ; serial
+				2022032400 ; serial
 				3600       ; refresh (1 hour)
 				3600       ; retry (1 hour)
 				604800     ; expire (1 week)
@@ -52,6 +52,7 @@ $ORIGIN 1.11.10.in-addr.arpa.
 50      PTR	dashboard.apps.hl.test.
 52      PTR	kubecost.hl.test.
 53      PTR	openvpn.hl.test.
+54      PTR	argocd.hl.test.
 55      PTR	influxdb.hl.test.
 58      PTR	kibana.hl.test.
 59      PTR	elasticsearch.hl.test.

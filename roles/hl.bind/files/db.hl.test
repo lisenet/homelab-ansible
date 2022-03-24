@@ -2,7 +2,7 @@
 
 $TTL 3600 ; 60 min
 @               IN SOA  dns1.hl.test. root.hl.test. (
-                        2022031600 ; Serial
+                        2022032400 ; Serial
                         3600       ; Refresh (1 hour)
                         3600       ; Retry (1 hour)
                         604800     ; Expire (1 hour)
@@ -57,6 +57,7 @@ dashboard.apps  A       10.11.1.50
 *.apps          A       10.11.1.51
 kubecost        A       10.11.1.52
 openvpn         A       10.11.1.53
+argocd          A       10.11.1.54
 influxdb        A       10.11.1.55
 kibana          A       10.11.1.58
 elasticsearch   A       10.11.1.59
