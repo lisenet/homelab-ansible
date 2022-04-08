@@ -2,7 +2,7 @@
 
 $TTL 3600 ; 60 min
 @               IN SOA  dns1.hl.test. root.hl.test. (
-                        2022032400 ; Serial
+                        2022040801 ; Serial
                         3600       ; Refresh (1 hour)
                         3600       ; Retry (1 hour)
                         604800     ; Expire (1 hour)
@@ -24,7 +24,9 @@ truenas         A       10.11.1.5
 ipcam-garden    A       10.11.1.6
 pi              A       10.11.1.7
 ipcam-driveway  A       10.11.1.8
+ipcam-room      A       10.11.1.9
 flames          A       10.11.1.10
+mikrotik-lte    A       10.11.1.11
 pxe             A       10.11.1.20
 kvm1            A       10.11.1.21
 kvm2            A       10.11.1.22

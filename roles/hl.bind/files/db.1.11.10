@@ -3,7 +3,7 @@
 $ORIGIN .
 $TTL 3600	; 60 minutes
 1.11.10.in-addr.arpa	IN SOA	dns1.hl.test. root.hl.test. (
-				2022032400 ; serial
+				2022040801 ; serial
 				3600       ; refresh (1 hour)
 				3600       ; retry (1 hour)
 				604800     ; expire (1 week)
@@ -15,6 +15,7 @@ $TTL 3600	; 60 minutes
 $ORIGIN 1.11.10.in-addr.arpa.
 1       PTR	mikrotik.hl.test.
 10      PTR	flames.hl.test.
+11      PTR	mikrotik-lte.hl.test.
 2       PTR	dns1.hl.test.
         PTR	admin1.hl.test.
 20      PTR	pxe.hl.test.
@@ -59,3 +60,4 @@ $ORIGIN 1.11.10.in-addr.arpa.
 6       PTR	ipcam-garden.hl.test.
 7       PTR	pi.hl.test.
 8       PTR	ipcam-driveway.hl.test.
+9       PTR	ipcam-room.hl.test.
