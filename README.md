@@ -48,7 +48,7 @@ The variable for user password is `user_password`.
 ### Configure PXE Hosts
 
 ```
-ansible-playbook ./playbooks/configure-pxe-hosts.yml
+ansible-playbook ./playbooks/configure-pxe-hosts.yml --extra-vars "download_pxe_boot_media=true download_packer_media=true"
 ```
 
 ### Configure KVM Hosts
