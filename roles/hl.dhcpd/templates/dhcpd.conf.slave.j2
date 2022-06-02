@@ -4,9 +4,9 @@
 failover peer "failover-dhcp" {
   secondary; # This defines the slave
   address {{ bind_slave_server_address }};
-  port 647;
+  port {{ firewall_dhcp_failover_port }};
   peer address {{ bind_master_server_address }};
-  peer port 647;
+  peer port {{ firewall_dhcp_failover_port }};
   max-response-delay 60;
   max-unacked-updates 10;
   load balance max seconds 3;
