@@ -61,17 +61,17 @@ class TestGitlabUser(GitlabModuleTestCase):
 
     @with_httmock(resp_find_user)
     def test_exist_user(self):
-        rvalue = self.moduleUtil.existsUser("john_smith")
+        rvalue = self.moduleUtil.exists_user("john_smith")
 
         self.assertEqual(rvalue, True)
 
-        rvalue = self.moduleUtil.existsUser("paul_smith")
+        rvalue = self.moduleUtil.exists_user("paul_smith")
 
         self.assertEqual(rvalue, False)
 
     @with_httmock(resp_find_user)
     def test_find_user(self):
-        user = self.moduleUtil.findUser("john_smith")
+        user = self.moduleUtil.find_user("john_smith")
 
         self.assertEqual(type(user), User)
         self.assertEqual(user.name, "John Smith")
@@ -79,7 +79,7 @@ class TestGitlabUser(GitlabModuleTestCase):
 
     @with_httmock(resp_create_user)
     def test_create_user(self):
-        user = self.moduleUtil.createUser({'email': 'john@example.com', 'password': 's3cur3s3cr3T',
+        user = self.moduleUtil.create_user({'email': 'john@example.com', 'password': 's3cur3s3cr3T',
                                            'username': 'john_smith', 'name': 'John Smith'})
         self.assertEqual(type(user), User)
         self.assertEqual(user.name, "John Smith")
@@ -88,21 +88,38 @@ class TestGitlabUser(GitlabModuleTestCase):
     @with_httmock(resp_get_user)
     def test_update_user(self):
         user = self.gitlab_instance.users.get(1)
-        changed, newUser = self.moduleUtil.updateUser(user, {'name': "Jack Smith", "is_admin": "true"})
+
+        changed, newUser = self.moduleUtil.update_user(
+            user,
+            {'name': {'value': "Jack Smith"}, "is_admin": {'value': "true", 'setter': 'admin'}}, {}
+        )
 
         self.assertEqual(changed, True)
         self.assertEqual(newUser.name, "Jack Smith")
-        self.assertEqual(newUser.is_admin, "true")
+        self.assertEqual(newUser.admin, "true")
 
-        changed, newUser = self.moduleUtil.updateUser(user, {'name': "Jack Smith"})
+        changed, newUser = self.moduleUtil.update_user(user, {'name': {'value': "Jack Smith"}}, {})
 
         self.assertEqual(changed, False)
+
+        changed, newUser = self.moduleUtil.update_user(
+            user,
+            {}, {
+                'skip_reconfirmation': {'value': True},
+                'password': {'value': 'super_secret-super_secret'},
+            }
+        )
+
+        # note: uncheckable parameters dont set changed state
+        self.assertEqual(changed, False)
+        self.assertEqual(newUser.skip_reconfirmation, True)
+        self.assertEqual(newUser.password, 'super_secret-super_secret')
 
     @with_httmock(resp_find_user)
     @with_httmock(resp_delete_user)
     def test_delete_user(self):
-        self.moduleUtil.existsUser("john_smith")
-        rvalue = self.moduleUtil.deleteUser()
+        self.moduleUtil.exists_user("john_smith")
+        rvalue = self.moduleUtil.delete_user()
 
         self.assertEqual(rvalue, None)
 
@@ -111,10 +128,10 @@ class TestGitlabUser(GitlabModuleTestCase):
     def test_sshkey_exist(self):
         user = self.gitlab_instance.users.get(1)
 
-        exist = self.moduleUtil.sshKeyExists(user, "Public key")
+        exist = self.moduleUtil.ssh_key_exists(user, "Public key")
         self.assertEqual(exist, True)
 
-        notExist = self.moduleUtil.sshKeyExists(user, "Private key")
+        notExist = self.moduleUtil.ssh_key_exists(user, "Private key")
         self.assertEqual(notExist, False)
 
     @with_httmock(resp_get_user)
@@ -123,20 +140,22 @@ class TestGitlabUser(GitlabModuleTestCase):
     def test_create_sshkey(self):
         user = self.gitlab_instance.users.get(1)
 
-        rvalue = self.moduleUtil.addSshKeyToUser(user, {
+        rvalue = self.moduleUtil.add_ssh_key_to_user(user, {
             'name': "Public key",
             'file': "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAIEAiPWx6WM4lhHNedGfBpPJNPpZ7yKu+dnn1SJe"
                     "jgt4596k6YjzGGphH2TUxwKzxcKDKKezwkpfnxPkSMkuEspGRt/aZZ9wa++Oi7Qkr8prgHc4"
-                    "soW6NUlfDzpvZK2H5E7eQaSeP3SAwGmQKUFHCddNaP0L+hM7zhFNzjFvpaMgJw0="})
+                    "soW6NUlfDzpvZK2H5E7eQaSeP3SAwGmQKUFHCddNaP0L+hM7zhFNzjFvpaMgJw0=",
+            'expires_at': ""})
         self.assertEqual(rvalue, False)
 
-        rvalue = self.moduleUtil.addSshKeyToUser(user, {
+        rvalue = self.moduleUtil.add_ssh_key_to_user(user, {
             'name': "Private key",
             'file': "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDA1YotVDm2mAyk2tPt4E7AHm01sS6JZmcU"
                     "dRuSuA5zszUJzYPPUSRAX3BCgTqLqYx//UuVncK7YqLVSbbwjKR2Ez5lISgCnVfLVEXzwhv+"
                     "xawxKWmI7hJ5S0tOv6MJ+IxyTa4xcKwJTwB86z22n9fVOQeJTR2dSOH1WJrf0PvRk+KVNY2j"
                     "TiGHTi9AIjLnyD/jWRpOgtdfkLRc8EzAWrWlgNmH2WOKBw6za0az6XoG75obUdFVdW3qcD0x"
-                    "c809OHLi7FDf+E7U4wiZJCFuUizMeXyuK/SkaE1aee4Qp5R4dxTR4TP9M1XAYkf+kF0W9srZ+mhF069XD/zhUPJsvwEF"})
+                    "c809OHLi7FDf+E7U4wiZJCFuUizMeXyuK/SkaE1aee4Qp5R4dxTR4TP9M1XAYkf+kF0W9srZ+mhF069XD/zhUPJsvwEF",
+            'expires_at': "2027-01-01"})
         self.assertEqual(rvalue, True)
 
     @with_httmock(resp_get_group)
@@ -144,7 +163,7 @@ class TestGitlabUser(GitlabModuleTestCase):
     def test_find_member(self):
         group = self.gitlab_instance.groups.get(1)
 
-        user = self.moduleUtil.findMember(group, 1)
+        user = self.moduleUtil.find_member(group, 1)
         self.assertEqual(user.username, "raymond_smith")
 
     @with_httmock(resp_get_user)
@@ -157,8 +176,8 @@ class TestGitlabUser(GitlabModuleTestCase):
         group = self.gitlab_instance.groups.get(1)
         user = self.gitlab_instance.users.get(1)
 
-        rvalue = self.moduleUtil.assignUserToGroup(user, group.id, "developer")
+        rvalue = self.moduleUtil.assign_user_to_group(user, group.id, "developer")
         self.assertEqual(rvalue, False)
 
-        rvalue = self.moduleUtil.assignUserToGroup(user, group.id, "guest")
+        rvalue = self.moduleUtil.assign_user_to_group(user, group.id, "guest")
         self.assertEqual(rvalue, True)

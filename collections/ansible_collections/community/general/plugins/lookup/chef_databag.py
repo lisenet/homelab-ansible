@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # (c) 2016, Josh Bradley <jbradley(at)digitalocean.com>
 # (c) 2017 Ansible Project
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -6,7 +7,7 @@ __metaclass__ = type
 
 DOCUMENTATION = '''
     author: Unknown (!UNKNOWN)
-    lookup: chef_databag
+    name: chef_databag
     short_description: fetches data from a Chef Databag
     description:
        - "This is a lookup plugin to provide access to chef data bags using the pychef package.
@@ -81,7 +82,7 @@ class LookupModule(LookupBase):
                 )
         if args:
             raise AnsibleError(
-                "unrecognized arguments to with_sequence: %r" % args.keys()
+                "unrecognized arguments to with_sequence: %r" % list(args.keys())
             )
 
     def run(self, terms, variables=None, **kwargs):

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # (c) 2015, Steve Gargan <steve.gargan@gmail.com>
 # (c) 2017 Ansible Project
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -7,7 +8,7 @@ __metaclass__ = type
 
 DOCUMENTATION = '''
     author: Unknown (!UNKNOWN)
-    lookup: consul_kv
+    name: consul_kv
     short_description: Fetch metadata from a Consul key value store.
     description:
       - Lookup metadata for a playbook from the key value store in a Consul cluster.
@@ -19,6 +20,7 @@ DOCUMENTATION = '''
       _raw:
         description: List of key(s) to retrieve.
         type: list
+        elements: string
       recurse:
         type: boolean
         description: If true, will retrieve all the values that have the given key as prefix.
@@ -106,7 +108,7 @@ import os
 from ansible.module_utils.six.moves.urllib.parse import urlparse
 from ansible.errors import AnsibleError, AnsibleAssertionError
 from ansible.plugins.lookup import LookupBase
-from ansible.module_utils._text import to_text
+from ansible.module_utils.common.text.converters import to_text
 
 try:
     import consul
@@ -171,10 +173,10 @@ class LookupModule(LookupBase):
 
         paramvals = {
             'key': params[0],
-            'token': None,
-            'recurse': False,
-            'index': None,
-            'datacenter': None
+            'token': self.get_option('token'),
+            'recurse': self.get_option('recurse'),
+            'index': self.get_option('index'),
+            'datacenter': self.get_option('datacenter')
         }
 
         # parameters specified?

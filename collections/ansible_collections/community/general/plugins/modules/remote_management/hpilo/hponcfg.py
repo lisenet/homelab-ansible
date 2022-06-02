@@ -14,30 +14,33 @@ module: hponcfg
 author: Dag Wieers (@dagwieers)
 short_description: Configure HP iLO interface using hponcfg
 description:
-- This modules configures the HP iLO interface using hponcfg.
+ - This modules configures the HP iLO interface using hponcfg.
 options:
   path:
     description:
-    - The XML file as accepted by hponcfg.
+     - The XML file as accepted by hponcfg.
     required: true
     aliases: ['src']
+    type: path
   minfw:
     description:
-    - The minimum firmware level needed.
+     - The minimum firmware level needed.
     required: false
+    type: str
   executable:
     description:
-    - Path to the hponcfg executable (`hponcfg` which uses $PATH).
+     - Path to the hponcfg executable (`hponcfg` which uses $PATH).
     default: hponcfg
+    type: str
   verbose:
     description:
-    - Run hponcfg in verbose mode (-v).
+     - Run hponcfg in verbose mode (-v).
     default: no
     type: bool
 requirements:
-- hponcfg tool
+ - hponcfg tool
 notes:
-- You need a working hponcfg on the target system.
+ - You need a working hponcfg on the target system.
 '''
 
 EXAMPLES = r'''
@@ -69,12 +72,13 @@ EXAMPLES = r'''
     executable: /opt/hp/tools/hponcfg
 '''
 
-from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.community.general.plugins.module_utils.module_helper import (
+    CmdModuleHelper, ArgFormat
+)
 
 
-def main():
-
-    module = AnsibleModule(
+class HPOnCfg(CmdModuleHelper):
+    module = dict(
         argument_spec=dict(
             src=dict(type='path', required=True, aliases=['path']),
             minfw=dict(type='str'),
@@ -82,29 +86,24 @@ def main():
             verbose=dict(default=False, type='bool'),
         )
     )
+    command_args_formats = dict(
+        src=dict(fmt=["-f", "{0}"]),
+        verbose=dict(fmt="-v", style=ArgFormat.BOOLEAN),
+        minfw=dict(fmt=["-m", "{0}"]),
+    )
+    check_rc = True
 
-    # Consider every action a change (not idempotent yet!)
-    changed = True
+    def __init_module__(self):
+        self.command = self.vars.executable
+        # Consider every action a change (not idempotent yet!)
+        self.changed = True
 
-    src = module.params['src']
-    minfw = module.params['minfw']
-    executable = module.params['executable']
-    verbose = module.params['verbose']
+    def __run__(self):
+        self.run_command(params=['src', 'verbose', 'minfw'])
 
-    options = ' -f %s' % src
 
-    if verbose:
-        options += ' -v'
-
-    if minfw:
-        options += ' -m %s' % minfw
-
-    rc, stdout, stderr = module.run_command('%s %s' % (executable, options))
-
-    if rc != 0:
-        module.fail_json(rc=rc, msg="Failed to run hponcfg", stdout=stdout, stderr=stderr)
-
-    module.exit_json(changed=changed, stdout=stdout, stderr=stderr)
+def main():
+    HPOnCfg.execute()
 
 
 if __name__ == '__main__':

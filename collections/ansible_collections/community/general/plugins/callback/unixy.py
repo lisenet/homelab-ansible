@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright: (c) 2017, Allyson Bowles <@akatch>
 # Copyright: (c) 2012-2014, Michael DeHaan <michael.dehaan@gmail.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -7,7 +8,7 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = '''
-    callback: unixy
+    name: unixy
     type: stdout
     author: Allyson Bowles (@akatch)
     short_description: condensed Ansible output
@@ -22,7 +23,7 @@ DOCUMENTATION = '''
 from os.path import basename
 from ansible import constants as C
 from ansible import context
-from ansible.module_utils._text import to_text
+from ansible.module_utils.common.text.converters import to_text
 from ansible.utils.color import colorize, hostcolor
 from ansible.plugins.callback.default import CallbackModule as CallbackModule_default
 

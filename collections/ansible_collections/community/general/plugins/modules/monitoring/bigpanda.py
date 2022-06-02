@@ -76,8 +76,6 @@ options:
     type: str
     description:
     - Message about the deployment.
-    - C(message) alias is deprecated in community.general 0.2.0, since it is used internally by Ansible Core Engine.
-    aliases: ['message']
     version_added: '0.2.0'
   source_system:
     type: str
@@ -132,7 +130,7 @@ import socket
 import traceback
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 from ansible.module_utils.urls import fetch_url
 
 
@@ -148,9 +146,7 @@ def main():
             env=dict(required=False),
             owner=dict(required=False),
             description=dict(required=False),
-            deployment_message=dict(required=False, aliases=['message'],
-                                    deprecated_aliases=[dict(name='message', version='3.0.0',
-                                                             collection_name='community.general')]),  # was Ansible 2.14
+            deployment_message=dict(required=False),
             source_system=dict(required=False, default='ansible'),
             validate_certs=dict(default=True, type='bool'),
             url=dict(required=False, default='https://api.bigpanda.io'),
@@ -183,7 +179,7 @@ def main():
 
         request_url = url + '/data/events/deployments/start'
     else:
-        message = module.params['message']
+        message = module.params['deployment_message']
         if message is not None:
             body['errorMessage'] = message
 

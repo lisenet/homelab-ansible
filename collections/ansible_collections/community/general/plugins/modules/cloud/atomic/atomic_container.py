@@ -95,14 +95,15 @@ msg:
 import traceback
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 def do_install(module, mode, rootfs, container, image, values_list, backend):
     system_list = ["--system"] if mode == 'system' else []
     user_list = ["--user"] if mode == 'user' else []
     rootfs_list = ["--rootfs=%s" % rootfs] if rootfs else []
-    args = ['atomic', 'install', "--storage=%s" % backend, '--name=%s' % container] + system_list + user_list + rootfs_list + values_list + [image]
+    atomic_bin = module.get_bin_path('atomic')
+    args = [atomic_bin, 'install', "--storage=%s" % backend, '--name=%s' % container] + system_list + user_list + rootfs_list + values_list + [image]
     rc, out, err = module.run_command(args, check_rc=False)
     if rc != 0:
         module.fail_json(rc=rc, msg=err)
@@ -112,7 +113,8 @@ def do_install(module, mode, rootfs, container, image, values_list, backend):
 
 
 def do_update(module, container, image, values_list):
-    args = ['atomic', 'containers', 'update', "--rebase=%s" % image] + values_list + [container]
+    atomic_bin = module.get_bin_path('atomic')
+    args = [atomic_bin, 'containers', 'update', "--rebase=%s" % image] + values_list + [container]
     rc, out, err = module.run_command(args, check_rc=False)
     if rc != 0:
         module.fail_json(rc=rc, msg=err)
@@ -122,7 +124,8 @@ def do_update(module, container, image, values_list):
 
 
 def do_uninstall(module, name, backend):
-    args = ['atomic', 'uninstall', "--storage=%s" % backend, name]
+    atomic_bin = module.get_bin_path('atomic')
+    args = [atomic_bin, 'uninstall', "--storage=%s" % backend, name]
     rc, out, err = module.run_command(args, check_rc=False)
     if rc != 0:
         module.fail_json(rc=rc, msg=err)
@@ -130,7 +133,8 @@ def do_uninstall(module, name, backend):
 
 
 def do_rollback(module, name):
-    args = ['atomic', 'containers', 'rollback', name]
+    atomic_bin = module.get_bin_path('atomic')
+    args = [atomic_bin, 'containers', 'rollback', name]
     rc, out, err = module.run_command(args, check_rc=False)
     if rc != 0:
         module.fail_json(rc=rc, msg=err)
@@ -148,14 +152,12 @@ def core(module):
     backend = module.params['backend']
     state = module.params['state']
 
+    atomic_bin = module.get_bin_path('atomic')
     module.run_command_environ_update = dict(LANG='C', LC_ALL='C', LC_MESSAGES='C')
-    out = {}
-    err = {}
-    rc = 0
 
     values_list = ["--set=%s" % x for x in values] if values else []
 
-    args = ['atomic', 'containers', 'list', '--no-trunc', '-n', '--all', '-f', 'backend=%s' % backend, '-f', 'container=%s' % name]
+    args = [atomic_bin, 'containers', 'list', '--no-trunc', '-n', '--all', '-f', 'backend=%s' % backend, '-f', 'container=%s' % name]
     rc, out, err = module.run_command(args, check_rc=False)
     if rc != 0:
         module.fail_json(rc=rc, msg=err)
@@ -180,10 +182,10 @@ def core(module):
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            mode=dict(default=None, choices=['user', 'system']),
+            mode=dict(choices=['user', 'system']),
             name=dict(required=True),
             image=dict(required=True),
-            rootfs=dict(default=None),
+            rootfs=dict(),
             state=dict(default='latest', choices=['present', 'absent', 'latest', 'rollback']),
             backend=dict(required=True, choices=['docker', 'ostree']),
             values=dict(type='list', default=[], elements='str'),
@@ -194,9 +196,7 @@ def main():
         module.fail_json(msg="values is supported only with user or system mode")
 
     # Verify that the platform supports atomic command
-    rc, out, err = module.run_command('atomic -v', check_rc=False)
-    if rc != 0:
-        module.fail_json(msg="Error in running atomic command", err=err)
+    dummy = module.get_bin_path('atomic', required=True)
 
     try:
         core(module)

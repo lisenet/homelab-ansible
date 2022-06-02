@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # (C) 2012, Michael DeHaan, <michael.dehaan@gmail.com>
 # (c) 2017 Ansible Project
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -7,7 +8,7 @@ __metaclass__ = type
 
 DOCUMENTATION = '''
     author: Unknown (!UNKNOWN)
-    callback: log_plays
+    name: log_plays
     type: notification
     short_description: write playbook output to log file
     description:
@@ -31,7 +32,7 @@ import time
 import json
 
 from ansible.utils.path import makedirs_safe
-from ansible.module_utils._text import to_bytes
+from ansible.module_utils.common.text.converters import to_bytes
 from ansible.module_utils.common._collections_compat import MutableMapping
 from ansible.parsing.ajson import AnsibleJSONEncoder
 from ansible.plugins.callback import CallbackBase

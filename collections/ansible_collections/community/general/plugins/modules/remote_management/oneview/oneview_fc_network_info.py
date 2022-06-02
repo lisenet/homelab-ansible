@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 # Copyright (c) 2016-2017 Hewlett Packard Enterprise Development LP
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
@@ -23,6 +24,7 @@ options:
     name:
       description:
         - Fibre Channel Network name.
+      type: str
 
 extends_documentation_fragment:
 - community.general.oneview
@@ -37,7 +39,8 @@ EXAMPLES = '''
   delegate_to: localhost
   register: result
 
-- ansible.builtin.debug:
+- name: Print fetched information about Fibre Channel Networks
+  ansible.builtin.debug:
     msg: "{{ result.fc_networks }}"
 
 - name: Gather paginated, filtered and sorted information about Fibre Channel Networks
@@ -50,7 +53,9 @@ EXAMPLES = '''
       filter: 'fabricType=FabricAttach'
   delegate_to: localhost
   register: result
-- ansible.builtin.debug:
+
+- name: Print fetched information about paginated, filtered and sorted list of Fibre Channel Networks
+  ansible.builtin.debug:
     msg: "{{ result.fc_networks }}"
 
 - name: Gather information about a Fibre Channel Network by name
@@ -60,7 +65,8 @@ EXAMPLES = '''
   delegate_to: localhost
   register: result
 
-- ansible.builtin.debug:
+- name: Print fetched information about Fibre Channel Network found by name
+  ansible.builtin.debug:
     msg: "{{ result.fc_networks }}"
 '''
 
@@ -82,12 +88,10 @@ class FcNetworkInfoModule(OneViewModuleBase):
             params=dict(required=False, type='dict')
         )
 
-        super(FcNetworkInfoModule, self).__init__(additional_arg_spec=argument_spec)
-        self.is_old_facts = self.module._name in ('oneview_fc_network_facts', 'community.general.oneview_fc_network_facts')
-        if self.is_old_facts:
-            self.module.deprecate("The 'oneview_fc_network_facts' module has been renamed to 'oneview_fc_network_info', "
-                                  "and the renamed one no longer returns ansible_facts",
-                                  version='3.0.0', collection_name='community.general')  # was Ansible 2.13
+        super(FcNetworkInfoModule, self).__init__(
+            additional_arg_spec=argument_spec,
+            supports_check_mode=True,
+        )
 
     def execute_module(self):
 
@@ -96,10 +100,7 @@ class FcNetworkInfoModule(OneViewModuleBase):
         else:
             fc_networks = self.oneview_client.fc_networks.get_all(**self.facts_params)
 
-        if self.is_old_facts:
-            return dict(changed=False, ansible_facts=dict(fc_networks=fc_networks))
-        else:
-            return dict(changed=False, fc_networks=fc_networks)
+        return dict(changed=False, fc_networks=fc_networks)
 
 
 def main():

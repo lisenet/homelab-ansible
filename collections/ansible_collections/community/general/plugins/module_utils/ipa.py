@@ -18,7 +18,7 @@ import socket
 import uuid
 
 import re
-from ansible.module_utils._text import to_bytes, to_native, to_text
+from ansible.module_utils.common.text.converters import to_bytes, to_native, to_text
 from ansible.module_utils.six import PY3
 from ansible.module_utils.six.moves.urllib.parse import quote
 from ansible.module_utils.urls import fetch_url, HAS_GSSAPI
@@ -31,6 +31,7 @@ def _env_then_dns_fallback(*args, **kwargs):
         result = env_fallback(*args, **kwargs)
         if result == '':
             raise AnsibleFallbackNotFound
+        return result
     except AnsibleFallbackNotFound:
         # If no host was given, we try to guess it from IPA.
         # The ipa-ca entry is a standard entry that IPA will have set for
@@ -119,9 +120,9 @@ class IPAClient(object):
         data = dict(method=method)
 
         # TODO: We should probably handle this a little better.
-        if method in ('ping', 'config_show'):
+        if method in ('ping', 'config_show', 'otpconfig_show'):
             data['params'] = [[], {}]
-        elif method == 'config_mod':
+        elif method in ('config_mod', 'otpconfig_mod'):
             data['params'] = [[], item]
         else:
             data['params'] = [[name], item]
@@ -178,10 +179,10 @@ class IPAClient(object):
                 result.append(key)
         return result
 
-    def modify_if_diff(self, name, ipa_list, module_list, add_method, remove_method, item=None):
+    def modify_if_diff(self, name, ipa_list, module_list, add_method, remove_method, item=None, append=None):
         changed = False
         diff = list(set(ipa_list) - set(module_list))
-        if len(diff) > 0:
+        if append is not True and len(diff) > 0:
             changed = True
             if not self.module.check_mode:
                 if item:

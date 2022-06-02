@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 # (c) 2017, Petr Lautrbach <plautrba@redhat.com>
 # Based on seport.py module (c) 2014, Dan Keder <dan.keder@gmail.com>
@@ -113,7 +114,7 @@ except ImportError:
 
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 def semanage_login_add(module, login, seuser, do_reload, serange='s0', sestore=''):

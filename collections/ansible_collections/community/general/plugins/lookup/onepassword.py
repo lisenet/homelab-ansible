@@ -8,7 +8,7 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = '''
-    lookup: onepassword
+    name: onepassword
     author:
       - Scott Buchanan (@scottsb)
       - Andrew Zenk (@azenk)
@@ -30,6 +30,11 @@ DOCUMENTATION = '''
         aliases: ['vault_password']
       section:
         description: Item section containing the field to retrieve (case-insensitive). If absent will return first match from any section.
+      domain:
+        description: Domain of 1Password. Default is U(1password.com).
+        version_added: 3.2.0
+        default: '1password.com'
+        type: str
       subdomain:
         description: The 1Password subdomain to authenticate against.
       username:
@@ -40,8 +45,8 @@ DOCUMENTATION = '''
         description: Vault containing the item to retrieve (case-insensitive). If absent will search all vaults.
     notes:
       - This lookup will use an existing 1Password session if one exists. If not, and you have already
-        performed an initial sign in (meaning C(~/.op/config exists)), then only the C(master_password) is required.
-        You may optionally specify C(subdomain) in this scenario, otherwise the last used subdomain will be used by C(op).
+        performed an initial sign in (meaning C(~/.op/config), C(~/.config/op/config) or C(~/.config/.op/config) exists), then only the
+        C(master_password) is required. You may optionally specify C(subdomain) in this scenario, otherwise the last used subdomain will be used by C(op).
       - This lookup can perform an initial login by providing C(subdomain), C(username), C(secret_key), and C(master_password).
       - Due to the B(very) sensitive nature of these credentials, it is B(highly) recommended that you only pass in the minimal credentials
         needed at any given time. Also, store these credentials in an Ansible Vault using a key that is equal to or greater in strength
@@ -98,24 +103,27 @@ from subprocess import Popen, PIPE
 
 from ansible.plugins.lookup import LookupBase
 from ansible.errors import AnsibleLookupError
-from ansible.module_utils._text import to_bytes, to_text
+from ansible.module_utils.common.text.converters import to_bytes, to_text
+
+from ansible_collections.community.general.plugins.module_utils.onepassword import OnePasswordConfig
 
 
 class OnePass(object):
-
     def __init__(self, path='op'):
         self.cli_path = path
-        self.config_file_path = os.path.expanduser('~/.op/config')
         self.logged_in = False
         self.token = None
         self.subdomain = None
+        self.domain = None
         self.username = None
         self.secret_key = None
         self.master_password = None
 
+        self._config = OnePasswordConfig()
+
     def get_token(self):
         # If the config file exists, assume an initial signin has taken place and try basic sign in
-        if os.path.isfile(self.config_file_path):
+        if os.path.isfile(self._config.config_file_path):
 
             if not self.master_password:
                 raise AnsibleLookupError('Unable to sign in to 1Password. master_password is required.')
@@ -168,7 +176,7 @@ class OnePass(object):
 
         args = [
             'signin',
-            '{0}.1password.com'.format(self.subdomain),
+            '{0}.{1}'.format(self.subdomain, self.domain),
             to_bytes(self.username),
             to_bytes(self.secret_key),
             '--output=raw',
@@ -187,8 +195,63 @@ class OnePass(object):
         return rc, out, err
 
     def _parse_field(self, data_json, field_name, section_title=None):
+        """
+        Retrieves the desired field from the `op` response payload
+
+        When the item is a `password` type, the password is a key within the `details` key:
+
+        $ op get item 'test item' | jq
+        {
+          [...]
+          "templateUuid": "005",
+          "details": {
+            "notesPlain": "",
+            "password": "foobar",
+            "passwordHistory": [],
+            "sections": [
+              {
+                "name": "linked items",
+                "title": "Related Items"
+              }
+            ]
+          },
+          [...]
+        }
+
+        However, when the item is a `login` type, the password is within a fields array:
+
+        $ op get item 'test item' | jq
+        {
+          [...]
+          "details": {
+            "fields": [
+              {
+                "designation": "username",
+                "name": "username",
+                "type": "T",
+                "value": "foo"
+              },
+              {
+                "designation": "password",
+                "name": "password",
+                "type": "P",
+                "value": "bar"
+              }
+            ],
+            [...]
+          },
+          [...]
+        """
         data = json.loads(data_json)
         if section_title is None:
+            # https://github.com/ansible-collections/community.general/pull/1610:
+            # check the details dictionary for `field_name` and return it immediately if it exists
+            # when the entry is a "password" instead of a "login" item, the password field is a key
+            # in the `details` dictionary:
+            if field_name in data['details']:
+                return data['details'][field_name]
+
+            # when the field is not found above, iterate through the fields list in the object details
             for field_data in data['details'].get('fields', []):
                 if field_data.get('name', '').lower() == field_name.lower():
                     return field_data.get('value', '')
@@ -210,6 +273,7 @@ class LookupModule(LookupBase):
         section = kwargs.get('section')
         vault = kwargs.get('vault')
         op.subdomain = kwargs.get('subdomain')
+        op.domain = kwargs.get('domain', '1password.com')
         op.username = kwargs.get('username')
         op.secret_key = kwargs.get('secret_key')
         op.master_password = kwargs.get('master_password', kwargs.get('vault_password'))
@@ -219,4 +283,5 @@ class LookupModule(LookupBase):
         values = []
         for term in terms:
             values.append(op.get_field(term, field, section, vault))
+
         return values

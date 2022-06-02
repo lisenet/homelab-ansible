@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # (c) 2018, Arigato Machine Inc.
 # (c) 2018, Ansible Project
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -7,7 +8,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
     author:
         - Kyrylo Galanov (!UNKNOWN) <galanoff@gmail.com>
-    lookup: manifold
+    name: manifold
     short_description: get credentials from Manifold.co
     description:
         - Retrieves resources' credentials from Manifold.co

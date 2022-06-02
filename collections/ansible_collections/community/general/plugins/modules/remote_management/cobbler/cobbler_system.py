@@ -151,7 +151,7 @@ import ssl
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import iteritems
 from ansible.module_utils.six.moves import xmlrpc_client
-from ansible.module_utils._text import to_text
+from ansible.module_utils.common.text.converters import to_text
 
 IFPROPS_MAPPING = dict(
     bondingopts='bonding_opts',
@@ -229,12 +229,14 @@ def main():
 
     ssl_context = None
     if not validate_certs:
-        try:  # Python 2.7.9 and newer
-            ssl_context = ssl.create_unverified_context()
-        except AttributeError:  # Legacy Python that doesn't verify HTTPS certificates by default
-            ssl._create_default_context = ssl._create_unverified_context
-        else:  # Python 2.7.8 and older
-            ssl._create_default_https_context = ssl._create_unverified_https_context
+        try:
+            ssl_context = ssl._create_unverified_context()
+        except AttributeError:
+            # Legacy Python that doesn't verify HTTPS certificates by default
+            pass
+        else:
+            # Handle target environment that doesn't support HTTPS verification
+            ssl._create_default_https_context = ssl._create_unverified_context
 
     url = '{proto}://{host}:{port}/cobbler_api'.format(**module.params)
     if ssl_context:

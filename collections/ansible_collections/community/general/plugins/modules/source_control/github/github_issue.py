@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 # Copyright: (c) 2017-18, Abhijeet Kasurde <akasurde@redhat.com>
 #
@@ -18,26 +19,30 @@ options:
     description:
       - Name of repository from which issue needs to be retrieved.
     required: true
+    type: str
   organization:
     description:
       - Name of the GitHub organization in which the repository is hosted.
     required: true
+    type: str
   issue:
     description:
       - Issue number for which information is required.
     required: true
+    type: int
   action:
     description:
         - Get various details about issue depending upon action specified.
     default: 'get_status'
     choices:
         - 'get_status'
+    type: str
 author:
     - Abhijeet Kasurde (@Akasurde)
 '''
 
 RETURN = '''
-get_status:
+issue_status:
     description: State of the GitHub issue
     type: str
     returned: success

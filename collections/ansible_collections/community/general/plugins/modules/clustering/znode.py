@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 # Copyright 2015 WP Engine, Inc. All rights reserved.
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
@@ -17,25 +18,31 @@ options:
         description:
             - A list of ZooKeeper servers (format '[server]:[port]').
         required: true
+        type: str
     name:
         description:
             - The path of the znode.
         required: true
+        type: str
     value:
         description:
             - The value assigned to the znode.
+        type: str
     op:
         description:
             - An operation to perform. Mutually exclusive with state.
         choices: [ get, wait, list ]
+        type: str
     state:
         description:
             - The state to enforce. Mutually exclusive with op.
         choices: [ present, absent ]
+        type: str
     timeout:
         description:
             - The amount of time to wait for a node to appear.
         default: 300
+        type: int
     recursive:
         description:
             - Recursively delete node and all its children.
@@ -102,7 +109,7 @@ except ImportError:
     KAZOO_INSTALLED = False
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible.module_utils._text import to_bytes
+from ansible.module_utils.common.text.converters import to_bytes
 
 
 def main():
@@ -110,11 +117,11 @@ def main():
         argument_spec=dict(
             hosts=dict(required=True, type='str'),
             name=dict(required=True, type='str'),
-            value=dict(required=False, default=None, type='str'),
-            op=dict(required=False, default=None, choices=['get', 'wait', 'list']),
+            value=dict(type='str'),
+            op=dict(choices=['get', 'wait', 'list']),
             state=dict(choices=['present', 'absent']),
-            timeout=dict(required=False, default=300, type='int'),
-            recursive=dict(required=False, default=False, type='bool')
+            timeout=dict(default=300, type='int'),
+            recursive=dict(default=False, type='bool')
         ),
         supports_check_mode=False
     )

@@ -5,11 +5,11 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = '''
-    become: ksu
+    name: ksu
     short_description: Kerberos substitute user
     description:
         - This become plugins allows your remote/login user to execute commands as another user via the ksu utility.
-    author: ansible (@core)
+    author: Ansible Core Team
     options:
         become_user:
             description: User you 'become' to execute the task
@@ -82,7 +82,7 @@ DOCUMENTATION = '''
 
 import re
 
-from ansible.module_utils._text import to_bytes
+from ansible.module_utils.common.text.converters import to_bytes
 from ansible.plugins.become import BecomeBase
 
 

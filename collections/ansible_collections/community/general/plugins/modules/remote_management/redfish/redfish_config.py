@@ -20,56 +20,48 @@ options:
   category:
     required: true
     description:
-      - Category to execute on OOB controller
+      - Category to execute on OOB controller.
     type: str
   command:
     required: true
     description:
-      - List of commands to execute on OOB controller
+      - List of commands to execute on OOB controller.
     type: list
+    elements: str
   baseuri:
     required: true
     description:
-      - Base URI of OOB controller
+      - Base URI of OOB controller.
     type: str
   username:
-    required: true
     description:
-      - User for authentication with OOB controller
+      - Username for authenticating to OOB controller.
     type: str
   password:
-    required: true
     description:
-      - Password for authentication with OOB controller
+      - Password for authenticating to OOB controller.
     type: str
-  bios_attribute_name:
-    required: false
+  auth_token:
     description:
-      - name of BIOS attr to update (deprecated - use bios_attributes instead)
-    default: 'null'
+      - Security token for authenticating to OOB controller.
     type: str
-  bios_attribute_value:
-    required: false
-    description:
-      - value of BIOS attr to update (deprecated - use bios_attributes instead)
-    default: 'null'
-    type: raw
+    version_added: 2.3.0
   bios_attributes:
     required: false
     description:
-      - dictionary of BIOS attributes to update
+      - Dictionary of BIOS attributes to update.
     default: {}
     type: dict
     version_added: '0.2.0'
   timeout:
     description:
-      - Timeout in seconds for URL requests to OOB controller
+      - Timeout in seconds for HTTP requests to OOB controller.
     default: 10
     type: int
   boot_order:
     required: false
     description:
-      - list of BootOptionReference strings specifying the BootOrder
+      - List of BootOptionReference strings specifying the BootOrder.
     default: []
     type: list
     elements: str
@@ -77,28 +69,49 @@ options:
   network_protocols:
     required: false
     description:
-      -  setting dict of manager services to update
+      - Setting dict of manager services to update.
     type: dict
     version_added: '0.2.0'
   resource_id:
     required: false
     description:
-      - The ID of the System, Manager or Chassis to modify
+      - ID of the System, Manager or Chassis to modify.
     type: str
     version_added: '0.2.0'
   nic_addr:
     required: false
     description:
-      - EthernetInterface Address string on OOB controller
+      - EthernetInterface Address string on OOB controller.
     default: 'null'
     type: str
     version_added: '0.2.0'
   nic_config:
     required: false
     description:
-      - setting dict of EthernetInterface on OOB controller
+      - Setting dict of EthernetInterface on OOB controller.
     type: dict
     version_added: '0.2.0'
+  strip_etag_quotes:
+    description:
+      - Removes surrounding quotes of etag used in C(If-Match) header
+        of C(PATCH) requests.
+      - Only use this option to resolve bad vendor implementation where
+        C(If-Match) only matches the unquoted etag string.
+    type: bool
+    default: false
+    version_added: 3.7.0
+  hostinterface_config:
+    required: false
+    description:
+      - Setting dict of HostInterface on OOB controller.
+    type: dict
+    version_added: '4.1.0'
+  hostinterface_id:
+    required: false
+    description:
+      - Redfish HostInterface instance ID if multiple HostInterfaces are present.
+    type: str
+    version_added: '4.1.0'
 
 author: "Jose Delarosa (@jose-delarosa)"
 '''
@@ -128,13 +141,13 @@ EXAMPLES = '''
       username: "{{ username }}"
       password: "{{ password }}"
 
-  - name: Enable PXE Boot for NIC1 using deprecated options
+  - name: Enable PXE Boot for NIC1
     community.general.redfish_config:
       category: Systems
       command: SetBiosAttributes
       resource_id: 437XR1138R2
-      bios_attribute_name: PxeDev1EnDis
-      bios_attribute_value: Enabled
+      bios_attributes:
+        PxeDev1EnDis: Enabled
       baseuri: "{{ baseuri }}"
       username: "{{ username }}"
       password: "{{ password }}"
@@ -200,6 +213,27 @@ EXAMPLES = '''
       baseuri: "{{ baseuri }}"
       username: "{{ username }}"
       password: "{{ password }}"
+
+  - name: Disable Host Interface
+    community.general.redfish_config:
+      category: Manager
+      command: SetHostInterface
+      hostinterface_config:
+        InterfaceEnabled: false
+      baseuri: "{{ baseuri }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+
+  - name: Enable Host Interface for HostInterface resource ID '2'
+    community.general.redfish_config:
+      category: Manager
+      command: SetHostInterface
+      hostinterface_config:
+        InterfaceEnabled: true
+      hostinterface_id: "2"
+      baseuri: "{{ baseuri }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
 '''
 
 RETURN = '''
@@ -212,14 +246,14 @@ msg:
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.general.plugins.module_utils.redfish_utils import RedfishUtils
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 # More will be added as module features are expanded
 CATEGORY_COMMANDS_ALL = {
     "Systems": ["SetBiosDefaultSettings", "SetBiosAttributes", "SetBootOrder",
                 "SetDefaultBootOrder"],
-    "Manager": ["SetNetworkProtocols", "SetManagerNic"]
+    "Manager": ["SetNetworkProtocols", "SetManagerNic", "SetHostInterface"]
 }
 
 
@@ -228,12 +262,11 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             category=dict(required=True),
-            command=dict(required=True, type='list'),
+            command=dict(required=True, type='list', elements='str'),
             baseuri=dict(required=True),
-            username=dict(required=True),
-            password=dict(required=True, no_log=True),
-            bios_attribute_name=dict(default='null'),
-            bios_attribute_value=dict(default='null', type='raw'),
+            username=dict(),
+            password=dict(no_log=True),
+            auth_token=dict(no_log=True),
             bios_attributes=dict(type='dict', default={}),
             timeout=dict(type='int', default=10),
             boot_order=dict(type='list', elements='str', default=[]),
@@ -246,8 +279,20 @@ def main():
             nic_config=dict(
                 type='dict',
                 default={}
-            )
+            ),
+            strip_etag_quotes=dict(type='bool', default=False),
+            hostinterface_config=dict(type='dict', default={}),
+            hostinterface_id=dict(),
         ),
+        required_together=[
+            ('username', 'password'),
+        ],
+        required_one_of=[
+            ('username', 'auth_token'),
+        ],
+        mutually_exclusive=[
+            ('username', 'auth_token'),
+        ],
         supports_check_mode=False
     )
 
@@ -256,19 +301,14 @@ def main():
 
     # admin credentials used for authentication
     creds = {'user': module.params['username'],
-             'pswd': module.params['password']}
+             'pswd': module.params['password'],
+             'token': module.params['auth_token']}
 
     # timeout
     timeout = module.params['timeout']
 
     # BIOS attributes to update
     bios_attributes = module.params['bios_attributes']
-    if module.params['bios_attribute_name'] != 'null':
-        bios_attributes[module.params['bios_attribute_name']] = module.params[
-            'bios_attribute_value']
-        module.deprecate(msg='The bios_attribute_name/bios_attribute_value '
-                         'options are deprecated. Use bios_attributes instead',
-                         version='3.0.0', collection_name='community.general')  # was Ansible 2.14
 
     # boot order
     boot_order = module.params['boot_order']
@@ -280,14 +320,23 @@ def main():
     nic_addr = module.params['nic_addr']
     nic_config = module.params['nic_config']
 
+    # Etag options
+    strip_etag_quotes = module.params['strip_etag_quotes']
+
+    # HostInterface config options
+    hostinterface_config = module.params['hostinterface_config']
+
+    # HostInterface instance ID
+    hostinterface_id = module.params['hostinterface_id']
+
     # Build root URI
     root_uri = "https://" + module.params['baseuri']
     rf_utils = RedfishUtils(creds, root_uri, timeout, module,
-                            resource_id=resource_id, data_modification=True)
+                            resource_id=resource_id, data_modification=True, strip_etag_quotes=strip_etag_quotes)
 
     # Check that Category is valid
     if category not in CATEGORY_COMMANDS_ALL:
-        module.fail_json(msg=to_native("Invalid Category '%s'. Valid Categories = %s" % (category, CATEGORY_COMMANDS_ALL.keys())))
+        module.fail_json(msg=to_native("Invalid Category '%s'. Valid Categories = %s" % (category, list(CATEGORY_COMMANDS_ALL.keys()))))
 
     # Check that all commands are valid
     for cmd in command_list:
@@ -323,9 +372,14 @@ def main():
                 result = rf_utils.set_network_protocols(module.params['network_protocols'])
             elif command == "SetManagerNic":
                 result = rf_utils.set_manager_nic(nic_addr, nic_config)
+            elif command == "SetHostInterface":
+                result = rf_utils.set_hostinterface_attributes(hostinterface_config, hostinterface_id)
 
     # Return data back or fail with proper message
     if result['ret'] is True:
+        if result.get('warning'):
+            module.warn(to_native(result['warning']))
+
         module.exit_json(changed=result['changed'], msg=to_native(result['msg']))
     else:
         module.fail_json(msg=to_native(result['msg']))

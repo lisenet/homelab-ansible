@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 # Copyright: (c) 2016-2017, Hewlett Packard Enterprise Development LP
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -24,11 +25,13 @@ options:
             - Indicates the desired state for the Logical Interconnect Group resource.
               C(absent) will remove the resource from OneView, if it exists.
               C(present) will ensure data properties are compliant with OneView.
+        type: str
         choices: [absent, present]
         default: present
     data:
         description:
             - List with the Logical Interconnect Group properties.
+        type: dict
         required: true
 extends_documentation_fragment:
 - community.general.oneview

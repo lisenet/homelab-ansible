@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # (c) 2016 Dag Wieers <dag@wieers.com>
 # (c) 2017 Ansible Project
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -5,7 +6,7 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = r'''
-lookup: filetree
+name: filetree
 author: Dag Wieers (@dagwieers) <dag@wieers.com>
 short_description: recursively match all files in a directory tree
 description:
@@ -31,7 +32,9 @@ EXAMPLES = r"""
 - name: Template files (explicitly skip directories in order to use the 'src' attribute)
   ansible.builtin.template:
     src: '{{ item.src }}'
-    dest: /web/{{ item.path }}
+    # Your template files should be stored with a .j2 file extension,
+    # but should not be deployed with it. splitext|first removes it.
+    dest: /web/{{ item.path | splitext | first }}
     mode: '{{ item.mode }}'
   with_community.general.filetree: web/
   when: item.state == 'file'
@@ -41,6 +44,7 @@ EXAMPLES = r"""
     src: '{{ item.src }}'
     dest: /web/{{ item.path }}
     state: link
+    follow: false  # avoid corrupting target files if the link already exists
     force: yes
     mode: '{{ item.mode }}'
   with_community.general.filetree: web/
@@ -121,7 +125,7 @@ except ImportError:
     pass
 
 from ansible.plugins.lookup import LookupBase
-from ansible.module_utils._text import to_native, to_text
+from ansible.module_utils.common.text.converters import to_native, to_text
 from ansible.utils.display import Display
 
 display = Display()

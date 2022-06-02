@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # This code is part of Ansible, but is an independent component.
 # This particular file snippet, and this file snippet only, is BSD licensed.
 # Modules you write using this snippet, which is embedded dynamically by Ansible
@@ -13,7 +14,7 @@ __metaclass__ = type
 
 import json
 
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.urls import fetch_url
 
@@ -84,7 +85,7 @@ class UTM:
             raise UTMModuleConfigurationError(
                 "The keys " + to_native(
                     self.change_relevant_keys) + " to check are not in the modules keys:\n" + to_native(
-                    module.params.keys()))
+                    list(module.params.keys())))
 
     def execute(self):
         try:

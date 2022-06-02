@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 # Copyright (c) 2016-2017 Hewlett Packard Enterprise Development LP
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
@@ -23,6 +24,7 @@ options:
     provider_display_name:
       description:
         - Provider Display Name.
+      type: str
     params:
       description:
         - List of params to delimit, filter and sort the list of resources.
@@ -31,6 +33,7 @@ options:
            - C(count): The number of resources to return.
            - C(query): A general query string to narrow the list of resources returned.
            - C(sort): The sort order of the returned data set."
+      type: dict
 extends_documentation_fragment:
 - community.general.oneview
 
@@ -43,7 +46,8 @@ EXAMPLES = '''
   delegate_to: localhost
   register: result
 
-- ansible.builtin.debug:
+- name: Print fetched information about SAN Managers
+  ansible.builtin.debug:
     msg: "{{ result.san_managers }}"
 
 - name: Gather paginated, filtered and sorted information about SAN Managers
@@ -57,7 +61,8 @@ EXAMPLES = '''
   delegate_to: localhost
   register: result
 
-- ansible.builtin.debug:
+- name: Print fetched information about paginated, filtered and sorted list of SAN Managers
+  ansible.builtin.debug:
     msg: "{{ result.san_managers }}"
 
 - name: Gather information about a SAN Manager by provider display name
@@ -67,7 +72,8 @@ EXAMPLES = '''
   delegate_to: localhost
   register: result
 
-- ansible.builtin.debug:
+- name: Print fetched information about SAN Manager found by provider display name
+  ansible.builtin.debug:
     msg: "{{ result.san_managers }}"
 '''
 
@@ -88,13 +94,11 @@ class SanManagerInfoModule(OneViewModuleBase):
     )
 
     def __init__(self):
-        super(SanManagerInfoModule, self).__init__(additional_arg_spec=self.argument_spec)
+        super(SanManagerInfoModule, self).__init__(
+            additional_arg_spec=self.argument_spec,
+            supports_check_mode=True,
+        )
         self.resource_client = self.oneview_client.san_managers
-        self.is_old_facts = self.module._name in ('oneview_san_manager_facts', 'community.general.oneview_san_manager_facts')
-        if self.is_old_facts:
-            self.module.deprecate("The 'oneview_san_manager_facts' module has been renamed to 'oneview_san_manager_info', "
-                                  "and the renamed one no longer returns ansible_facts",
-                                  version='3.0.0', collection_name='community.general')  # was Ansible 2.13
 
     def execute_module(self):
         if self.module.params.get('provider_display_name'):
@@ -107,10 +111,7 @@ class SanManagerInfoModule(OneViewModuleBase):
         else:
             resources = self.oneview_client.san_managers.get_all(**self.facts_params)
 
-        if self.is_old_facts:
-            return dict(changed=False, ansible_facts=dict(san_managers=resources))
-        else:
-            return dict(changed=False, san_managers=resources)
+        return dict(changed=False, san_managers=resources)
 
 
 def main():

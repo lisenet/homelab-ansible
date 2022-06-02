@@ -15,7 +15,7 @@ description:
   - Gather information about the servers.
   - U(https://www.online.net/en/dedicated-server)
 author:
-  - "Remy Leone (@sieben)"
+  - "Remy Leone (@remyleone)"
 extends_documentation_fragment:
 - community.general.online
 
@@ -32,11 +32,13 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
----
 online_server_info:
-  description: Response from Online API
+  description:
+    - Response from Online API.
+    - "For more details please refer to: U(https://console.online.net/en/api/)."
   returned: success
-  type: complex
+  type: list
+  elements: dict
   sample:
     "online_server_info": [
         {

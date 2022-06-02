@@ -1,19 +1,17 @@
+# -*- coding: utf-8 -*-
 # Copyright (c) 2018 Ansible Project
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import (absolute_import, division, print_function)
-
-
 __metaclass__ = type
 
-DOCUMENTATION = '''
+DOCUMENTATION = r'''
     name: online
-    plugin_type: inventory
     author:
-      - Remy Leone (@sieben)
-    short_description: Online inventory source
+      - Remy Leone (@remyleone)
+    short_description: Scaleway (previously Online SAS or Online.net) inventory source
     description:
-        - Get inventory hosts from Online
+        - Get inventory hosts from Scaleway (previously Online SAS or Online.net).
     options:
         plugin:
             description: token that ensures this is a source file for the 'online' plugin.
@@ -30,6 +28,7 @@ DOCUMENTATION = '''
         hostnames:
             description: List of preference about what to use as an hostname.
             type: list
+            elements: string
             default:
                 - public_ipv4
             choices:
@@ -39,13 +38,14 @@ DOCUMENTATION = '''
         groups:
             description: List of groups.
             type: list
+            elements: string
             choices:
                 - location
                 - offer
                 - rpn
 '''
 
-EXAMPLES = '''
+EXAMPLES = r'''
 # online_inventory.yml file in YAML format
 # Example command line: ansible-inventory --list -i online_inventory.yml
 
@@ -64,7 +64,7 @@ from sys import version as python_version
 from ansible.errors import AnsibleError
 from ansible.module_utils.urls import open_url
 from ansible.plugins.inventory import BaseInventoryPlugin
-from ansible.module_utils._text import to_native, to_text
+from ansible.module_utils.common.text.converters import to_native, to_text
 from ansible.module_utils.ansible_release import __version__ as ansible_version
 from ansible.module_utils.six.moves.urllib.parse import urljoin
 
@@ -237,7 +237,7 @@ class InventoryModule(BaseInventoryPlugin):
 
         self.headers = {
             'Authorization': "Bearer %s" % token,
-            'User-Agent': "ansible %s Python %s" % (ansible_version, python_version.split(' ')[0]),
+            'User-Agent': "ansible %s Python %s" % (ansible_version, python_version.split(' ', 1)[0]),
             'Content-type': 'application/json'
         }
 

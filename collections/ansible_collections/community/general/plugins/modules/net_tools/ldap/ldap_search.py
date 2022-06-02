@@ -77,7 +77,7 @@ EXAMPLES = r"""
 import traceback
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 from ansible_collections.community.general.plugins.module_utils.ldap import LdapGeneric, gen_specs
 
 LDAP_IMP_ERR = None
@@ -106,13 +106,12 @@ def main():
         module.fail_json(msg=missing_required_lib('python-ldap'),
                          exception=LDAP_IMP_ERR)
 
-    if not module.check_mode:
-        try:
-            LdapSearch(module).main()
-        except Exception as exception:
-            module.fail_json(msg="Attribute action failed.", details=to_native(exception))
+    try:
+        LdapSearch(module).main()
+    except Exception as exception:
+        module.fail_json(msg="Attribute action failed.", details=to_native(exception))
 
-    module.exit_json(changed=True)
+    module.exit_json(changed=False)
 
 
 def _extract_entry(dn, attrs):
@@ -144,24 +143,20 @@ class LdapSearch(LdapGeneric):
             self.attrsonly = 0
 
     def _load_scope(self):
-        scope = self.module.params['scope']
-        if scope == 'base':
-            self.scope = ldap.SCOPE_BASE
-        elif scope == 'onelevel':
-            self.scope = ldap.SCOPE_ONELEVEL
-        elif scope == 'subordinate':
-            self.scope = ldap.SCOPE_SUBORDINATE
-        elif scope == 'children':
-            self.scope = ldap.SCOPE_SUBTREE
-        else:
-            raise AssertionError('Implementation error')
+        spec = dict(
+            base=ldap.SCOPE_BASE,
+            onelevel=ldap.SCOPE_ONELEVEL,
+            subordinate=ldap.SCOPE_SUBORDINATE,
+            children=ldap.SCOPE_SUBTREE,
+        )
+        self.scope = spec[self.module.params['scope']]
 
     def _load_attrs(self):
         self.attrlist = self.module.params['attrs'] or None
 
     def main(self):
         results = self.perform_search()
-        self.module.exit_json(changed=True, results=results)
+        self.module.exit_json(changed=False, results=results)
 
     def perform_search(self):
         try:
@@ -172,10 +167,14 @@ class LdapSearch(LdapGeneric):
                 attrlist=self.attrlist,
                 attrsonly=self.attrsonly
             )
-            if self.schema:
-                return [dict(dn=result[0], attrs=list(result[1].keys())) for result in results]
-            else:
-                return [_extract_entry(result[0], result[1]) for result in results]
+            ldap_entries = []
+            for result in results:
+                if isinstance(result[1], dict):
+                    if self.schema:
+                        ldap_entries.append(dict(dn=result[0], attrs=list(result[1].keys())))
+                    else:
+                        ldap_entries.append(_extract_entry(result[0], result[1]))
+            return ldap_entries
         except ldap.NO_SUCH_OBJECT:
             self.module.fail_json(msg="Base not found: {0}".format(self.dn))
 

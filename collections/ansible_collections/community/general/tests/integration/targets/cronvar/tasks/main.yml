@@ -3,6 +3,11 @@
 # and should not be used as examples of how to write Ansible roles #
 ####################################################################
 
+- name: Ensure /etc/cron.d directory exists
+  file:
+    path: /etc/cron.d
+    state: directory
+
 - name: Create EMAIL cron var
   cronvar:
     name: EMAIL
@@ -96,7 +101,7 @@
   register: custom_varcheck3
   failed_when: custom_varcheck3.rc == 0
 
-- name: Esure cronvar tasks did the right thing
+- name: Ensure cronvar tasks did the right thing
   assert:
     that:
       - create_cronvar1 is changed

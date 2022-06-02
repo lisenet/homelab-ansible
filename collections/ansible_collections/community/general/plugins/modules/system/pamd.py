@@ -16,7 +16,9 @@ short_description: Manage PAM Modules
 description:
   - Edit PAM service's type, control, module path and module arguments.
   - In order for a PAM rule to be modified, the type, control and
-    module_path must match an existing rule.  See man(5) pam.d for details.
+    module_path must match an existing rule. See man(5) pam.d for details.
+notes:
+  - This module does not handle authselect profiles.
 options:
   name:
     description:
@@ -272,8 +274,7 @@ RULE_REGEX = re.compile(r"""(?P<rule_type>-?(?:auth|account|session|password))\s
                         (?P<control>\[.*\]|\S*)\s+
                         (?P<path>\S*)\s*
                         (?P<args>.*)\s*""", re.X)
-
-RULE_ARG_REGEX = re.compile(r"""(\[.*\]|\S*)""")
+RULE_ARG_REGEX = re.compile(r"(\[.*\]|\S*)")
 
 VALID_TYPES = ['account', '-account', 'auth', '-auth', 'password', '-password', 'session', '-session']
 
@@ -287,7 +288,7 @@ class PamdLine(object):
 
     @property
     def is_valid(self):
-        if self.line == '':
+        if self.line.strip() == '':
             return True
         return False
 
@@ -302,6 +303,10 @@ class PamdLine(object):
 
     def __str__(self):
         return str(self.line)
+
+
+class PamdEmptyLine(PamdLine):
+    pass
 
 
 class PamdComment(PamdLine):
@@ -352,11 +357,9 @@ class PamdRule(PamdLine):
 
     # Method to check if a rule matches the type, control and path.
     def matches(self, rule_type, rule_control, rule_path, rule_args=None):
-        if (rule_type == self.rule_type and
+        return (rule_type == self.rule_type and
                 rule_control == self.rule_control and
-                rule_path == self.rule_path):
-            return True
-        return False
+                rule_path == self.rule_path)
 
     @classmethod
     def rule_from_string(cls, line):
@@ -445,8 +448,8 @@ class PamdService(object):
                 pamd_line = PamdComment(line)
             elif line.lstrip().startswith('@include'):
                 pamd_line = PamdInclude(line)
-            elif line == '':
-                pamd_line = PamdLine(line)
+            elif line.strip() == '':
+                pamd_line = PamdEmptyLine(line)
             else:
                 pamd_line = PamdRule.rule_from_string(line)
 
@@ -501,25 +504,25 @@ class PamdService(object):
         # Get a list of rules we want to change
         rules_to_find = self.get(rule_type, rule_control, rule_path)
 
-        new_args = parse_module_arguments(new_args)
+        new_args = parse_module_arguments(new_args, return_none=True)
 
         changes = 0
         for current_rule in rules_to_find:
             rule_changed = False
             if new_type:
-                if(current_rule.rule_type != new_type):
+                if current_rule.rule_type != new_type:
                     rule_changed = True
                     current_rule.rule_type = new_type
             if new_control:
-                if(current_rule.rule_control != new_control):
+                if current_rule.rule_control != new_control:
                     rule_changed = True
                     current_rule.rule_control = new_control
             if new_path:
-                if(current_rule.rule_path != new_path):
+                if current_rule.rule_path != new_path:
                     rule_changed = True
                     current_rule.rule_path = new_path
-            if new_args:
-                if(current_rule.rule_args != new_args):
+            if new_args is not None:
+                if current_rule.rule_args != new_args:
                     rule_changed = True
                     current_rule.rule_args = new_args
 
@@ -545,7 +548,7 @@ class PamdService(object):
 
             # Next we may have to loop backwards if the previous line is a comment.  If it
             # is, we'll get the previous "rule's" previous.
-            while previous_rule is not None and isinstance(previous_rule, PamdComment):
+            while previous_rule is not None and isinstance(previous_rule, (PamdComment, PamdEmptyLine)):
                 previous_rule = previous_rule.prev
             # Next we'll see if the previous rule matches what we are trying to insert.
             if previous_rule is not None and not previous_rule.matches(new_type, new_control, new_path):
@@ -589,7 +592,7 @@ class PamdService(object):
             next_rule = current_rule.next
             # Next we may have to loop forwards if the next line is a comment.  If it
             # is, we'll get the next "rule's" next.
-            while next_rule is not None and isinstance(next_rule, PamdComment):
+            while next_rule is not None and isinstance(next_rule, (PamdComment, PamdEmptyLine)):
                 next_rule = next_rule.next
 
             # First we create a new rule
@@ -718,8 +721,9 @@ class PamdService(object):
         current_line = self._head
 
         while current_line is not None:
-            if not current_line.validate()[0]:
-                return current_line.validate()
+            curr_validate = current_line.validate()
+            if not curr_validate[0]:
+                return curr_validate
             current_line = current_line.next
         return True, "Module is valid"
 
@@ -727,34 +731,42 @@ class PamdService(object):
         lines = []
         current_line = self._head
 
+        mark = "# Updated by Ansible - %s" % datetime.now().isoformat()
         while current_line is not None:
             lines.append(str(current_line))
             current_line = current_line.next
 
-        if lines[1].startswith("# Updated by Ansible"):
-            lines.pop(1)
-
-        lines.insert(1, "# Updated by Ansible - " + datetime.now().isoformat())
+        if len(lines) <= 1:
+            lines.insert(0, "")
+            lines.insert(1, mark)
+        else:
+            if lines[1].startswith("# Updated by Ansible"):
+                lines[1] = mark
+            else:
+                lines.insert(1, mark)
 
         return '\n'.join(lines) + '\n'
 
 
-def parse_module_arguments(module_arguments):
-    # Return empty list if we have no args to parse
-    if not module_arguments:
-        return []
-    elif isinstance(module_arguments, list) and len(module_arguments) == 1 and not module_arguments[0]:
+def parse_module_arguments(module_arguments, return_none=False):
+    # If args is None, return empty list by default.
+    # But if return_none is True, then return None
+    if module_arguments is None:
+        return None if return_none else []
+    if isinstance(module_arguments, list) and len(module_arguments) == 1 and not module_arguments[0]:
         return []
 
     if not isinstance(module_arguments, list):
         module_arguments = [module_arguments]
 
-    parsed_args = list()
+    # From this point on, module_arguments is guaranteed to be a list, empty or not
+    parsed_args = []
 
+    re_clear_spaces = re.compile(r"\s*=\s*")
     for arg in module_arguments:
         for item in filter(None, RULE_ARG_REGEX.findall(arg)):
             if not item.startswith("["):
-                re.sub("\\s*=\\s*", "=", item)
+                re_clear_spaces.sub("=", item)
             parsed_args.append(item)
 
     return parsed_args
@@ -780,13 +792,8 @@ def main():
         required_if=[
             ("state", "args_present", ["module_arguments"]),
             ("state", "args_absent", ["module_arguments"]),
-            ("state", "before", ["new_control"]),
-            ("state", "before", ["new_type"]),
-            ("state", "before", ["new_module_path"]),
-            ("state", "after", ["new_control"]),
-            ("state", "after", ["new_type"]),
-            ("state", "after", ["new_module_path"]),
-
+            ("state", "before", ["new_control", "new_type", "new_module_path"]),
+            ("state", "after", ["new_control", "new_type", "new_module_path"]),
         ],
     )
     content = str()
@@ -798,9 +805,7 @@ def main():
             content = service_file_obj.read()
     except IOError as e:
         # If unable to read the file, fail out
-        module.fail_json(msg='Unable to open/read PAM module \
-                            file %s with error %s.' %
-                         (fname, str(e)))
+        module.fail_json(msg='Unable to open/read PAM module file %s with error %s.' % (fname, str(e)))
 
     # Assuming we didn't fail, create the service
     service = PamdService(content)
@@ -857,8 +862,7 @@ def main():
                 fd.write(str(service))
 
         except IOError:
-            module.fail_json(msg='Unable to create temporary \
-                                    file %s' % temp_file)
+            module.fail_json(msg='Unable to create temporary file %s' % temp_file)
 
         module.atomic_move(temp_file.name, os.path.realpath(fname))
 

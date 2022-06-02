@@ -13,6 +13,8 @@ An Ansible Collection of modules and plugins that target POSIX UNIX/Linux and de
 
 This collection has been tested against following Ansible versions: **>=2.9**.
 
+For collections that support Ansible 2.9, please ensure you update your `network_os` to use the
+fully qualified collection name (for example, `cisco.ios.ios`).
 Plugins and modules within a collection may be tested with only specific Ansible versions.
 A collection may contain metadata that identifies these versions.
 PEP440 is the schema used to describe the versions of Ansible.
@@ -86,10 +88,12 @@ None
 
 <!-- List the versions of Ansible the collection has been tested with. Must match what is in galaxy.yml. -->
 
-* ansible-core 2.12 (devel)
-* ansible-core 2.11 (stable)
-* ansible-base 2.10 (stable)
-* ansible 2.9 (stable)
+- ansible-core 2.14 (devel)
+- ansible-core 2.13 (stable)
+- ansible-core 2.12 (stable)
+- ansible-core 2.11 (stable)
+- ansible-base 2.10 (stable)
+- ansible 2.9 (stable)
 
 ## Roadmap
 

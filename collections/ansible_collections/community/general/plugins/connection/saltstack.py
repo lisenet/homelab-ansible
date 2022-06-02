@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Based on local.py (c) 2012, Michael DeHaan <michael.dehaan@gmail.com>
 # Based on chroot.py (c) 2013, Maykel Moya <mmoya@speedyrails.com>
 # Based on func.py
@@ -10,20 +11,17 @@ __metaclass__ = type
 
 DOCUMENTATION = '''
     author: Michael Scherer (@mscherer) <misc@zarb.org>
-    connection: saltstack
+    name: saltstack
     short_description: Allow ansible to piggyback on salt minions
     description:
         - This allows you to use existing Saltstack infrastructure to connect to targets.
 '''
 
-import re
 import os
-import pty
-import codecs
-import subprocess
+import base64
 
-from ansible.module_utils._text import to_bytes, to_text
-from ansible.module_utils.six.moves import cPickle
+from ansible import errors
+from ansible.plugins.connection import ConnectionBase
 
 HAVE_SALTSTACK = False
 try:
@@ -32,13 +30,9 @@ try:
 except ImportError:
     pass
 
-import os
-from ansible import errors
-from ansible.plugins.connection import ConnectionBase
-
 
 class Connection(ConnectionBase):
-    ''' Salt-based connections '''
+    """ Salt-based connections """
 
     has_pipelining = False
     # while the name of the product is salt, naming that module salt cause
@@ -57,30 +51,31 @@ class Connection(ConnectionBase):
         self._connected = True
         return self
 
-    def exec_command(self, cmd, sudoable=False, in_data=None):
-        ''' run a command on the remote minion '''
+    def exec_command(self, cmd, in_data=None, sudoable=False):
+        """ run a command on the remote minion """
         super(Connection, self).exec_command(cmd, in_data=in_data, sudoable=sudoable)
 
         if in_data:
             raise errors.AnsibleError("Internal Error: this module does not support optimized module pipelining")
 
-        self._display.vvv("EXEC %s" % (cmd), host=self.host)
+        self._display.vvv("EXEC %s" % cmd, host=self.host)
         # need to add 'true;' to work around https://github.com/saltstack/salt/issues/28077
         res = self.client.cmd(self.host, 'cmd.exec_code_all', ['bash', 'true;' + cmd])
         if self.host not in res:
             raise errors.AnsibleError("Minion %s didn't answer, check if salt-minion is running and the name is correct" % self.host)
 
         p = res[self.host]
-        return (p['retcode'], p['stdout'], p['stderr'])
+        return p['retcode'], p['stdout'], p['stderr']
 
-    def _normalize_path(self, path, prefix):
+    @staticmethod
+    def _normalize_path(path, prefix):
         if not path.startswith(os.path.sep):
             path = os.path.join(os.path.sep, path)
         normpath = os.path.normpath(path)
         return os.path.join(prefix, normpath[1:])
 
     def put_file(self, in_path, out_path):
-        ''' transfer a file from local to remote '''
+        """ transfer a file from local to remote """
 
         super(Connection, self).put_file(in_path, out_path)
 
@@ -88,11 +83,11 @@ class Connection(ConnectionBase):
         self._display.vvv("PUT %s TO %s" % (in_path, out_path), host=self.host)
         with open(in_path, 'rb') as in_fh:
             content = in_fh.read()
-        self.client.cmd(self.host, 'hashutil.base64_decodefile', [codecs.encode(content, 'base64'), out_path])
+        self.client.cmd(self.host, 'hashutil.base64_decodefile', [base64.b64encode(content), out_path])
 
     # TODO test it
     def fetch_file(self, in_path, out_path):
-        ''' fetch a file from remote to local '''
+        """ fetch a file from remote to local """
 
         super(Connection, self).fetch_file(in_path, out_path)
 
@@ -102,5 +97,5 @@ class Connection(ConnectionBase):
         open(out_path, 'wb').write(content)
 
     def close(self):
-        ''' terminate the connection; nothing to do here '''
+        """ terminate the connection; nothing to do here """
         pass

@@ -38,7 +38,7 @@ options:
             - "A ':' separated list of paths to search for 'brew' executable.
               Since a package (I(formula) in homebrew parlance) location is prefixed relative to the actual path of I(brew) command,
               providing an alternative I(brew) path enables managing different set of packages in an alternative location in the system."
-        default: '/usr/local/bin'
+        default: '/usr/local/bin:/opt/homebrew/bin'
         type: path
     state:
         description:
@@ -51,7 +51,6 @@ options:
             - update homebrew itself first.
         type: bool
         default: no
-        aliases: ['update-brew']
     upgrade_all:
         description:
             - upgrade all homebrew packages.
@@ -76,7 +75,7 @@ notes:
 '''
 
 EXAMPLES = '''
-# Install formula foo with 'brew' in default path (C(/usr/local/bin))
+# Install formula foo with 'brew' in default path
 - community.general.homebrew:
     name: foo
     state: present
@@ -126,10 +125,15 @@ EXAMPLES = '''
     state: present
     install_options: with-baz,enable-debug
 
-- name: Use ignored-pinned option while upgrading all
+- name: Install formula foo with 'brew' from cask
+  community.general.homebrew:
+    name: homebrew/cask/foo
+    state: present
+
+- name: Use ignore-pinned option while upgrading all
   community.general.homebrew:
     upgrade_all: yes
-    upgrade_options: ignored-pinned
+    upgrade_options: ignore-pinned
 '''
 
 RETURN = '''
@@ -871,7 +875,7 @@ def main():
                 elements='str',
             ),
             path=dict(
-                default="/usr/local/bin",
+                default="/usr/local/bin:/opt/homebrew/bin",
                 required=False,
                 type='path',
             ),
@@ -886,7 +890,6 @@ def main():
             ),
             update_homebrew=dict(
                 default=False,
-                aliases=["update-brew"],
                 type='bool',
             ),
             upgrade_all=dict(

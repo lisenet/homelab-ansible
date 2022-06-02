@@ -31,6 +31,7 @@ mandatory_py_version = pytest.mark.skipif(
 
 
 from ansible.errors import AnsibleError, AnsibleParserError
+from ansible.parsing.dataloader import DataLoader
 from ansible_collections.community.general.plugins.inventory.linode import InventoryModule
 
 
@@ -39,38 +40,19 @@ def inventory():
     return InventoryModule()
 
 
-def test_access_token_lookup(inventory):
+def test_missing_access_token_lookup(inventory):
+    loader = DataLoader()
     inventory._options = {'access_token': None}
     with pytest.raises(AnsibleError) as error_message:
-        inventory._build_client()
+        inventory._build_client(loader)
         assert 'Could not retrieve Linode access token' in error_message
 
 
-def test_validate_option(inventory):
-    assert ['eu-west'] == inventory._validate_option('regions', list, 'eu-west')
-    assert ['eu-west'] == inventory._validate_option('regions', list, ['eu-west'])
-
-
-def test_validation_option_bad_option(inventory):
-    with pytest.raises(AnsibleParserError) as error_message:
-        inventory._validate_option('regions', dict, [])
-        assert "The option filters ([]) must be a <class 'dict'>" == error_message
-
-
-def test_empty_config_query_options(inventory):
-    regions, types = inventory._get_query_options({})
-    assert regions == types == []
-
-
-def test_conig_query_options(inventory):
-    regions, types = inventory._get_query_options({
-        'regions': ['eu-west', 'us-east'],
-        'types': ['g5-standard-2', 'g6-standard-2'],
-    })
-
-    assert regions == ['eu-west', 'us-east']
-    assert types == ['g5-standard-2', 'g6-standard-2']
+def test_verify_file(tmp_path, inventory):
+    file = tmp_path / "foobar.linode.yml"
+    file.touch()
+    assert inventory.verify_file(str(file)) is True
 
 
 def test_verify_file_bad_config(inventory):
-    assert inventory.verify_file('foobar.linde.yml') is False
+    assert inventory.verify_file('foobar.linode.yml') is False

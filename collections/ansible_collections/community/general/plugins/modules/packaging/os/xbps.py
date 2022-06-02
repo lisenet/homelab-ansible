@@ -42,7 +42,6 @@ options:
         description:
             - Whether or not to refresh the master package lists. This can be
               run as part of a package installation or as a separate step.
-        aliases: ['update-cache']
         type: bool
         default: yes
     upgrade:
@@ -60,12 +59,6 @@ options:
         type: bool
         default: yes
         version_added: '0.2.0'
-    force:
-        description:
-            - This option doesn't have any effect and is deprecated, it will be
-              removed in 3.0.0.
-        type: bool
-        default: no
 '''
 
 EXAMPLES = '''
@@ -235,7 +228,9 @@ def install_packages(module, xbps_path, state, packages):
         module.params['upgrade_xbps'] = False
         install_packages(module, xbps_path, state, packages)
     elif rc != 0 and not (state == 'latest' and rc == 17):
-        module.fail_json(msg="failed to install %s" % (package))
+        module.fail_json(msg="failed to install %s packages(s)"
+                         % (len(toInstall)),
+                         packages=toInstall)
 
     module.exit_json(changed=True, msg="installed %s package(s)"
                      % (len(toInstall)),
@@ -288,11 +283,9 @@ def main():
                                                    'latest', 'absent',
                                                    'removed']),
             recurse=dict(default=False, type='bool'),
-            force=dict(default=False, type='bool', removed_in_version='3.0.0', removed_from_collection='community.general'),
             upgrade=dict(default=False, type='bool'),
-            update_cache=dict(default=True, aliases=['update-cache'],
-                              type='bool'),
-            upgrade_xbps=dict(default=True, type='bool')
+            update_cache=dict(default=True, type='bool'),
+            upgrade_xbps=dict(default=True, type='bool'),
         ),
         required_one_of=[['name', 'update_cache', 'upgrade']],
         supports_check_mode=True)

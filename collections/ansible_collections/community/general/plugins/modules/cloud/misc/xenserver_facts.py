@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 #
 # Copyright: Ansible Project
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -160,7 +161,9 @@ def get_srs(session):
 
 
 def main():
-    module = AnsibleModule({})
+    module = AnsibleModule(
+        supports_check_mode=True,
+    )
 
     if not HAVE_XENAPI:
         module.fail_json(changed=False, msg="python xen api required for this module")

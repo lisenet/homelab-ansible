@@ -20,9 +20,6 @@ requirements:
 notes:
     - Tested with C(op) version 0.5.5
     - "Based on the C(onepassword) lookup plugin by Scott Buchanan <sbuchanan@ri.pn>."
-    - When this module is called with the deprecated C(onepassword_facts) name, potentially sensitive data
-      from 1Password is returned as Ansible facts. Facts are subject to caching if enabled, which means this
-      data could be stored in clear text on disk or in a database.
 short_description: Gather items from 1Password
 description:
     - M(community.general.onepassword_info) wraps the C(op) command line utility to fetch data about one or more 1Password items.
@@ -34,6 +31,7 @@ description:
 options:
     search_terms:
         type: list
+        elements: dict
         description:
             - A list of one or more search terms.
             - Each search term can either be a simple string or it can be a dictionary for more control.
@@ -165,8 +163,10 @@ import re
 
 from subprocess import Popen, PIPE
 
-from ansible.module_utils._text import to_bytes, to_native
+from ansible.module_utils.common.text.converters import to_bytes, to_native
 from ansible.module_utils.basic import AnsibleModule
+
+from ansible_collections.community.general.plugins.module_utils.onepassword import OnePasswordConfig
 
 
 class AnsibleModuleError(Exception):
@@ -181,13 +181,14 @@ class OnePasswordInfo(object):
 
     def __init__(self):
         self.cli_path = module.params.get('cli_path')
-        self.config_file_path = '~/.op/config'
         self.auto_login = module.params.get('auto_login')
         self.logged_in = False
         self.token = None
 
         terms = module.params.get('search_terms')
         self.terms = self.parse_search_terms(terms)
+
+        self._config = OnePasswordConfig()
 
     def _run(self, args, expected_rc=0, command_input=None, ignore_errors=False):
         if self.token:
@@ -296,12 +297,12 @@ class OnePasswordInfo(object):
             except AnsibleModuleError as e:
                 module.fail_json(msg="Failed to perform initial sign in to 1Password: %s" % to_native(e))
         else:
-            module.fail_json(msg="Unable to perform an initial sign in to 1Password. Please run '%s sigin' "
+            module.fail_json(msg="Unable to perform an initial sign in to 1Password. Please run '%s signin' "
                                  "or define credentials in 'auto_login'. See the module documentation for details." % self.cli_path)
 
     def get_token(self):
         # If the config file exists, assume an initial signin has taken place and try basic sign in
-        if os.path.isfile(self.config_file_path):
+        if os.path.isfile(self._config.config_file_path):
 
             if self.auto_login is not None:
 
@@ -372,20 +373,14 @@ def main():
                 master_password=dict(required=True, type='str', no_log=True),
                 secret_key=dict(type='str', no_log=True),
             ), default=None),
-            search_terms=dict(required=True, type='list')
+            search_terms=dict(required=True, type='list', elements='dict'),
         ),
         supports_check_mode=True
     )
 
     results = {'onepassword': OnePasswordInfo().run()}
 
-    if module._name in ('onepassword_facts', 'community.general.onepassword_facts'):
-        module.deprecate("The 'onepassword_facts' module has been renamed to 'onepassword_info'. "
-                         "When called with the new name it no longer returns 'ansible_facts'",
-                         version='3.0.0', collection_name='community.general')  # was Ansible 2.13
-        module.exit_json(changed=False, ansible_facts=results)
-    else:
-        module.exit_json(changed=False, **results)
+    module.exit_json(changed=False, **results)
 
 
 if __name__ == '__main__':

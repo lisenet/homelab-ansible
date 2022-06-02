@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # (c) 2017-2018, Jan-Piet Mens <jpmens(at)gmail.com>
 # (c) 2018 Ansible Project
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -5,7 +6,7 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = '''
-    lookup: lmdb_kv
+    name: lmdb_kv
     author:
       - Jan-Piet Mens (@jpmens)
     version_added: '0.2.0'
@@ -55,7 +56,7 @@ _raw:
 
 from ansible.errors import AnsibleError
 from ansible.plugins.lookup import LookupBase
-from ansible.module_utils._text import to_native, to_text
+from ansible.module_utils.common.text.converters import to_native, to_text
 HAVE_LMDB = True
 try:
     import lmdb

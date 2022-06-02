@@ -17,7 +17,7 @@ short_description: Add or remove LDAP entries.
 description:
   - Add or remove LDAP entries. This module only asserts the existence or
     non-existence of an LDAP entry, not its attributes. To assert the
-    attribute values of an entry, see M(community.general.ldap_attr).
+    attribute values of an entry, see M(community.general.ldap_attrs).
 notes:
   - The default authentication settings will attempt to use a SASL EXTERNAL
     bind over a UNIX domain socket. This works well with the default Ubuntu
@@ -25,9 +25,6 @@ notes:
     rule allowing root to modify the server configuration. If you need to use
     a simple bind to access your server, pass the credentials in I(bind_dn)
     and I(bind_pw).
-  - "The I(params) parameter was removed due to circumventing Ansible's parameter
-     handling.  The I(params) parameter started disallowing setting the I(bind_pw) parameter in
-     Ansible-2.7 as it was insecure to set the parameter that way."
 author:
   - Jiri Tyr (@jtyr)
 requirements:
@@ -37,7 +34,7 @@ options:
     description:
       - If I(state=present), attributes necessary to create an entry. Existing
         entries are never modified. To assert specific attribute values on an
-        existing entry, use M(community.general.ldap_attr) module instead.
+        existing entry, use M(community.general.ldap_attrs) module instead.
     type: dict
   objectClass:
     description:
@@ -51,6 +48,14 @@ options:
       - The target state of the entry.
     choices: [present, absent]
     default: present
+    type: str
+  recursive:
+    description:
+      - If I(state=delete), a flag indicating whether a single entry or the
+        whole branch must be deleted.
+    type: bool
+    default: false
+    version_added: 4.6.0
 extends_documentation_fragment:
 - community.general.ldap.documentation
 
@@ -106,12 +111,13 @@ RETURN = """
 import traceback
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible.module_utils._text import to_native, to_bytes
+from ansible.module_utils.common.text.converters import to_native, to_bytes
 from ansible_collections.community.general.plugins.module_utils.ldap import LdapGeneric, gen_specs
 
 LDAP_IMP_ERR = None
 try:
     import ldap.modlist
+    import ldap.controls
 
     HAS_LDAP = True
 except ImportError:
@@ -125,6 +131,7 @@ class LdapEntry(LdapGeneric):
 
         # Shortcuts
         self.state = self.module.params['state']
+        self.recursive = self.module.params['recursive']
 
         # Add the objectClass into the list of attributes
         self.module.params['attributes']['objectClass'] = (
@@ -160,12 +167,29 @@ class LdapEntry(LdapGeneric):
         return action
 
     def delete(self):
-        """ If self.dn exists, returns a callable that will delete it. """
+        """ If self.dn exists, returns a callable that will delete either
+        the item itself if the recursive option is not set or the whole branch
+        if it is. """
         def _delete():
             self.connection.delete_s(self.dn)
 
+        def _delete_recursive():
+            """ Attempt recurive deletion using the subtree-delete control.
+            If that fails, do it manually. """
+            try:
+                subtree_delete = ldap.controls.ValueLessRequestControl('1.2.840.113556.1.4.805')
+                self.connection.delete_ext_s(self.dn, serverctrls=[subtree_delete])
+            except ldap.NOT_ALLOWED_ON_NONLEAF:
+                search = self.connection.search_s(self.dn, ldap.SCOPE_SUBTREE, attrlist=('dn',))
+                search.reverse()
+                for entry in search:
+                    self.connection.delete_s(entry[0])
+
         if self._is_entry_present():
-            action = _delete
+            if self.recursive:
+                action = _delete_recursive
+            else:
+                action = _delete
         else:
             action = None
 
@@ -187,8 +211,8 @@ def main():
         argument_spec=gen_specs(
             attributes=dict(default={}, type='dict'),
             objectClass=dict(type='list', elements='str'),
-            params=dict(type='dict'),
             state=dict(default='present', choices=['present', 'absent']),
+            recursive=dict(default=False, type='bool'),
         ),
         required_if=[('state', 'present', ['objectClass'])],
         supports_check_mode=True,
@@ -197,9 +221,6 @@ def main():
     if not HAS_LDAP:
         module.fail_json(msg=missing_required_lib('python-ldap'),
                          exception=LDAP_IMP_ERR)
-
-    if module.params['params']:
-        module.fail_json(msg="The `params` option to ldap_attr was removed since it circumvents Ansible's option handling")
 
     state = module.params['state']
 

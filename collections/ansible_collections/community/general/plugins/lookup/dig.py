@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # (c) 2015, Jan-Piet Mens <jpmens(at)gmail.com>
 # (c) 2017 Ansible Project
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -5,7 +6,7 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = '''
-    lookup: dig
+    name: dig
     author: Jan-Piet Mens (@jpmens) <jpmens(at)gmail.com>
     short_description: query DNS using the dnspython library
     requirements:
@@ -26,14 +27,21 @@ DOCUMENTATION = '''
         This needs to be passed-in as an additional parameter to the lookup
     options:
       _terms:
-        description: domain(s) to query
+        description: Domain(s) to query.
       qtype:
-        description: record type to query
+        description:
+            - Record type to query.
+            - C(DLV) is deprecated and will be removed in community.general 6.0.0.
         default: 'A'
         choices: [A, ALL, AAAA, CNAME, DNAME, DLV, DNSKEY, DS, HINFO, LOC, MX, NAPTR, NS, NSEC3PARAM, PTR, RP, RRSIG, SOA, SPF, SRV, SSHFP, TLSA, TXT]
       flat:
-        description: If 0 each record is returned as a dictionary, otherwise a string
+        description: If 0 each record is returned as a dictionary, otherwise a string.
         default: 1
+      retry_servfail:
+        description: Retry a nameserver if it returns SERVFAIL.
+        default: false
+        type: bool
+        version_added: 3.6.0
     notes:
       - ALL is not a record per-se, merely the listed fields are available for any record results you retrieve in the form of a dictionary.
       - While the 'dig' lookup plugin supports anything which dnspython supports out of the box, only a subset can be converted into a dictionary.
@@ -72,6 +80,10 @@ EXAMPLES = """
 - ansible.builtin.debug:
     msg: "XMPP service for gmail.com. is available at {{ item.target }} on port {{ item.port }}"
   with_items: "{{ lookup('community.general.dig', '_xmpp-server._tcp.gmail.com./SRV', 'flat=0', wantlist=True) }}"
+
+- name: Retry nameservers that return SERVFAIL
+  ansible.builtin.debug:
+    msg: "{{ lookup('community.general.dig', 'example.org./A', 'retry_servfail=True') }}"
 """
 
 RETURN = """
@@ -152,7 +164,8 @@ RETURN = """
 
 from ansible.errors import AnsibleError
 from ansible.plugins.lookup import LookupBase
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
+from ansible.utils.display import Display
 import socket
 
 try:
@@ -166,6 +179,9 @@ try:
     HAVE_DNS = True
 except ImportError:
     HAVE_DNS = False
+
+
+display = Display()
 
 
 def make_rdata_dict(rdata):
@@ -299,6 +315,8 @@ class LookupModule(LookupBase):
                         rdclass = dns.rdataclass.from_text(arg)
                     except Exception as e:
                         raise AnsibleError("dns lookup illegal CLASS: %s" % to_native(e))
+                elif opt == 'retry_servfail':
+                    myres.retry_servfail = bool(arg)
 
                 continue
 
@@ -313,6 +331,11 @@ class LookupModule(LookupBase):
         # print "--- domain = {0} qtype={1} rdclass={2}".format(domain, qtype, rdclass)
 
         ret = []
+
+        if qtype.upper() == 'DLV':
+            display.deprecated('The DLV record type has been decommissioned in 2017 and support for'
+                               ' it will be removed from community.general 6.0.0',
+                               version='6.0.0', collection_name='community.general')
 
         if qtype.upper() == 'PTR':
             try:

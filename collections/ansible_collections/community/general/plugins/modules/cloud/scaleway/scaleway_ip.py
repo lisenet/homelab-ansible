@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 #
 # Scaleway IP management module
 #
@@ -12,7 +13,7 @@ DOCUMENTATION = '''
 ---
 module: scaleway_ip
 short_description: Scaleway IP management module
-author: Remy Leone (@sieben)
+author: Remy Leone (@remyleone)
 description:
     - This module manages IP on Scaleway account
       U(https://developer.scaleway.com)
@@ -46,6 +47,10 @@ options:
       - EMEA-NL-EVS
       - par1
       - EMEA-FR-PAR1
+      - par2
+      - EMEA-FR-PAR2
+      - waw1
+      - EMEA-PL-WAW1
 
   id:
     type: str

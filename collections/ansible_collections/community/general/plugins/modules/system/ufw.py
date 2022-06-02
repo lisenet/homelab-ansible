@@ -54,6 +54,8 @@ options:
     description:
       - Insert the corresponding rule as rule number NUM.
       - Note that ufw numbers rules starting with 1.
+      - If I(delete=true) and a value is provided for I(insert),
+        then I(insert) is ignored.
     type: int
   insert_relative_to:
     description:
@@ -120,6 +122,8 @@ options:
   delete:
     description:
       - Delete rule.
+      - If I(delete=true) and a value is provided for I(insert),
+        then I(insert) is ignored.
     type: bool
     default: false
   interface:
@@ -511,12 +515,12 @@ def main():
                                  'interface_in and interface_out')
             # Rules are constructed according to the long format
             #
-            # ufw [--dry-run] [route] [delete] [insert NUM] allow|deny|reject|limit [in|out on INTERFACE] [log|log-all] \
+            # ufw [--dry-run] [route] [delete | insert NUM] allow|deny|reject|limit [in|out on INTERFACE] [log|log-all] \
             #     [from ADDRESS [port PORT]] [to ADDRESS [port PORT]] \
             #     [proto protocol] [app application] [comment COMMENT]
             cmd.append([module.boolean(params['route']), 'route'])
             cmd.append([module.boolean(params['delete']), 'delete'])
-            if params['insert'] is not None:
+            if params['insert'] is not None and not params['delete']:
                 relative_to_cmd = params['insert_relative_to']
                 if relative_to_cmd == 'zero':
                     insert_to = params['insert']
@@ -526,8 +530,8 @@ def main():
                     lines = [(numbered_line_re.match(line), '(v6)' in line) for line in numbered_state.splitlines()]
                     lines = [(int(matcher.group(1)), ipv6) for (matcher, ipv6) in lines if matcher]
                     last_number = max([no for (no, ipv6) in lines]) if lines else 0
-                    has_ipv4 = any([not ipv6 for (no, ipv6) in lines])
-                    has_ipv6 = any([ipv6 for (no, ipv6) in lines])
+                    has_ipv4 = any(not ipv6 for (no, ipv6) in lines)
+                    has_ipv6 = any(ipv6 for (no, ipv6) in lines)
                     if relative_to_cmd == 'first-ipv4':
                         relative_to = 1
                     elif relative_to_cmd == 'last-ipv4':

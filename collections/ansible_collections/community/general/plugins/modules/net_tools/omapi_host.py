@@ -63,6 +63,7 @@ options:
         description:
             - Attach a list of OMAPI DHCP statements with host lease (without ending semicolon).
         type: list
+        elements: str
         default: []
     ddns:
         description:
@@ -139,7 +140,7 @@ except ImportError:
     pureomapi_found = False
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible.module_utils._text import to_bytes, to_native
+from ansible.module_utils.common.text.converters import to_bytes, to_native
 
 
 class OmapiHostManager:
@@ -282,7 +283,7 @@ def main():
             hostname=dict(type='str', aliases=['name']),
             ip=dict(type='str'),
             ddns=dict(type='bool', default=False),
-            statements=dict(type='list', default=[]),
+            statements=dict(type='list', elements='str', default=[]),
         ),
         supports_check_mode=False,
     )

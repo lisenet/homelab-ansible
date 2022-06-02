@@ -113,7 +113,7 @@ import traceback
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.general.plugins.module_utils.dimensiondata import HAS_LIBCLOUD, DimensionDataModule
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 if HAS_LIBCLOUD:
     from libcloud.compute.base import NodeLocation
@@ -260,7 +260,7 @@ class DimensionDataNetworkModule(DimensionDataModule):
                 )
 
             self.module.fail_json(
-                "Unexpected failure deleting network with id %s", network.id
+                "Unexpected failure deleting network with id %s" % network.id
             )
 
         except DimensionDataAPIException as e:

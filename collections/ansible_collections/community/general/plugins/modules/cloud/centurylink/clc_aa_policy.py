@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 #
 # Copyright (c) 2015 CenturyLink
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -30,10 +31,6 @@ options:
     required: False
     default: present
     choices: ['present','absent']
-  wait:
-    description:
-      - This option does nothing and will be removed in community.general 3.0.0.
-    type: bool
 requirements:
     - python = 2.7
     - requests >= 2.5.0
@@ -123,7 +120,7 @@ __version__ = '${version}'
 import os
 import traceback
 
-from distutils.version import LooseVersion
+from ansible_collections.community.general.plugins.module_utils.version import LooseVersion
 
 REQUESTS_IMP_ERR = None
 try:
@@ -185,7 +182,6 @@ class ClcAntiAffinityPolicy:
         argument_spec = dict(
             name=dict(required=True),
             location=dict(required=True),
-            wait=dict(type='bool', removed_in_version='3.0.0', removed_from_collection='community.general'),  # was Ansible 2.14
             state=dict(default='present', choices=['present', 'absent']),
         )
         return argument_spec

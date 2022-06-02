@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 # Copyright: Ansible Project
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
@@ -96,7 +97,7 @@ EXAMPLES = '''
       register: my_volume
 '''
 
-from distutils.version import LooseVersion
+from ansible_collections.community.general.plugins.module_utils.version import LooseVersion
 
 try:
     import pyrax

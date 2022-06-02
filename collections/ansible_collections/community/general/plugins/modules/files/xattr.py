@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 # Copyright: (c) 2017, Ansible Project
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -11,9 +12,9 @@ DOCUMENTATION = '''
 module: xattr
 short_description: Manage user defined extended attributes
 description:
-    - Manages filesystem user defined extended attributes.
-    - Requires that extended attributes are enabled on the target filesystem
-      and that the setfattr/getfattr utilities are present.
+  - Manages filesystem user defined extended attributes.
+  - Requires that extended attributes are enabled on the target filesystem
+    and that the setfattr/getfattr utilities are present.
 options:
   path:
     description:
@@ -33,13 +34,13 @@ options:
     type: str
   value:
     description:
-      - The value to set the named name/key to, it automatically sets the C(state) to 'set'.
+      - The value to set the named name/key to, it automatically sets the I(state) to C(present).
     type: str
   state:
     description:
       - defines which state you want to do.
-        C(read) retrieves the current value for a C(key) (default)
-        C(present) sets C(name) to C(value), default if value is set
+        C(read) retrieves the current value for a I(key) (default)
+        C(present) sets I(path) to C(value), default if value is set
         C(all) dumps all data
         C(keys) retrieves all keys
         C(absent) deletes the key
@@ -48,14 +49,14 @@ options:
     default: read
   follow:
     description:
-      - If C(yes), dereferences symlinks and sets/gets attributes on symlink target,
+      - If C(true), dereferences symlinks and sets/gets attributes on symlink target,
         otherwise acts on symlink itself.
     type: bool
-    default: yes
+    default: true
 notes:
   - As of Ansible 2.3, the I(name) option has been changed to I(path) as default, but I(name) still works as well.
 author:
-- Brian Coca (@bcoca)
+  - Brian Coca (@bcoca)
 '''
 
 EXAMPLES = '''
@@ -94,13 +95,12 @@ import os
 
 # import module snippets
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 def get_xattr_keys(module, path, follow):
-    cmd = [module.get_bin_path('getfattr', True)]
-    # prevents warning and not sure why it's not default
-    cmd.append('--absolute-names')
+    cmd = [module.get_bin_path('getfattr', True), '--absolute-names']
+
     if not follow:
         cmd.append('-h')
     cmd.append(path)
@@ -109,16 +109,15 @@ def get_xattr_keys(module, path, follow):
 
 
 def get_xattr(module, path, key, follow):
+    cmd = [module.get_bin_path('getfattr', True), '--absolute-names']
 
-    cmd = [module.get_bin_path('getfattr', True)]
-    # prevents warning and not sure why it's not default
-    cmd.append('--absolute-names')
     if not follow:
         cmd.append('-h')
     if key is None:
         cmd.append('-d')
     else:
-        cmd.append('-n %s' % key)
+        cmd.append('-n')
+        cmd.append(key)
     cmd.append(path)
 
     return _run_xattr(module, cmd, False)
@@ -129,8 +128,10 @@ def set_xattr(module, path, key, value, follow):
     cmd = [module.get_bin_path('setfattr', True)]
     if not follow:
         cmd.append('-h')
-    cmd.append('-n %s' % key)
-    cmd.append('-v %s' % value)
+    cmd.append('-n')
+    cmd.append(key)
+    cmd.append('-v')
+    cmd.append(value)
     cmd.append(path)
 
     return _run_xattr(module, cmd)
@@ -141,7 +142,8 @@ def rm_xattr(module, path, key, follow):
     cmd = [module.get_bin_path('setfattr', True)]
     if not follow:
         cmd.append('-h')
-    cmd.append('-x %s' % key)
+    cmd.append('-x')
+    cmd.append(key)
     cmd.append(path)
 
     return _run_xattr(module, cmd, False)
@@ -150,7 +152,7 @@ def rm_xattr(module, path, key, follow):
 def _run_xattr(module, cmd, check_rc=True):
 
     try:
-        (rc, out, err) = module.run_command(' '.join(cmd), check_rc=check_rc)
+        (rc, out, err) = module.run_command(cmd, check_rc=check_rc)
     except Exception as e:
         module.fail_json(msg="%s!" % to_native(e))
 
@@ -160,7 +162,7 @@ def _run_xattr(module, cmd, check_rc=True):
         if line.startswith('#') or line == '':
             pass
         elif '=' in line:
-            (key, val) = line.split('=')
+            (key, val) = line.split('=', 1)
             result[key] = val.strip('"')
         else:
             result[line] = ''
@@ -172,7 +174,7 @@ def main():
         argument_spec=dict(
             path=dict(type='path', required=True, aliases=['name']),
             namespace=dict(type='str', default='user'),
-            key=dict(type='str'),
+            key=dict(type='str', no_log=False),
             value=dict(type='str'),
             state=dict(type='str', default='read', choices=['absent', 'all', 'keys', 'present', 'read']),
             follow=dict(type='bool', default=True),

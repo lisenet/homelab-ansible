@@ -13,12 +13,13 @@ from httmock import urlmatch  # noqa
 
 from ansible_collections.community.general.tests.unit.compat import unittest
 
-from gitlab import Gitlab
+import gitlab
 
 
 class FakeAnsibleModule(object):
-    def __init__(self):
+    def __init__(self, module_params=None):
         self.check_mode = False
+        self.params = module_params if module_params else {}
 
     def fail_json(self, **args):
         pass
@@ -33,7 +34,7 @@ class GitlabModuleTestCase(unittest.TestCase):
 
         self.mock_module = FakeAnsibleModule()
 
-        self.gitlab_instance = Gitlab("http://localhost", private_token="private_token", api_version=4)
+        self.gitlab_instance = gitlab.Gitlab("http://localhost", private_token="private_token", api_version=4)
 
 
 # Python 2.7+ is needed for python-gitlab
@@ -43,6 +44,14 @@ GITLAB_MINIMUM_PYTHON_VERSION = (2, 7)
 # Verify if the current Python version is higher than GITLAB_MINIMUM_PYTHON_VERSION
 def python_version_match_requirement():
     return sys.version_info >= GITLAB_MINIMUM_PYTHON_VERSION
+
+
+def python_gitlab_module_version():
+    return gitlab.__version__
+
+
+def python_gitlab_version_match_requirement():
+    return "2.3.0"
 
 
 # Skip unittest test case if python version don't match requirement
@@ -186,6 +195,8 @@ def resp_get_group(url, request):
                '"lfs_enabled": true, "avatar_url": "http://localhost:3000/uploads/group/avatar/1/foo.jpg",'
                '"web_url": "http://localhost:3000/groups/foo-bar", "request_access_enabled": false,'
                '"full_name": "Foobar Group", "full_path": "foo-bar",'
+               '"project_creation_level": "maintainer", "subgroup_creation_level": "maintainer",'
+               '"require_two_factor_authentication": true,'
                '"file_template_project_id": 1, "parent_id": null, "projects": [{"id": 1,"description": null, "default_branch": "master",'
                '"ssh_url_to_repo": "git@example.com:diaspora/diaspora-client.git",'
                '"http_url_to_repo": "http://example.com/diaspora/diaspora-client.git",'
@@ -217,7 +228,9 @@ def resp_create_group(url, request):
                '"lfs_enabled": true, "avatar_url": "http://localhost:3000/uploads/group/avatar/1/foo.jpg",'
                '"web_url": "http://localhost:3000/groups/foo-bar", "request_access_enabled": false,'
                '"full_name": "Foobar Group", "full_path": "foo-bar",'
-               '"file_template_project_id": 1, "parent_id": null}')
+               '"file_template_project_id": 1, "parent_id": null,'
+               '"project_creation_level": "developer", "subgroup_creation_level": "maintainer",'
+               '"require_two_factor_authentication": true}')
     content = content.encode("utf-8")
     return response(200, content, headers, None, 5, request)
 
@@ -230,7 +243,9 @@ def resp_create_subgroup(url, request):
                '"lfs_enabled": true, "avatar_url": "http://localhost:3000/uploads/group/avatar/2/bar.jpg",'
                '"web_url": "http://localhost:3000/groups/foo-bar/bar-foo", "request_access_enabled": false,'
                '"full_name": "BarFoo Group", "full_path": "foo-bar/bar-foo",'
-               '"file_template_project_id": 1, "parent_id": 1}')
+               '"file_template_project_id": 1, "parent_id": 1,'
+               '"project_creation_level": "noone",'
+               '"require_two_factor_authentication": true}')
     content = content.encode("utf-8")
     return response(200, content, headers, None, 5, request)
 
@@ -467,6 +482,32 @@ def resp_delete_project(url, request):
     return response(204, content, headers, None, 5, request)
 
 
+@urlmatch(scheme="http", netloc="localhost", path="/api/v4/projects/1/protected_branches/master", method="get")
+def resp_get_protected_branch(url, request):
+    headers = {'content-type': 'application/json'}
+    content = ('{"id": 1, "name": "master", "push_access_levels": [{"access_level": 40, "access_level_description": "Maintainers"}],'
+               '"merge_access_levels": [{"access_level": 40, "access_level_description": "Maintainers"}],'
+               '"allow_force_push":false, "code_owner_approval_required": false}')
+    content = content.encode("utf-8")
+    return response(200, content, headers, None, 5, request)
+
+
+@urlmatch(scheme="http", netloc="localhost", path="/api/v4/projects/1/protected_branches/master", method="get")
+def resp_get_protected_branch_not_exist(url, request):
+    headers = {'content-type': 'application/json'}
+    content = ('')
+    content = content.encode("utf-8")
+    return response(404, content, headers, None, 5, request)
+
+
+@urlmatch(scheme="http", netloc="localhost", path="/api/v4/projects/1/protected_branches/master", method="delete")
+def resp_delete_protected_branch(url, request):
+    headers = {'content-type': 'application/json'}
+    content = ('')
+    content = content.encode("utf-8")
+    return response(204, content, headers, None, 5, request)
+
+
 '''
 HOOK API
 '''
@@ -524,20 +565,8 @@ RUNNER API
 '''
 
 
-@urlmatch(scheme="http", netloc="localhost", path="/api/v4/runners/all", method="get")
+@urlmatch(scheme="http", netloc="localhost", path=r'/api/v4/runners/all$', method="get")
 def resp_find_runners_all(url, request):
-    headers = {'content-type': 'application/json'}
-    content = ('[{"active": true,"description": "test-1-20150125","id": 1,'
-               '"is_shared": false,"ip_address": "127.0.0.1","name": null,'
-               '"online": true,"status": "online"},{"active": true,'
-               '"description": "test-2-20150125","id": 2,"ip_address": "127.0.0.1",'
-               '"is_shared": false,"name": null,"online": false,"status": "offline"}]')
-    content = content.encode("utf-8")
-    return response(200, content, headers, None, 5, request)
-
-
-@urlmatch(scheme="http", netloc="localhost", path="/api/v4/runners", method="get")
-def resp_find_runners_list(url, request):
     headers = {'content-type': 'application/json',
                "X-Page": 1,
                "X-Next-Page": 2,
@@ -553,7 +582,41 @@ def resp_find_runners_list(url, request):
     return response(200, content, headers, None, 5, request)
 
 
-@urlmatch(scheme="http", netloc="localhost", path="/api/v4/runners/1", method="get")
+@urlmatch(scheme="http", netloc="localhost", path=r'/api/v4/runners$', method="get")
+def resp_find_runners_list(url, request):
+    headers = {'content-type': 'application/json',
+               "X-Page": 1,
+               "X-Next-Page": 2,
+               "X-Per-Page": 1,
+               "X-Total-Pages": 1,
+               "X-Total": 2}
+    content = ('[{"active": true,"description": "test-1-20201214","id": 1,'
+               '"is_shared": false,"ip_address": "127.0.0.1","name": null,'
+               '"online": true,"status": "online"},{"active": true,'
+               '"description": "test-2-20201214","id": 2,"ip_address": "127.0.0.1",'
+               '"is_shared": false,"name": null,"online": false,"status": "offline"}]')
+    content = content.encode("utf-8")
+    return response(200, content, headers, None, 5, request)
+
+
+@urlmatch(scheme="http", netloc="localhost", path=r'/api/v4/runners/1$', method="put")
+def resp_update_runner(url, request):
+    headers = {'content-type': 'application/json',
+               "X-Page": 1,
+               "X-Next-Page": 2,
+               "X-Per-Page": 1,
+               "X-Total-Pages": 1,
+               "X-Total": 2}
+    content = ('[{"active": true,"description": "test-1-20201214","id": 1,'
+               '"is_shared": false,"ip_address": "127.0.0.1","name": null,'
+               '"online": true,"status": "online"},{"active": true,'
+               '"description": "test-2-20201214","id": 2,"ip_address": "127.0.0.1",'
+               '"is_shared": false,"name": null,"online": false,"status": "offline"}]')
+    content = content.encode("utf-8")
+    return response(200, content, headers, None, 5, request)
+
+
+@urlmatch(scheme="http", netloc="localhost", path=r'/api/v4/runners/1$', method="get")
 def resp_get_runner(url, request):
     headers = {'content-type': 'application/json'}
     content = ('{"active": true,"description": "test-1-20150125","id": 1,'
@@ -563,7 +626,7 @@ def resp_get_runner(url, request):
     return response(200, content, headers, None, 5, request)
 
 
-@urlmatch(scheme="http", netloc="localhost", path="/api/v4/runners", method="post")
+@urlmatch(scheme="http", netloc="localhost", path=r'/api/v4/runners$', method="post")
 def resp_create_runner(url, request):
     headers = {'content-type': 'application/json'}
     content = ('{"active": true,"description": "test-1-20150125","id": 1,'
@@ -573,7 +636,7 @@ def resp_create_runner(url, request):
     return response(201, content, headers, None, 5, request)
 
 
-@urlmatch(scheme="http", netloc="localhost", path="/api/v4/runners/1", method="delete")
+@urlmatch(scheme="http", netloc="localhost", path=r'/api/v4/runners/1$', method="delete")
 def resp_delete_runner(url, request):
     headers = {'content-type': 'application/json'}
     content = ('{}')

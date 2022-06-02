@@ -15,7 +15,7 @@ class ModuleDocFragment(object):
 options:
   bind_dn:
     description:
-      - A DN to bind with. If this is omitted, we'll try a SASL bind with the EXTERNAL mechanism.
+      - A DN to bind with. If this is omitted, we'll try a SASL bind with the EXTERNAL mechanism as default.
       - If this is blank, we'll use an anonymous bind.
     type: str
   bind_pw:
@@ -27,10 +27,21 @@ options:
     description:
       - The DN of the entry to add or remove.
     type: str
+  referrals_chasing:
+    choices: [disabled, anonymous]
+    default: anonymous
+    type: str
+    description:
+      - Set the referrals chasing behavior.
+      - C(anonymous) follow referrals anonymously. This is the default behavior.
+      - C(disabled) disable referrals chasing. This sets C(OPT_REFERRALS) to off.
+    version_added: 2.0.0
   server_uri:
     description:
-      - A URI to the LDAP server.
+      - The I(server_uri) parameter may be a comma- or whitespace-separated list of URIs containing only the schema, the host, and the port fields.
       - The default value lets the underlying LDAP client library look for a UNIX domain socket in its default location.
+      - Note that when using multiple URIs you cannot determine to which URI your client gets connected.
+      - For URIs containing additional fields, particularly when using commas, behavior is undefined.
     type: str
     default: ldapi:///
   start_tls:
@@ -44,4 +55,12 @@ options:
       - This should only be used on sites using self-signed certificates.
     type: bool
     default: yes
+  sasl_class:
+    description:
+      - The class to use for SASL authentication.
+      - possible choices are C(external), C(gssapi).
+    type: str
+    choices: ['external', 'gssapi']
+    default: external
+    version_added: "2.0.0"
 '''

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # (c) 2017, Patrick Deelman <patrick@patrickdeelman.nl>
 # (c) 2017 Ansible Project
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -6,13 +7,15 @@ __metaclass__ = type
 
 
 DOCUMENTATION = '''
-    lookup: passwordstore
+    name: passwordstore
     author:
       - Patrick Deelman (!UNKNOWN) <patrick@patrickdeelman.nl>
     short_description: manage passwords with passwordstore.org's pass utility
     description:
       - Enables Ansible to retrieve, create or update passwords from the passwordstore.org pass utility.
         It also retrieves YAML style keys stored as multilines in the passwordfile.
+      - To avoid problems when accessing multiple secrets at once, add C(auto-expand-secmem) to
+        C(~/.gnupg/gpg-agent.conf). Where this is not possible, consider using I(lock=readwrite) instead.
     options:
       _terms:
         description: query key.
@@ -25,9 +28,9 @@ DOCUMENTATION = '''
         env:
           - name: PASSWORD_STORE_DIR
       create:
-        description: Create the password if it does not already exist.
+        description: Create the password if it does not already exist. Takes precedence over C(missing).
         type: bool
-        default: 'no'
+        default: false
       overwrite:
         description: Overwrite the password if it does already exist.
         type: bool
@@ -60,38 +63,105 @@ DOCUMENTATION = '''
         description: use alphanumeric characters.
         type: bool
         default: 'no'
+      missing:
+        description:
+          - List of preference about what to do if the password file is missing.
+          - If I(create=true), the value for this option is ignored and assumed to be C(create).
+          - If set to C(error), the lookup will error out if the passname does not exist.
+          - If set to C(create), the passname will be created with the provided length I(length) if it does not exist.
+          - If set to C(empty) or C(warn), will return a C(none) in case the passname does not exist.
+            When using C(lookup) and not C(query), this will be translated to an empty string.
+        version_added: 3.1.0
+        type: str
+        default: error
+        choices:
+          - error
+          - warn
+          - empty
+          - create
+      lock:
+        description:
+          - How to synchronize operations.
+          - The default of C(write) only synchronizes write operations.
+          - C(readwrite) synchronizes all operations (including read). This makes sure that gpg-agent is never called in parallel.
+          - C(none) does not do any synchronization.
+        ini:
+          - section: passwordstore_lookup
+            key: lock
+        type: str
+        default: write
+        choices:
+          - readwrite
+          - write
+          - none
+        version_added: 4.5.0
+      locktimeout:
+        description:
+          - Lock timeout applied when I(lock) is not C(none).
+          - Time with a unit suffix, C(s), C(m), C(h) for seconds, minutes, and hours, respectively. For example, C(900s) equals C(15m).
+          - Correlates with C(pinentry-timeout) in C(~/.gnupg/gpg-agent.conf), see C(man gpg-agent) for details.
+        ini:
+          - section: passwordstore_lookup
+            key: locktimeout
+        type: str
+        default: 15m
+        version_added: 4.5.0
 '''
 EXAMPLES = """
-# Debug is used for examples, BAD IDEA to show passwords on screen
-- name: Basic lookup. Fails if example/test doesn't exist
-  ansible.builtin.debug:
-    msg: "{{ lookup('community.general.passwordstore', 'example/test')}}"
+ansible.cfg: |
+  [passwordstore_lookup]
+  lock=readwrite
+  locktimeout=45s
 
-- name: Create pass with random 16 character password. If password exists just give the password
-  ansible.builtin.debug:
-    var: mypassword
-  vars:
-    mypassword: "{{ lookup('community.general.passwordstore', 'example/test create=true')}}"
+playbook.yml: |
+  ---
 
-- name: Different size password
-  ansible.builtin.debug:
-    msg: "{{ lookup('community.general.passwordstore', 'example/test create=true length=42')}}"
+  # Debug is used for examples, BAD IDEA to show passwords on screen
+  - name: Basic lookup. Fails if example/test does not exist
+    ansible.builtin.debug:
+      msg: "{{ lookup('community.general.passwordstore', 'example/test')}}"
 
-- name: Create password and overwrite the password if it exists. As a bonus, this module includes the old password inside the pass file
-  ansible.builtin.debug:
-    msg: "{{ lookup('community.general.passwordstore', 'example/test create=true overwrite=true')}}"
+  - name: Basic lookup. Warns if example/test does not exist and returns empty string
+    ansible.builtin.debug:
+      msg: "{{ lookup('community.general.passwordstore', 'example/test missing=warn')}}"
 
-- name: Create an alphanumeric password
-  ansible.builtin.debug:
-    msg: "{{ lookup('community.general.passwordstore', 'example/test create=true nosymbols=true') }}"
+  - name: Create pass with random 16 character password. If password exists just give the password
+    ansible.builtin.debug:
+      var: mypassword
+    vars:
+      mypassword: "{{ lookup('community.general.passwordstore', 'example/test create=true')}}"
 
-- name: Return the value for user in the KV pair user, username
-  ansible.builtin.debug:
-    msg: "{{ lookup('community.general.passwordstore', 'example/test subkey=user')}}"
+  - name: Create pass with random 16 character password. If password exists just give the password
+    ansible.builtin.debug:
+      var: mypassword
+    vars:
+      mypassword: "{{ lookup('community.general.passwordstore', 'example/test missing=create')}}"
 
-- name: Return the entire password file content
-  ansible.builtin.set_fact:
-    passfilecontent: "{{ lookup('community.general.passwordstore', 'example/test returnall=true')}}"
+  - name: Prints 'abc' if example/test does not exist, just give the password otherwise
+    ansible.builtin.debug:
+      var: mypassword
+    vars:
+      mypassword: "{{ lookup('community.general.passwordstore', 'example/test missing=empty') | default('abc', true) }}"
+
+  - name: Different size password
+    ansible.builtin.debug:
+      msg: "{{ lookup('community.general.passwordstore', 'example/test create=true length=42')}}"
+
+  - name: Create password and overwrite the password if it exists. As a bonus, this module includes the old password inside the pass file
+    ansible.builtin.debug:
+      msg: "{{ lookup('community.general.passwordstore', 'example/test create=true overwrite=true')}}"
+
+  - name: Create an alphanumeric password
+    ansible.builtin.debug:
+      msg: "{{ lookup('community.general.passwordstore', 'example/test create=true nosymbols=true') }}"
+
+  - name: Return the value for user in the KV pair user, username
+    ansible.builtin.debug:
+      msg: "{{ lookup('community.general.passwordstore', 'example/test subkey=user')}}"
+
+  - name: Return the entire password file content
+    ansible.builtin.set_fact:
+      passfilecontent: "{{ lookup('community.general.passwordstore', 'example/test returnall=true')}}"
 """
 
 RETURN = """
@@ -102,20 +172,28 @@ _raw:
   elements: str
 """
 
+from contextlib import contextmanager
 import os
+import re
 import subprocess
 import time
+import yaml
 
-from distutils import util
 from ansible.errors import AnsibleError, AnsibleAssertionError
-from ansible.module_utils._text import to_bytes, to_native, to_text
+from ansible.module_utils.common.file import FileLock
+from ansible.module_utils.common.text.converters import to_bytes, to_native, to_text
+from ansible.module_utils.parsing.convert_bool import boolean
+from ansible.utils.display import Display
 from ansible.utils.encrypt import random_password
 from ansible.plugins.lookup import LookupBase
 from ansible import constants as C
 
+display = Display()
+
 
 # backhacked check_output with input for python 2.7
 # http://stackoverflow.com/questions/10103551/passing-data-to-subprocess-check-output
+# note: contains special logic for calling 'pass', so not a drop-in replacement for check_output
 def check_output2(*popenargs, **kwargs):
     if 'stdout' in kwargs:
         raise ValueError('stdout argument not allowed, it will be overridden.')
@@ -137,9 +215,10 @@ def check_output2(*popenargs, **kwargs):
         process.wait()
         raise
     retcode = process.poll()
-    if retcode != 0 or \
-            b'encryption failed: Unusable public key' in b_out or \
-            b'encryption failed: Unusable public key' in b_err:
+    if retcode == 0 and (b'encryption failed: Unusable public key' in b_out or
+                         b'encryption failed: Unusable public key' in b_err):
+        retcode = 78  # os.EX_CONFIG
+    if retcode != 0:
         cmd = kwargs.get("args")
         if cmd is None:
             cmd = popenargs[0]
@@ -173,24 +252,29 @@ class LookupModule(LookupBase):
             try:
                 for key in ['create', 'returnall', 'overwrite', 'backup', 'nosymbols']:
                     if not isinstance(self.paramvals[key], bool):
-                        self.paramvals[key] = util.strtobool(self.paramvals[key])
+                        self.paramvals[key] = boolean(self.paramvals[key])
             except (ValueError, AssertionError) as e:
                 raise AnsibleError(e)
+            if self.paramvals['missing'] not in ['error', 'warn', 'create', 'empty']:
+                raise AnsibleError("{0} is not a valid option for missing".format(self.paramvals['missing']))
             if not isinstance(self.paramvals['length'], int):
                 if self.paramvals['length'].isdigit():
                     self.paramvals['length'] = int(self.paramvals['length'])
                 else:
                     raise AnsibleError("{0} is not a correct value for length".format(self.paramvals['length']))
 
+            if self.paramvals['create']:
+                self.paramvals['missing'] = 'create'
+
             # Collect pass environment variables from the plugin's parameters.
             self.env = os.environ.copy()
+            self.env['LANGUAGE'] = 'C'  # make sure to get errors in English as required by check_output2
 
-            # Set PASSWORD_STORE_DIR if directory is set
-            if self.paramvals['directory']:
-                if os.path.isdir(self.paramvals['directory']):
-                    self.env['PASSWORD_STORE_DIR'] = self.paramvals['directory']
-                else:
-                    raise AnsibleError('Passwordstore directory \'{0}\' does not exist'.format(self.paramvals['directory']))
+            # Set PASSWORD_STORE_DIR
+            if os.path.isdir(self.paramvals['directory']):
+                self.env['PASSWORD_STORE_DIR'] = self.paramvals['directory']
+            else:
+                raise AnsibleError('Passwordstore directory \'{0}\' does not exist'.format(self.paramvals['directory']))
 
             # Set PASSWORD_STORE_UMASK if umask is set
             if 'umask' in self.paramvals:
@@ -204,26 +288,34 @@ class LookupModule(LookupBase):
     def check_pass(self):
         try:
             self.passoutput = to_text(
-                check_output2(["pass", self.passname], env=self.env),
+                check_output2(["pass", "show", self.passname], env=self.env),
                 errors='surrogate_or_strict'
             ).splitlines()
             self.password = self.passoutput[0]
             self.passdict = {}
-            for line in self.passoutput[1:]:
-                if ':' in line:
-                    name, value = line.split(':', 1)
-                    self.passdict[name.strip()] = value.strip()
+            try:
+                values = yaml.safe_load('\n'.join(self.passoutput[1:]))
+                for key, item in values.items():
+                    self.passdict[key] = item
+            except (yaml.YAMLError, AttributeError):
+                for line in self.passoutput[1:]:
+                    if ':' in line:
+                        name, value = line.split(':', 1)
+                        self.passdict[name.strip()] = value.strip()
+            if os.path.isfile(os.path.join(self.paramvals['directory'], self.passname + ".gpg")):
+                # Only accept password as found, if there a .gpg file for it (might be a tree node otherwise)
+                return True
         except (subprocess.CalledProcessError) as e:
-            if e.returncode == 1 and 'not in the password store' in e.output:
-                # if pass returns 1 and return string contains 'is not in the password store.'
-                # We need to determine if this is valid or Error.
-                if not self.paramvals['create']:
-                    raise AnsibleError('passname: {0} not found, use create=True'.format(self.passname))
-                else:
-                    return False
-            else:
+            # 'not in password store' is the expected error if a password wasn't found
+            if 'not in the password store' not in e.output:
                 raise AnsibleError(e)
-        return True
+
+        if self.paramvals['missing'] == 'error':
+            raise AnsibleError('passwordstore: passname {0} not found and missing=error is set'.format(self.passname))
+        elif self.paramvals['missing'] == 'warn':
+            display.warning('passwordstore: passname {0} not found'.format(self.passname))
+
+        return False
 
     def get_newpass(self):
         if self.paramvals['nosymbols']:
@@ -275,11 +367,30 @@ class LookupModule(LookupBase):
             else:
                 return None
 
-    def run(self, terms, variables, **kwargs):
-        result = []
+    @contextmanager
+    def opt_lock(self, type):
+        if self.get_option('lock') == type:
+            tmpdir = os.environ.get('TMPDIR', '/tmp')
+            lockfile = os.path.join(tmpdir, '.passwordstore.lock')
+            with FileLock().lock_file(lockfile, tmpdir, self.lock_timeout):
+                self.locked = type
+                yield
+            self.locked = None
+        else:
+            yield
+
+    def setup(self, variables):
+        self.locked = None
+        timeout = self.get_option('locktimeout')
+        if not re.match('^[0-9]+[smh]$', timeout):
+            raise AnsibleError("{0} is not a correct value for locktimeout".format(timeout))
+        unit_to_seconds = {"s": 1, "m": 60, "h": 3600}
+        self.lock_timeout = int(timeout[:-1]) * unit_to_seconds[timeout[-1]]
         self.paramvals = {
             'subkey': 'password',
-            'directory': variables.get('passwordstore'),
+            'directory': variables.get('passwordstore', os.environ.get(
+                                       'PASSWORD_STORE_DIR',
+                                       os.path.expanduser('~/.password-store'))),
             'create': False,
             'returnall': False,
             'overwrite': False,
@@ -287,16 +398,30 @@ class LookupModule(LookupBase):
             'userpass': '',
             'length': 16,
             'backup': False,
+            'missing': 'error',
         }
+
+    def run(self, terms, variables, **kwargs):
+        self.setup(variables)
+        result = []
 
         for term in terms:
             self.parse_params(term)   # parse the input into paramvals
-            if self.check_pass():     # password exists
-                if self.paramvals['overwrite'] and self.paramvals['subkey'] == 'password':
-                    result.append(self.update_password())
-                else:
-                    result.append(self.get_passresult())
-            else:                     # password does not exist
-                if self.paramvals['create']:
-                    result.append(self.generate_password())
+            with self.opt_lock('readwrite'):
+                if self.check_pass():     # password exists
+                    if self.paramvals['overwrite'] and self.paramvals['subkey'] == 'password':
+                        with self.opt_lock('write'):
+                            result.append(self.update_password())
+                    else:
+                        result.append(self.get_passresult())
+                else:                     # password does not exist
+                    if self.paramvals['missing'] == 'create':
+                        with self.opt_lock('write'):
+                            if self.locked == 'write' and self.check_pass():  # lookup password again if under write lock
+                                result.append(self.get_passresult())
+                            else:
+                                result.append(self.generate_password())
+                    else:
+                        result.append(None)
+
         return result

@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 # This file is part of Ansible
 #
 # Ansible is free software: you can redistribute it and/or modify
@@ -274,7 +275,7 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             auth_token=dict(
-                type='str',
+                type='str', no_log=True,
                 default=os.environ.get('ONEANDONE_AUTH_TOKEN')),
             api_url=dict(
                 type='str',

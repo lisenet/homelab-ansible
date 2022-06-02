@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # (c) 2017, Brian Coca
 # (c) 2017 Ansible Project
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -7,7 +8,7 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = '''
-    cache: pickle
+    name: pickle
     short_description: Pickle formatted files.
     description:
         - This cache uses Python's pickle serialization format, in per host files, saved to the filesystem.

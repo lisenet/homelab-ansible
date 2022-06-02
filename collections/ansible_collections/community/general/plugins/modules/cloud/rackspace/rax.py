@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 # Copyright: Ansible Project
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
@@ -110,6 +111,7 @@ options:
         with this image
   instance_ids:
     type: list
+    elements: str
     description:
       - list of instance ids, currently only used when state='absent' to
         remove instances
@@ -129,6 +131,7 @@ options:
       - Name to give the instance
   networks:
     type: list
+    elements: str
     description:
       - The network to attach to the instances. If specified, you must include
         ALL networks including the public and private interfaces. Can be C(id)
@@ -810,12 +813,11 @@ def main():
             flavor=dict(),
             group=dict(),
             image=dict(),
-            instance_ids=dict(type='list'),
+            instance_ids=dict(type='list', elements='str'),
             key_name=dict(aliases=['keypair']),
             meta=dict(type='dict', default={}),
             name=dict(),
-            networks=dict(type='list', default=['public', 'private']),
-            service=dict(),
+            networks=dict(type='list', elements='str', default=['public', 'private']),
             state=dict(default='present', choices=['present', 'absent']),
             user_data=dict(no_log=True),
             wait=dict(default=False, type='bool'),
@@ -830,13 +832,6 @@ def main():
 
     if not HAS_PYRAX:
         module.fail_json(msg='pyrax is required for this module')
-
-    service = module.params.get('service')
-
-    if service is not None:
-        module.fail_json(msg='The "service" attribute has been deprecated, '
-                             'please remove "service: cloudservers" from your '
-                             'playbook pertaining to the "rax" module')
 
     auto_increment = module.params.get('auto_increment')
     boot_from_volume = module.params.get('boot_from_volume')

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright (c) 2017 Ansible Project
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
@@ -7,7 +8,6 @@ __metaclass__ = type
 DOCUMENTATION = '''
     author: Unknown (!UNKNOWN)
     name: virtualbox
-    plugin_type: inventory
     short_description: virtualbox inventory source
     description:
         - Get inventory hosts from the local virtualbox installation.
@@ -57,7 +57,7 @@ import os
 from subprocess import Popen, PIPE
 
 from ansible.errors import AnsibleParserError
-from ansible.module_utils._text import to_bytes, to_native, to_text
+from ansible.module_utils.common.text.converters import to_bytes, to_native, to_text
 from ansible.module_utils.common._collections_compat import MutableMapping
 from ansible.plugins.inventory import BaseInventoryPlugin, Constructable, Cacheable
 from ansible.module_utils.common.process import get_bin_path
@@ -217,7 +217,7 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
                     yield host not in v
             yield True
 
-        return all([found_host for found_host in find_host(host, inventory)])
+        return all(find_host(host, inventory))
 
     def verify_file(self, path):
 

@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 
 # Copyright: (c) 2016, Adfinis SyGroup AG
 # Tobias Rueetschi <tobias.ruetschi@adfinis-sygroup.ch>
@@ -95,8 +95,7 @@ def main():
         argument_spec=dict(
             name=dict(required=True,
                       type='str'),
-            description=dict(default=None,
-                             type='str'),
+            description=dict(type='str'),
             position=dict(default='',
                           type='str'),
             ou=dict(default='',

@@ -274,11 +274,8 @@ def main():
             api_key=dict(required=True, type='str', no_log=True),
             name=dict(required=True, type='str')
         ),
-        supports_check_mode=False
+        supports_check_mode=True,
     )
-    if module._name in ('memset_server_facts', 'community.general.memset_server_facts'):
-        module.deprecate("The 'memset_server_facts' module has been renamed to 'memset_server_info'",
-                         version='3.0.0', collection_name='community.general')  # was Ansible 2.13
 
     # populate the dict with the user-provided vars.
     args = dict()

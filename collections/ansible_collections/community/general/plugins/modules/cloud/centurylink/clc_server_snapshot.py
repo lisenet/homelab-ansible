@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 #
 # Copyright (c) 2015 CenturyLink
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -18,6 +19,7 @@ options:
       - The list of CLC server Ids.
     type: list
     required: True
+    elements: str
   expiration_days:
     description:
       - The number of days to keep the server snapshot before it expires.
@@ -34,7 +36,7 @@ options:
   wait:
     description:
       - Whether to wait for the provisioning tasks to finish before returning.
-    default: True
+    default: 'True'
     required: False
     type: str
 requirements:
@@ -99,7 +101,8 @@ __version__ = '${version}'
 
 import os
 import traceback
-from distutils.version import LooseVersion
+
+from ansible_collections.community.general.plugins.module_utils.version import LooseVersion
 
 REQUESTS_IMP_ERR = None
 try:
@@ -143,8 +146,7 @@ class ClcSnapshot:
             self.module.fail_json(msg=missing_required_lib('clc-sdk'), exception=CLC_IMP_ERR)
         if not REQUESTS_FOUND:
             self.module.fail_json(msg=missing_required_lib('requests'), exception=REQUESTS_IMP_ERR)
-        if requests.__version__ and LooseVersion(
-                requests.__version__) < LooseVersion('2.5.0'):
+        if requests.__version__ and LooseVersion(requests.__version__) < LooseVersion('2.5.0'):
             self.module.fail_json(
                 msg='requests library  version should be >= 2.5.0')
 
@@ -330,7 +332,7 @@ class ClcSnapshot:
         :return: the package dictionary object
         """
         argument_spec = dict(
-            server_ids=dict(type='list', required=True),
+            server_ids=dict(type='list', required=True, elements='str'),
             expiration_days=dict(default=7, type='int'),
             wait=dict(default=True),
             state=dict(

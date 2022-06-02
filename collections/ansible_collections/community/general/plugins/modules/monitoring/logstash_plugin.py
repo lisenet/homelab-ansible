@@ -82,7 +82,7 @@ PACKAGE_STATE_MAP = dict(
 
 def is_plugin_present(module, plugin_bin, plugin_name):
     cmd_args = [plugin_bin, "list", plugin_name]
-    rc, out, err = module.run_command(" ".join(cmd_args))
+    rc, out, err = module.run_command(cmd_args)
     return rc == 0
 
 
@@ -138,11 +138,11 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             name=dict(required=True),
-            state=dict(default="present", choices=PACKAGE_STATE_MAP.keys()),
+            state=dict(default="present", choices=list(PACKAGE_STATE_MAP.keys())),
             plugin_bin=dict(default="/usr/share/logstash/bin/logstash-plugin", type="path"),
-            proxy_host=dict(default=None),
-            proxy_port=dict(default=None),
-            version=dict(default=None)
+            proxy_host=dict(),
+            proxy_port=dict(),
+            version=dict()
         ),
         supports_check_mode=True
     )

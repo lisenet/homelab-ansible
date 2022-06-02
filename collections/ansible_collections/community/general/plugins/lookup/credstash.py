@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # (c) 2015, Ensighten <infra@ensighten.com>
 # (c) 2017 Ansible Project
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -6,7 +7,7 @@ __metaclass__ = type
 
 DOCUMENTATION = '''
     author: Unknown (!UNKNOWN)
-    lookup: credstash
+    name: credstash
     short_description: retrieve secrets from Credstash on AWS
     requirements:
       - credstash (python library)
@@ -16,11 +17,11 @@ DOCUMENTATION = '''
       _terms:
         description: term or list of terms to lookup in the credit store
         type: list
-        required: True
+        elements: string
+        required: true
       table:
         description: name of the credstash table to query
         default: 'credential-store'
-        required: True
       version:
         description: Credstash version
       region:

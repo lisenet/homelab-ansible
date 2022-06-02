@@ -1,6 +1,5 @@
 #!/usr/bin/python
-
-# encoding: utf-8
+# -*- coding: utf-8 -*-
 
 # (c) 2016, James Hogarth <james.hogarth@gmail.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -107,7 +106,7 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six.moves import http_cookiejar as cookiejar
 from ansible.module_utils.six.moves.urllib.parse import urlencode
 from ansible.module_utils.urls import fetch_url
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 def is_csrf_protection_enabled(module):

@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 # Copyright (c) 2016-2017 Hewlett Packard Enterprise Development LP
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
@@ -24,11 +25,13 @@ options:
                 - C(present) will ensure data properties are compliant with OneView.
                 - C(absent) will remove the resource from OneView, if it exists.
                 - C(default_bandwidth_reset) will reset the network connection template to the default.
+        type: str
         default: present
         choices: [present, absent, default_bandwidth_reset]
     data:
         description:
             - List with Ethernet Network properties.
+        type: dict
         required: true
 extends_documentation_fragment:
 - community.general.oneview

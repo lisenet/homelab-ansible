@@ -7,25 +7,26 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = '''
-    callback: nrdp
+    name: nrdp
     type: notification
     author: "Remi VERCHERE (@rverchere)"
-    short_description: post task result to a nagios server through nrdp
+    short_description: Post task results to a Nagios server through nrdp
     description:
-        - this callback send playbook result to nagios
-        - nagios shall use NRDP to recive passive events
-        - the passive check is sent to a dedicated host/service for ansible
+        - This callback send playbook result to Nagios.
+        - Nagios shall use NRDP to recive passive events.
+        - The passive check is sent to a dedicated host/service for Ansible.
     options:
         url:
-            description: url of the nrdp server
-            required: True
+            description: URL of the nrdp server.
+            required: true
             env:
                 - name : NRDP_URL
             ini:
                 - section: callback_nrdp
                   key: url
+            type: string
         validate_certs:
-            description: (bool) validate the SSL certificate of the nrdp server. (For HTTPS url)
+            description: Validate the SSL certificate of the nrdp server. (Used for HTTPS URLs.)
             env:
                 - name: NRDP_VALIDATE_CERTS
             ini:
@@ -33,38 +34,43 @@ DOCUMENTATION = '''
                   key: validate_nrdp_certs
                 - section: callback_nrdp
                   key: validate_certs
-            default: False
+            type: boolean
+            default: false
             aliases: [ validate_nrdp_certs ]
         token:
-            description: token to be allowed to push nrdp events
-            required: True
+            description: Token to be allowed to push nrdp events.
+            required: true
             env:
                 - name: NRDP_TOKEN
             ini:
                 - section: callback_nrdp
                   key: token
+            type: string
         hostname:
-            description: hostname where the passive check is linked to
-            required: True
+            description: Hostname where the passive check is linked to.
+            required: true
             env:
                 - name : NRDP_HOSTNAME
             ini:
                 - section: callback_nrdp
                   key: hostname
+            type: string
         servicename:
-            description: service where the passive check is linked to
-            required: True
+            description: Service where the passive check is linked to.
+            required: true
             env:
                 - name : NRDP_SERVICENAME
             ini:
                 - section: callback_nrdp
                   key: servicename
+            type: string
 '''
 
 import os
 import json
 
 from ansible.module_utils.six.moves.urllib.parse import urlencode
+from ansible.module_utils.common.text.converters import to_bytes
 from ansible.module_utils.urls import open_url
 from ansible.plugins.callback import CallbackBase
 
@@ -138,7 +144,7 @@ class CallbackModule(CallbackBase):
         body = {
             'cmd': 'submitcheck',
             'token': self.token,
-            'XMLDATA': bytes(xmldata)
+            'XMLDATA': to_bytes(xmldata)
         }
 
         try:

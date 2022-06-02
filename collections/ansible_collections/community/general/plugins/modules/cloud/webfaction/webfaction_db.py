@@ -32,36 +32,43 @@ options:
         description:
             - The name of the database
         required: true
+        type: str
 
     state:
         description:
             - Whether the database should exist
         choices: ['present', 'absent']
         default: "present"
+        type: str
 
     type:
         description:
             - The type of database to create.
         required: true
         choices: ['mysql', 'postgresql']
+        type: str
 
     password:
         description:
             - The password for the new database user.
+        type: str
 
     login_name:
         description:
             - The webfaction account to use
         required: true
+        type: str
 
     login_password:
         description:
             - The webfaction password to use
         required: true
+        type: str
 
     machine:
         description:
             - The machine name to use (optional for accounts with only one machine)
+        type: str
 '''
 
 EXAMPLES = '''
@@ -94,13 +101,13 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             name=dict(required=True),
-            state=dict(required=False, choices=['present', 'absent'], default='present'),
+            state=dict(choices=['present', 'absent'], default='present'),
             # You can specify an IP address or hostname.
             type=dict(required=True, choices=['mysql', 'postgresql']),
-            password=dict(required=False, default=None, no_log=True),
+            password=dict(no_log=True),
             login_name=dict(required=True),
             login_password=dict(required=True, no_log=True),
-            machine=dict(required=False, default=None),
+            machine=dict(),
         ),
         supports_check_mode=True
     )

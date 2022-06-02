@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 #
 # Copyright (c) 2015 CenturyLink
@@ -206,7 +207,8 @@ __version__ = '${version}'
 
 import os
 import traceback
-from distutils.version import LooseVersion
+
+from ansible_collections.community.general.plugins.module_utils.version import LooseVersion
 
 REQUESTS_IMP_ERR = None
 try:
@@ -295,9 +297,9 @@ class ClcGroup(object):
         """
         argument_spec = dict(
             name=dict(required=True),
-            description=dict(default=None),
-            parent=dict(default=None),
-            location=dict(default=None),
+            description=dict(),
+            parent=dict(),
+            location=dict(),
             state=dict(default='present', choices=['present', 'absent']),
             wait=dict(type='bool', default=True))
 

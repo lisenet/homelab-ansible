@@ -33,23 +33,6 @@ description:
      - This module was called C(ali_instance_facts) before Ansible 2.9. The usage did not change.
 
 options:
-    availability_zone:
-      description:
-        - (Deprecated) Aliyun availability zone ID in which to launch the instance. Please use filter item 'zone_id' instead.
-      aliases: ['alicloud_zone']
-      type: str
-    instance_names:
-      description:
-        - (Deprecated) A list of ECS instance names. Please use filter item 'instance_name' instead.
-      aliases: ["names"]
-      type: list
-      elements: str
-    instance_ids:
-      description:
-        - A list of ECS instance ids.
-      aliases: ["ids"]
-      type: list
-      elements: str
     name_prefix:
       description:
         - Use a instance name prefix to filter ecs instances.
@@ -65,8 +48,8 @@ options:
         - A dict of filters to apply. Each dict item consists of a filter key and a filter value. The filter keys can be
           all of request parameters. See U(https://www.alibabacloud.com/help/doc-detail/25506.htm) for parameter details.
           Filter keys can be same as request parameter name or be lower case and use underscore ("_") or dash ("-") to
-          connect different words in one parameter. 'InstanceIds' should be a list and it will be appended to
-          I(instance_ids) automatically. 'Tag.n.Key' and 'Tag.n.Value' should be a dict and using I(tags) instead.
+          connect different words in one parameter. 'InstanceIds' should be a list.
+          'Tag.n.Key' and 'Tag.n.Value' should be a dict and using I(tags) instead.
       type: dict
       version_added: '0.2.0'
 author:
@@ -374,18 +357,15 @@ except ImportError:
 def main():
     argument_spec = ecs_argument_spec()
     argument_spec.update(dict(
-        availability_zone=dict(aliases=['alicloud_zone']),
-        instance_ids=dict(type='list', elements='str', aliases=['ids']),
-        instance_names=dict(type='list', elements='str', aliases=['names']),
         name_prefix=dict(type='str'),
         tags=dict(type='dict', aliases=['instance_tags']),
         filters=dict(type='dict')
     )
     )
-    module = AnsibleModule(argument_spec=argument_spec)
-    if module._name in ('ali_instance_facts', 'community.general.ali_instance_facts'):
-        module.deprecate("The 'ali_instance_facts' module has been renamed to 'ali_instance_info'",
-                         version='3.0.0', collection_name='community.general')  # was Ansible 2.13
+    module = AnsibleModule(
+        argument_spec=argument_spec,
+        supports_check_mode=True,
+    )
 
     if HAS_FOOTMARK is False:
         module.fail_json(msg=missing_required_lib('footmark'), exception=FOOTMARK_IMP_ERR)
@@ -394,21 +374,12 @@ def main():
 
     instances = []
     instance_ids = []
-    ids = module.params['instance_ids']
+    ids = []
     name_prefix = module.params['name_prefix']
-    names = module.params['instance_names']
-    zone_id = module.params['availability_zone']
-    if ids and (not isinstance(ids, list) or len(ids) < 1):
-        module.fail_json(msg='instance_ids should be a list of instances, aborting')
-
-    if names and (not isinstance(names, list) or len(names) < 1):
-        module.fail_json(msg='instance_names should be a list of instances, aborting')
 
     filters = module.params['filters']
     if not filters:
         filters = {}
-    if not ids:
-        ids = []
     for key, value in list(filters.items()):
         if key in ["InstanceIds", "instance_ids", "instance-ids"] and isinstance(ids, list):
             for id in value:
@@ -418,10 +389,6 @@ def main():
         filters['instance_ids'] = ids
     if module.params['tags']:
         filters['tags'] = module.params['tags']
-    if zone_id:
-        filters['zone_id'] = zone_id
-    if names:
-        filters['instance_name'] = names[0]
 
     for inst in ecs.describe_instances(**filters):
         if name_prefix:
