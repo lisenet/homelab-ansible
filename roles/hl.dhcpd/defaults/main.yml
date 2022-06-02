@@ -8,6 +8,7 @@ packages:
 
 systemd_service: "dhcpd"
 firewall_port: "dhcp"
+firewall_dhcp_failover_port: "647"
 
 # rndc_key:
 # DNS update key, generated with `rndc-confgen -A hmac-sha256 -a -b 512 -r /dev/urandom`

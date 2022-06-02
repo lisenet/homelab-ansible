@@ -16,6 +16,13 @@
     permanent: yes
     state: enabled
 
+- name: RedHat | Enable DHCP Failover Port {{ firewall_dhcp_failover_port }} in Firewalld
+  firewalld:
+    immediate: yes
+    port: "{{ firewall_dhcp_failover_port }}/tcp"
+    permanent: yes
+    state: enabled
+
 - name: RedHat | Configure Master DHCP Server
   block:
     - name: RedHat | Copy {{ dhcpd_config_file }}
