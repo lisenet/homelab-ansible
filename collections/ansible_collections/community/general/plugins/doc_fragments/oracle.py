@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright (c) 2018, Oracle and/or its affiliates.
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
@@ -47,7 +48,7 @@ class ModuleDocFragment(object):
                   OCI_USER_KEY_FILE variable, if any, is used. This option is required if the private key is
                   not specified through a configuration file (See C(config_file_location)). If the key is encrypted
                   with a pass-phrase, the C(api_user_key_pass_phrase) option must also be provided.
-            type: str
+            type: path
         api_user_key_pass_phrase:
             description:
                 - Passphrase used by the key referenced in C(api_user_key_file), if it is encrypted. If not set, then

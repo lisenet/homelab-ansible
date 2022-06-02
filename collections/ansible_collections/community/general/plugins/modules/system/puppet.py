@@ -54,7 +54,8 @@ options:
   logdest:
     description:
     - Where the puppet logs should go, if puppet apply is being used.
-    - C(all) will go to both C(stdout) and C(syslog).
+    - C(all) will go to both C(console) and C(syslog).
+    - C(stdout) will be deprecated and replaced by C(console).
     type: str
     choices: [ all, stdout, syslog ]
     default: stdout
@@ -89,6 +90,13 @@ options:
   debug:
     description:
       - Enable full debugging.
+    type: bool
+    default: false
+  show_diff:
+    description:
+      - Whether to print file changes details
+      - Alias C(show-diff) has been deprecated and will be removed in community.general 7.0.0.
+    aliases: ['show-diff']
     type: bool
     default: false
 requirements:
@@ -127,7 +135,7 @@ EXAMPLES = r'''
   community.general.puppet:
     noop: yes
 
-- name: Run a manifest with debug, log to both syslog and stdout, specify module path
+- name: Run a manifest with debug, log to both syslog and console, specify module path
   community.general.puppet:
     modulepath: /etc/puppet/modules:/opt/stack/puppet-modules:/usr/share/openstack-puppet/modules
     logdest: all
@@ -171,12 +179,12 @@ def main():
             puppetmaster=dict(type='str'),
             modulepath=dict(type='str'),
             manifest=dict(type='str'),
-            noop=dict(required=False, type='bool'),
-            logdest=dict(type='str', default='stdout', choices=['all',
-                                                                'stdout',
-                                                                'syslog']),
-            # internal code to work with --diff, do not use
-            show_diff=dict(type='bool', default=False, aliases=['show-diff']),
+            noop=dict(type='bool'),
+            logdest=dict(type='str', default='stdout', choices=['all', 'stdout', 'syslog']),
+            # The following is not related to Ansible's diff; see https://github.com/ansible-collections/community.general/pull/3980#issuecomment-1005666154
+            show_diff=dict(
+                type='bool', default=False, aliases=['show-diff'],
+                deprecated_aliases=[dict(name='show-diff', version='7.0.0', collection_name='community.general')]),
             facts=dict(type='dict'),
             facter_basename=dict(type='str', default='ansible'),
             environment=dict(type='str'),
@@ -270,7 +278,7 @@ def main():
         if p['logdest'] == 'syslog':
             cmd += "--logdest syslog "
         if p['logdest'] == 'all':
-            cmd += " --logdest syslog --logdest stdout"
+            cmd += " --logdest syslog --logdest console"
         if p['modulepath']:
             cmd += "--modulepath='%s'" % p['modulepath']
         if p['environment']:

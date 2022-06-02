@@ -9,7 +9,6 @@ __metaclass__ = type
 
 DOCUMENTATION = '''
     name: gitlab_runners
-    plugin_type: inventory
     author:
       - Stefan Heitmüller (@morph027) <stefan.heitmueller@gmx.com>
     short_description: Ansible dynamic inventory plugin for GitLab runners.
@@ -36,7 +35,6 @@ DOCUMENTATION = '''
                 version_added: 1.0.0
             type: str
             required: true
-            default: https://gitlab.com
         api_token:
             description: GitLab token for logging in.
             env:
@@ -83,7 +81,7 @@ keyed_groups:
 '''
 
 from ansible.errors import AnsibleError, AnsibleParserError
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 from ansible.plugins.inventory import BaseInventoryPlugin, Constructable
 
 try:

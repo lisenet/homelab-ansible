@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # (C) 2014-2015, Matt Martz <matt@sivel.net>
 # (C) 2017 Ansible Project
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -8,7 +9,7 @@ __metaclass__ = type
 
 DOCUMENTATION = '''
     author: Unknown (!UNKNOWN)
-    callback: slack
+    name: slack
     type: notification
     requirements:
       - whitelist in configuration
@@ -58,7 +59,7 @@ import os
 import uuid
 
 from ansible import context
-from ansible.module_utils._text import to_text
+from ansible.module_utils.common.text.converters import to_text
 from ansible.module_utils.urls import open_url
 from ansible.plugins.callback import CallbackBase
 

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # (c) 2015, Alejandro Guirao <lekumberri@gmail.com>
 # (c) 2012-17 Ansible Project
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -5,7 +6,7 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = '''
-    lookup: shelvefile
+    name: shelvefile
     author: Alejandro Guirao (!UNKNOWN) <lekumberri@gmail.com>
     short_description: read keys from Python shelve file
     description:
@@ -36,7 +37,7 @@ import shelve
 
 from ansible.errors import AnsibleError, AnsibleAssertionError
 from ansible.plugins.lookup import LookupBase
-from ansible.module_utils._text import to_bytes, to_text
+from ansible.module_utils.common.text.converters import to_bytes, to_text
 
 
 class LookupModule(LookupBase):

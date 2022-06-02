@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# Copyright: Tristan Le Guern (@Aversiste) <tleguern at bouledef.eu>
+# Copyright: Tristan Le Guern (@tleguern) <tleguern at bouledef.eu>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
@@ -21,7 +21,7 @@ options:
       - Restrict results to a specific authentication realm.
     aliases: ['realm', 'name']
     type: str
-author: Tristan Le Guern (@Aversiste)
+author: Tristan Le Guern (@tleguern)
 extends_documentation_fragment: community.general.proxmox.documentation
 '''
 
@@ -76,7 +76,7 @@ proxmox_domains:
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 from ansible_collections.community.general.plugins.module_utils.proxmox import (
-    proxmox_auth_argument_spec, ProxmoxAnsible, HAS_PROXMOXER, PROXMOXER_IMP_ERR)
+    proxmox_auth_argument_spec, ProxmoxAnsible)
 
 
 class ProxmoxDomainInfoAnsible(ProxmoxAnsible):
@@ -113,9 +113,6 @@ def main():
     result = dict(
         changed=False
     )
-
-    if not HAS_PROXMOXER:
-        module.fail_json(msg=missing_required_lib('proxmoxer'), exception=PROXMOXER_IMP_ERR)
 
     proxmox = ProxmoxDomainInfoAnsible(module)
     domain = module.params['domain']

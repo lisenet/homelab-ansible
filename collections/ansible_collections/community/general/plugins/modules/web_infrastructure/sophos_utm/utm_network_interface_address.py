@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 # Copyright: (c) 2018, Juergen Wiebe <wiebe@e-spirit.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -108,7 +109,7 @@ result:
 """
 
 from ansible_collections.community.general.plugins.module_utils.utm_utils import UTM, UTMModule
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 def main():

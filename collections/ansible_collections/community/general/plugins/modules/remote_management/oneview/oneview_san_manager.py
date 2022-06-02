@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 # Copyright (c) 2016-2017 Hewlett Packard Enterprise Development LP
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
@@ -24,12 +25,14 @@ options:
                 - C(present) ensures data properties are compliant with OneView.
                 - C(absent) removes the resource from OneView, if it exists.
                 - C(connection_information_set) updates the connection information for the SAN Manager. This operation is non-idempotent.
+        type: str
         default: present
         choices: [present, absent, connection_information_set]
     data:
-      description:
-        - List with SAN Manager properties.
-      required: true
+        description:
+            - List with SAN Manager properties.
+        type: dict
+        required: true
 
 extends_documentation_fragment:
 - community.general.oneview

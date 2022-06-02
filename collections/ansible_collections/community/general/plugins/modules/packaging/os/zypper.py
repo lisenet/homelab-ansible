@@ -29,6 +29,7 @@ author:
 short_description: Manage packages on SUSE and openSUSE
 description:
     - Manage packages on SUSE and openSUSE using the zypper and rpm tools.
+    - Also supports transactional updates, by running zypper inside C(/sbin/transactional-update --continue --drop-if-no-change --quiet run).
 options:
     name:
         description:
@@ -127,6 +128,13 @@ options:
         description:
           - Adds C(--replacefiles) option to I(zypper) install/update command.
         version_added: '0.2.0'
+    clean_deps:
+        type: bool
+        required: false
+        default: false
+        description:
+          - Adds C(--clean-deps) option to I(zypper) remove command.
+        version_added: '4.6.0'
 notes:
   - When used with a `loop:` each package will be processed individually,
     it is much more efficient to pass the list directly to the `name` option.
@@ -213,10 +221,11 @@ EXAMPLES = '''
     ZYPP_LOCK_TIMEOUT: 20
 '''
 
+import os.path
 import xml
 import re
 from xml.dom.minidom import parseString as parseXML
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 # import module snippets
 from ansible.module_utils.basic import AnsibleModule
@@ -314,6 +323,8 @@ def parse_zypper_xml(m, cmd, fail_not_found=True, packages=None):
         if packages is None:
             firstrun = True
             packages = {}
+        else:
+            firstrun = False
         solvable_list = dom.getElementsByTagName('solvable')
         for solvable in solvable_list:
             name = solvable.getAttribute('name')
@@ -336,7 +347,9 @@ def get_cmd(m, subcommand):
     "puts together the basic zypper command arguments with those passed to the module"
     is_install = subcommand in ['install', 'update', 'patch', 'dist-upgrade']
     is_refresh = subcommand == 'refresh'
-    cmd = ['/usr/bin/zypper', '--quiet', '--non-interactive', '--xmlout']
+    cmd = [m.get_bin_path('zypper', required=True), '--quiet', '--non-interactive', '--xmlout']
+    if transactional_updates():
+        cmd = [m.get_bin_path('transactional-update', required=True), '--continue', '--drop-if-no-change', '--quiet', 'run'] + cmd
     if m.params['extra_args_precommand']:
         args_list = m.params['extra_args_precommand'].split()
         cmd.extend(args_list)
@@ -364,6 +377,9 @@ def get_cmd(m, subcommand):
             cmd.append('--oldpackage')
         if m.params['replacefiles']:
             cmd.append('--replacefiles')
+    if subcommand == 'remove':
+        if m.params['clean_deps']:
+            cmd.append('--clean-deps')
     if subcommand == 'dist-upgrade' and m.params['allow_vendor_change']:
         cmd.append('--allow-vendor-change')
     if m.params['extra_args']:
@@ -413,7 +429,9 @@ def package_present(m, name, want_latest):
         # if a version is given leave the package in to let zypper handle the version
         # resolution
         packageswithoutversion = [p for p in packages if not p.version]
-        prerun_state = get_installed_state(m, packageswithoutversion)
+        prerun_state = {}
+        if packageswithoutversion:
+            prerun_state = get_installed_state(m, packageswithoutversion)
         # generate lists of packages to install or remove
         packages = [p for p in packages if p.shouldinstall != (p.name in prerun_state)]
 
@@ -491,6 +509,10 @@ def repo_refresh(m):
 
     return retvals
 
+
+def transactional_updates():
+    return os.path.exists('/var/lib/misc/transactional-update.state')
+
 # ===========================================
 # Main control flow
 
@@ -510,7 +532,8 @@ def main():
             oldpackage=dict(required=False, default=False, type='bool'),
             extra_args=dict(required=False, default=None),
             allow_vendor_change=dict(required=False, default=False, type='bool'),
-            replacefiles=dict(required=False, default=False, type='bool')
+            replacefiles=dict(required=False, default=False, type='bool'),
+            clean_deps=dict(required=False, default=False, type='bool'),
         ),
         supports_check_mode=True
     )

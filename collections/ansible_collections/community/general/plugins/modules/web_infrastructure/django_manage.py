@@ -62,7 +62,7 @@ options:
   clear:
     description:
       - Clear the existing files before trying to copy or link the original file.
-      - Used only with the 'collectstatic' command. The C(--noinput) argument will be added automatically.
+      - Used only with the C(collectstatic) command. The C(--noinput) argument will be added automatically.
     required: false
     default: no
     type: bool
@@ -101,14 +101,6 @@ options:
        C(collectstatic) command.
     required: false
     type: bool
-  liveserver:
-    description:
-      - This parameter was implemented a long time ago in a galaxy far way. It probably relates to the
-        django-liveserver package, which is no longer updated.
-      - Hence, it will be considered DEPRECATED and should be removed in a future release.
-    type: str
-    required: false
-    aliases: [live_server]
   testrunner:
     description:
       - "From the Django docs: Controls the test runner class that is used to execute tests."
@@ -117,9 +109,9 @@ options:
     required: false
     aliases: [test_runner]
 notes:
-  - C(virtualenv) (U(http://www.virtualenv.org)) must be installed on the remote host if the virtualenv parameter
+  - C(virtualenv) (U(http://www.virtualenv.org)) must be installed on the remote host if the I(virtualenv) parameter
     is specified.
-  - This module will create a virtualenv if the virtualenv parameter is specified and a virtualenv does not already
+  - This module will create a virtualenv if the I(virtualenv) parameter is specified and a virtual environment does not already
     exist at the given location.
   - This module assumes English error messages for the C(createcachetable) command to detect table existence,
     unfortunately.
@@ -166,6 +158,7 @@ EXAMPLES = """
 
 import os
 import sys
+import shlex
 
 from ansible.module_utils.basic import AnsibleModule
 
@@ -233,7 +226,7 @@ def main():
         flush=('database', ),
         loaddata=('database', 'fixtures', ),
         syncdb=('database', ),
-        test=('failfast', 'testrunner', 'liveserver', 'apps', ),
+        test=('failfast', 'testrunner', 'apps', ),
         validate=(),
         migrate=('apps', 'skip', 'merge', 'database',),
         collectstatic=('clear', 'link', ),
@@ -253,7 +246,7 @@ def main():
     )
 
     # These params are allowed for certain commands only
-    specific_params = ('apps', 'clear', 'database', 'failfast', 'fixtures', 'liveserver', 'testrunner')
+    specific_params = ('apps', 'clear', 'database', 'failfast', 'fixtures', 'testrunner')
 
     # These params are automatically added to the command if present
     general_params = ('settings', 'pythonpath', 'database',)
@@ -264,82 +257,82 @@ def main():
         argument_spec=dict(
             command=dict(required=True, type='str'),
             project_path=dict(required=True, type='path', aliases=['app_path', 'chdir']),
-            settings=dict(default=None, required=False, type='path'),
-            pythonpath=dict(default=None, required=False, type='path', aliases=['python_path']),
-            virtualenv=dict(default=None, required=False, type='path', aliases=['virtual_env']),
+            settings=dict(type='path'),
+            pythonpath=dict(type='path', aliases=['python_path']),
+            virtualenv=dict(type='path', aliases=['virtual_env']),
 
-            apps=dict(default=None, required=False),
-            cache_table=dict(default=None, required=False, type='str'),
-            clear=dict(default=False, required=False, type='bool'),
-            database=dict(default=None, required=False, type='str'),
-            failfast=dict(default=False, required=False, type='bool', aliases=['fail_fast']),
-            fixtures=dict(default=None, required=False, type='str'),
-            liveserver=dict(default=None, required=False, type='str', aliases=['live_server'],
-                            removed_in_version='3.0.0', removed_from_collection='community.general'),
-            testrunner=dict(default=None, required=False, type='str', aliases=['test_runner']),
-            skip=dict(default=None, required=False, type='bool'),
-            merge=dict(default=None, required=False, type='bool'),
-            link=dict(default=None, required=False, type='bool'),
+            apps=dict(),
+            cache_table=dict(type='str'),
+            clear=dict(default=False, type='bool'),
+            database=dict(type='str'),
+            failfast=dict(default=False, type='bool', aliases=['fail_fast']),
+            fixtures=dict(type='str'),
+            testrunner=dict(type='str', aliases=['test_runner']),
+            skip=dict(type='bool'),
+            merge=dict(type='bool'),
+            link=dict(type='bool'),
         ),
     )
 
-    command = module.params['command']
+    command_split = shlex.split(module.params['command'])
+    command_bin = command_split[0]
     project_path = module.params['project_path']
     virtualenv = module.params['virtualenv']
 
     for param in specific_params:
         value = module.params[param]
-        if param in specific_boolean_params:
-            value = module.boolean(value)
-        if value and param not in command_allowed_param_map[command]:
-            module.fail_json(msg='%s param is incompatible with command=%s' % (param, command))
+        if value and param not in command_allowed_param_map[command_bin]:
+            module.fail_json(msg='%s param is incompatible with command=%s' % (param, command_bin))
 
-    for param in command_required_param_map.get(command, ()):
+    for param in command_required_param_map.get(command_bin, ()):
         if not module.params[param]:
-            module.fail_json(msg='%s param is required for command=%s' % (param, command))
+            module.fail_json(msg='%s param is required for command=%s' % (param, command_bin))
 
     _ensure_virtualenv(module)
 
-    cmd = "./manage.py %s" % (command, )
+    run_cmd_args = ["./manage.py"] + command_split
 
-    if command in noinput_commands:
-        cmd = '%s --noinput' % cmd
+    if command_bin in noinput_commands and '--noinput' not in command_split:
+        run_cmd_args.append("--noinput")
 
     for param in general_params:
         if module.params[param]:
-            cmd = '%s --%s=%s' % (cmd, param, module.params[param])
+            run_cmd_args.append('--%s=%s' % (param, module.params[param]))
 
     for param in specific_boolean_params:
-        if module.boolean(module.params[param]):
-            cmd = '%s --%s' % (cmd, param)
+        if module.params[param]:
+            run_cmd_args.append('--%s' % param)
 
     # these params always get tacked on the end of the command
     for param in end_of_command_params:
         if module.params[param]:
-            cmd = '%s %s' % (cmd, module.params[param])
+            if param in ('fixtures', 'apps'):
+                run_cmd_args.extend(shlex.split(module.params[param]))
+            else:
+                run_cmd_args.append(module.params[param])
 
-    rc, out, err = module.run_command(cmd, cwd=project_path)
+    rc, out, err = module.run_command(run_cmd_args, cwd=project_path)
     if rc != 0:
-        if command == 'createcachetable' and 'table' in err and 'already exists' in err:
+        if command_bin == 'createcachetable' and 'table' in err and 'already exists' in err:
             out = 'already exists.'
         else:
             if "Unknown command:" in err:
-                _fail(module, cmd, err, "Unknown django command: %s" % command)
-            _fail(module, cmd, out, err, path=os.environ["PATH"], syspath=sys.path)
+                _fail(module, run_cmd_args, err, "Unknown django command: %s" % command_bin)
+            _fail(module, run_cmd_args, out, err, path=os.environ["PATH"], syspath=sys.path)
 
     changed = False
 
     lines = out.split('\n')
-    filt = globals().get(command + "_filter_output", None)
+    filt = globals().get(command_bin + "_filter_output", None)
     if filt:
         filtered_output = list(filter(filt, lines))
         if len(filtered_output):
             changed = True
-    check_changed = globals().get("{0}_check_changed".format(command), None)
+    check_changed = globals().get("{0}_check_changed".format(command_bin), None)
     if check_changed:
         changed = check_changed(out)
 
-    module.exit_json(changed=changed, out=out, cmd=cmd, app_path=project_path, project_path=project_path,
+    module.exit_json(changed=changed, out=out, cmd=run_cmd_args, app_path=project_path, project_path=project_path,
                      virtualenv=virtualenv, settings=module.params['settings'], pythonpath=module.params['pythonpath'])
 
 

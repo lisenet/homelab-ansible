@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 # Copyright 2016 Tomas Karasek <tom.to.the.k@gmail.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
@@ -17,27 +18,35 @@ author: "Tomas Karasek (@t0mk) <tom.to.the.k@gmail.com>"
 options:
   state:
     description:
-     - Indicate desired state of the target.
+    - Indicate desired state of the target.
     default: present
     choices: ['present', 'absent']
+    type: str
   auth_token:
     description:
-     - Packet API token. You can also supply it in env var C(PACKET_API_TOKEN).
+    - Packet API token. You can also supply it in env var C(PACKET_API_TOKEN).
+    type: str
   label:
-     description:
-     - Label for the key. If you keep it empty, it will be read from key string.
+    description:
+    - Label for the key. If you keep it empty, it will be read from key string.
+    type: str
+    aliases: [name]
   id:
     description:
-     - UUID of the key which you want to remove.
+    - UUID of the key which you want to remove.
+    type: str
   fingerprint:
     description:
-     - Fingerprint of the key which you want to remove.
+    - Fingerprint of the key which you want to remove.
+    type: str
   key:
     description:
-     - Public Key string ({type} {base64 encoded key} {description}).
+    - Public Key string ({type} {base64 encoded key} {description}).
+    type: str
   key_file:
     description:
-     - File with the public key.
+    - File with the public key.
+    type: path
 
 requirements:
   - "python >= 2.6"
@@ -159,7 +168,7 @@ def get_sshkey_selector(module):
             return k.key == select_dict['key']
         else:
             # if key string not specified, all the fields must match
-            return all([select_dict[f] == getattr(k, f) for f in select_dict])
+            return all(select_dict[f] == getattr(k, f) for f in select_dict)
     return selector
 
 
@@ -217,11 +226,11 @@ def main():
             state=dict(choices=['present', 'absent'], default='present'),
             auth_token=dict(default=os.environ.get(PACKET_API_TOKEN_ENV_VAR),
                             no_log=True),
-            label=dict(type='str', aliases=['name'], default=None),
-            id=dict(type='str', default=None),
-            fingerprint=dict(type='str', default=None),
-            key=dict(type='str', default=None, no_log=True),
-            key_file=dict(type='path', default=None),
+            label=dict(type='str', aliases=['name']),
+            id=dict(type='str'),
+            fingerprint=dict(type='str'),
+            key=dict(type='str', no_log=True),
+            key_file=dict(type='path'),
         ),
         mutually_exclusive=[
             ('label', 'id'),

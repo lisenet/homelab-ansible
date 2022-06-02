@@ -24,7 +24,7 @@ class AnsibleFailJson(Exception):
     pass
 
 
-class ModuleMocked():
+class ModuleMocked:
     def atomic_move(self, src, dst):
         move(src, dst)
 
@@ -60,7 +60,7 @@ class TestInterfacesFileModule(unittest.TestCase):
                                              tofile=os.path.basename(backup))
         # Restore backup
         move(backup, path)
-        deltas = [d for d in diffs]
+        deltas = list(diffs)
         self.assertTrue(len(deltas) == 0)
 
     def compareInterfacesLinesToFile(self, interfaces_lines, path, testname=None):
@@ -79,7 +79,7 @@ class TestInterfacesFileModule(unittest.TestCase):
         goldenstring = string
         if not os.path.isfile(testfilepath):
             f = io.open(testfilepath, 'wb')
-            f.write(string)
+            f.write(string.encode())
             f.close()
         else:
             with open(testfilepath, 'r') as goldenfile:
@@ -94,7 +94,7 @@ class TestInterfacesFileModule(unittest.TestCase):
             self.compareInterfacesLinesToFile(lines, testfile)
             self.compareInterfacesToFile(ifaces, testfile)
 
-    def test_add_up_aoption_to_aggi(self):
+    def test_add_up_option_to_aggi(self):
         testcases = {
             "add_aggi_up": [
                 {
@@ -116,6 +116,34 @@ class TestInterfacesFileModule(unittest.TestCase):
                     'option': 'up',
                     'value': None,
                     'state': 'absent',
+                },
+            ],
+            "add_aggi_up_twice": [
+                {
+                    'iface': 'aggi',
+                    'option': 'up',
+                    'value': 'route add -net 224.0.0.0 netmask 240.0.0.0 dev aggi',
+                    'state': 'present',
+                },
+                {
+                    'iface': 'aggi',
+                    'option': 'up',
+                    'value': 'route add -net 224.0.0.0 netmask 240.0.0.0 dev aggi',
+                    'state': 'present',
+                },
+            ],
+            "aggi_remove_dup": [
+                {
+                    'iface': 'aggi',
+                    'option': 'up',
+                    'value': None,
+                    'state': 'absent',
+                },
+                {
+                    'iface': 'aggi',
+                    'option': 'up',
+                    'value': 'route add -net 224.0.0.0 netmask 240.0.0.0 dev aggi',
+                    'state': 'present',
                 },
             ],
             "set_aggi_slaves": [
@@ -148,8 +176,8 @@ class TestInterfacesFileModule(unittest.TestCase):
                 fail_json_iterations = []
                 for i, options in enumerate(options_list):
                     try:
-                        dummy, lines = interfaces_file.setInterfaceOption(module, lines, options['iface'], options['option'],
-                                                                          options['value'], options['state'])
+                        dummy, lines = interfaces_file.set_interface_option(module, lines, options['iface'], options['option'],
+                                                                            options['value'], options['state'])
                     except AnsibleFailJson as e:
                         fail_json_iterations.append("[%d] fail_json message: %s\noptions:\n%s" %
                                                     (i, str(e), json.dumps(options, sort_keys=True, indent=4, separators=(',', ': '))))
@@ -181,8 +209,8 @@ class TestInterfacesFileModule(unittest.TestCase):
                         fail_json_iterations = []
                         options['state'] = state
                         try:
-                            dummy, lines = interfaces_file.setInterfaceOption(module, lines,
-                                                                              options['iface'], options['option'], options['value'], options['state'])
+                            dummy, lines = interfaces_file.set_interface_option(module, lines,
+                                                                                options['iface'], options['option'], options['value'], options['state'])
                         except AnsibleFailJson as e:
                             fail_json_iterations.append("fail_json message: %s\noptions:\n%s" %
                                                         (str(e), json.dumps(options, sort_keys=True, indent=4, separators=(',', ': '))))
@@ -216,12 +244,12 @@ class TestInterfacesFileModule(unittest.TestCase):
                     options = options_list[0]
                     fail_json_iterations = []
                     try:
-                        changed, lines = interfaces_file.setInterfaceOption(module, lines, options['iface'], options['option'],
-                                                                            options['value'], options['state'])
+                        changed, lines = interfaces_file.set_interface_option(module, lines, options['iface'], options['option'],
+                                                                              options['value'], options['state'])
                         # When a changed is made try running it again for proper idempotency
                         if changed:
-                            changed_again, lines = interfaces_file.setInterfaceOption(module, lines, options['iface'],
-                                                                                      options['option'], options['value'], options['state'])
+                            changed_again, lines = interfaces_file.set_interface_option(module, lines, options['iface'],
+                                                                                        options['option'], options['value'], options['state'])
                             self.assertFalse(changed_again,
                                              msg='Second request for change should return false for {0} running on {1}'.format(testname,
                                                                                                                                testfile))
@@ -305,8 +333,8 @@ class TestInterfacesFileModule(unittest.TestCase):
                     options = options_list[0]
                     fail_json_iterations = []
                     try:
-                        dummy, lines = interfaces_file.setInterfaceOption(module, lines, options['iface'], options['option'],
-                                                                          options['value'], options['state'], options['address_family'])
+                        dummy, lines = interfaces_file.set_interface_option(module, lines, options['iface'], options['option'],
+                                                                            options['value'], options['state'], options['address_family'])
                     except AnsibleFailJson as e:
                         fail_json_iterations.append("fail_json message: %s\noptions:\n%s" %
                                                     (str(e), json.dumps(options, sort_keys=True, indent=4, separators=(',', ': '))))

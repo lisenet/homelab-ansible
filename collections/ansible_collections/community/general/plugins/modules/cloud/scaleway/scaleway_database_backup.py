@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 #
 # Scaleway database backups management module
 #
@@ -44,6 +45,7 @@ options:
     choices:
         - fr-par
         - nl-ams
+        - pl-waw
 
   id:
     description:

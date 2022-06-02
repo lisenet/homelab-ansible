@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # This code is part of Ansible, but is an independent component.
 # This particular file snippet, and this file snippet only, is based on
 # Lib/posixpath.py of cpython
@@ -47,6 +48,10 @@
 # 8. By copying, installing or otherwise using Python, Licensee
 # agrees to be bound by the terms and conditions of this License
 # Agreement.
+
+from __future__ import absolute_import, division, print_function
+
+__metaclass__ = type
 
 import os
 

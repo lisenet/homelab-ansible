@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 # (c) 2017, Arie Bregman <abregman@redhat.com>
 #
 # This file is a module for Ansible that interacts with Network Manager
@@ -58,7 +59,7 @@ RETURN = '''
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_text
+from ansible.module_utils.common.text.converters import to_text
 
 
 class Namespace(object):
@@ -75,7 +76,7 @@ class Namespace(object):
 
     def exists(self):
         '''Check if the namespace already exists'''
-        rc, out, err = self.module.run_command('ip netns list')
+        rc, out, err = self.module.run_command(['ip', 'netns', 'list'])
         if rc != 0:
             self.module.fail_json(msg=to_text(err))
         return self.name in out

@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 # Copyright: Ansible Project
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
@@ -30,6 +31,7 @@ options:
     required: yes
   databases:
     type: list
+    elements: str
     description:
       - Name of the databases that the user can access
     default: []
@@ -76,7 +78,7 @@ except ImportError:
     HAS_PYRAX = False
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_text
+from ansible.module_utils.common.text.converters import to_text
 from ansible_collections.community.general.plugins.module_utils.rax import rax_argument_spec, rax_required_together, rax_to_dict, setup_rax_module
 
 
@@ -189,7 +191,7 @@ def main():
             cdb_id=dict(type='str', required=True),
             db_username=dict(type='str', required=True),
             db_password=dict(type='str', required=True, no_log=True),
-            databases=dict(type='list', default=[]),
+            databases=dict(type='list', elements='str', default=[]),
             host=dict(type='str', default='%'),
             state=dict(default='present', choices=['present', 'absent'])
         )

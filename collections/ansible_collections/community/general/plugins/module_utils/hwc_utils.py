@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright (c), Google Inc, 2017
 # Simplified BSD License (see licenses/simplified_bsd.txt or
 # https://opensource.org/licenses/BSD-2-Clause)
@@ -21,7 +22,7 @@ except ImportError:
 
 from ansible.module_utils.basic import (AnsibleModule, env_fallback,
                                         missing_required_lib)
-from ansible.module_utils._text import to_text
+from ansible.module_utils.common.text.converters import to_text
 
 
 class HwcModuleException(Exception):

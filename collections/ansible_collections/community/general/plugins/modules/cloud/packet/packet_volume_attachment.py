@@ -130,7 +130,7 @@ device_id:
 import uuid
 
 from ansible.module_utils.basic import AnsibleModule, env_fallback
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 HAS_PACKET_SDK = True
 
@@ -181,7 +181,6 @@ def do_detach(packet_conn, vol, dev_id=None):
         return (dev_id is None) or (a['device']['id'] == dev_id)
     for a in vol['attachments']:
         if dev_match(a):
-            print(a['href'])
             packet_conn.call_api(a['href'], type="DELETE")
 
 

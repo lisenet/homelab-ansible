@@ -35,13 +35,11 @@ options:
       - Update the package database first C(urpmi.update -a).
     type: bool
     default: no
-    aliases: ['update-cache']
   no_recommends:
     description:
       - Corresponds to the C(--no-recommends) option for I(urpmi).
     type: bool
     default: yes
-    aliases: ['no-recommends']
   force:
     description:
       - Assume "yes" is the answer to any question urpmi has to ask.
@@ -195,9 +193,9 @@ def main():
         argument_spec=dict(
             state=dict(type='str', default='present',
                        choices=['absent', 'installed', 'present', 'removed']),
-            update_cache=dict(type='bool', default=False, aliases=['update-cache']),
+            update_cache=dict(type='bool', default=False),
             force=dict(type='bool', default=True),
-            no_recommends=dict(type='bool', default=True, aliases=['no-recommends']),
+            no_recommends=dict(type='bool', default=True),
             name=dict(type='list', elements='str', required=True, aliases=['package', 'pkg']),
             root=dict(type='str', aliases=['installroot']),
         ),

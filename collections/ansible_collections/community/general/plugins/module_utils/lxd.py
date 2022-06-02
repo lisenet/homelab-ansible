@@ -20,7 +20,7 @@ import ssl
 from ansible.module_utils.urls import generic_urlparse
 from ansible.module_utils.six.moves.urllib.parse import urlparse
 from ansible.module_utils.six.moves import http_client
-from ansible.module_utils._text import to_text
+from ansible.module_utils.common.text.converters import to_text
 
 # httplib/http.client connection using unix domain socket
 HTTPConnection = http_client.HTTPConnection
@@ -75,11 +75,14 @@ class LXDClient(object):
         else:
             raise LXDClientException('URL scheme must be unix: or https:')
 
-    def do(self, method, url, body_json=None, ok_error_codes=None, timeout=None):
+    def do(self, method, url, body_json=None, ok_error_codes=None, timeout=None, wait_for_container=None):
         resp_json = self._send_request(method, url, body_json=body_json, ok_error_codes=ok_error_codes, timeout=timeout)
         if resp_json['type'] == 'async':
             url = '{0}/wait'.format(resp_json['operation'])
             resp_json = self._send_request('GET', url)
+            if wait_for_container:
+                while resp_json['metadata']['status'] == 'Running':
+                    resp_json = self._send_request('GET', url)
             if resp_json['metadata']['status'] != 'Success':
                 self._raise_err_from_json(resp_json)
         return resp_json

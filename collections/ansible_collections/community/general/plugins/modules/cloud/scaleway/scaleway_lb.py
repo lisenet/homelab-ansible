@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 #
 # Scaleway Load-balancer management module
 #
@@ -15,7 +16,7 @@ DOCUMENTATION = '''
 ---
 module: scaleway_lb
 short_description: Scaleway load-balancer management module
-author: Remy Leone (@sieben)
+author: Remy Leone (@remyleone)
 description:
     - "This module manages load-balancers on Scaleway."
 extends_documentation_fragment:
@@ -59,9 +60,11 @@ options:
     choices:
       - nl-ams
       - fr-par
+      - pl-waw
 
   tags:
     type: list
+    elements: str
     description:
     - List of tags to apply to the load-balancer
 
@@ -337,7 +340,7 @@ def main():
         description=dict(required=True),
         region=dict(required=True, choices=SCALEWAY_REGIONS),
         state=dict(choices=list(state_strategy.keys()), default='present'),
-        tags=dict(type="list", default=[]),
+        tags=dict(type="list", elements="str", default=[]),
         organization_id=dict(required=True),
         wait=dict(type="bool", default=False),
         wait_timeout=dict(type="int", default=300),

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # (c) 2018, Samir Musali <samir.musali@logdna.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
@@ -6,7 +7,7 @@ __metaclass__ = type
 
 DOCUMENTATION = '''
     author: Unknown (!UNKNOWN)
-    callback: logdna
+    name: logdna
     type: aggregate
     short_description: Sends playbook logs to LogDNA
     description:
@@ -77,7 +78,7 @@ def get_mac():
 
 # Getting hostname of system:
 def get_hostname():
-    return str(socket.gethostname()).split('.local')[0]
+    return str(socket.gethostname()).split('.local', 1)[0]
 
 
 # Getting IP of system:

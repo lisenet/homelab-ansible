@@ -10,7 +10,7 @@ DOCUMENTATION = '''
     author:
     - Eric Belhomme (@eric-belhomme) <ebelhomme@fr.scc.com>
     version_added: '0.2.0'
-    lookup: etcd3
+    name: etcd3
     short_description: Get key values from etcd3 server
     description:
     - Retrieves key values and/or key prefixes from etcd3 server using its native gRPC API.
@@ -93,7 +93,7 @@ DOCUMENTATION = '''
       environment variable and keep I(endpoints), I(host), and I(port) unused.
     seealso:
     - module: community.general.etcd3
-    - ref: etcd_lookup
+    - ref: ansible_collections.community.general.etcd_lookup
       description: The etcd v2 lookup.
 
     requirements:
@@ -138,7 +138,7 @@ import re
 from ansible.plugins.lookup import LookupBase
 from ansible.utils.display import Display
 from ansible.module_utils.basic import missing_required_lib
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 from ansible.plugins.lookup import LookupBase
 from ansible.errors import AnsibleError, AnsibleLookupError
 

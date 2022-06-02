@@ -135,9 +135,9 @@ import re
 import shlex
 import sqlite3
 
-from distutils.version import StrictVersion
-
 from ansible.module_utils.basic import AnsibleModule
+
+from ansible_collections.community.general.plugins.module_utils.version import LooseVersion
 
 
 # Function used for executing commands.
@@ -164,7 +164,7 @@ def get_package_state(names, pkg_spec, module):
         if stdout:
             # If the requested package name is just a stem, like "python", we may
             # find multiple packages with that name.
-            pkg_spec[name]['installed_names'] = [installed_name for installed_name in stdout.splitlines()]
+            pkg_spec[name]['installed_names'] = stdout.splitlines()
             module.debug("get_package_state(): installed_names = %s" % pkg_spec[name]['installed_names'])
             pkg_spec[name]['installed_state'] = True
         else:
@@ -241,11 +241,12 @@ def package_present(names, pkg_spec, module):
                     # "file:/local/package/directory/ is empty" message on stderr
                     # while still installing the package, so we need to look for
                     # for a message like "packagename-1.0: ok" just in case.
-                    match = re.search(r"\W%s-[^:]+: ok\W" % pkg_spec[name]['stem'], pkg_spec[name]['stdout'])
+                    match = re.search(r"\W%s-[^:]+: ok\W" % re.escape(pkg_spec[name]['stem']), pkg_spec[name]['stdout'])
 
                     if match:
                         # It turns out we were able to install the package.
                         module.debug("package_present(): we were able to install package for name '%s'" % name)
+                        pkg_spec[name]['changed'] = True
                     else:
                         # We really did fail, fake the return code.
                         module.debug("package_present(): we really did fail for name '%s'" % name)
@@ -295,7 +296,7 @@ def package_latest(names, pkg_spec, module):
             pkg_spec[name]['changed'] = False
             for installed_name in pkg_spec[name]['installed_names']:
                 module.debug("package_latest(): checking for pre-upgrade package name: %s" % installed_name)
-                match = re.search(r"\W%s->.+: ok\W" % installed_name, pkg_spec[name]['stdout'])
+                match = re.search(r"\W%s->.+: ok\W" % re.escape(installed_name), pkg_spec[name]['stdout'])
                 if match:
                     module.debug("package_latest(): pre-upgrade package name match: %s" % installed_name)
 
@@ -434,7 +435,7 @@ def parse_package_name(names, pkg_spec, module):
         if pkg_spec[name]['branch']:
             branch_release = "6.0"
 
-            if StrictVersion(platform.release()) < StrictVersion(branch_release):
+            if LooseVersion(platform.release()) < LooseVersion(branch_release):
                 module.fail_json(msg="package name using 'branch' syntax requires at least OpenBSD %s: %s" % (branch_release, name))
 
         # Sanity check that there are no trailing dashes in flavor.

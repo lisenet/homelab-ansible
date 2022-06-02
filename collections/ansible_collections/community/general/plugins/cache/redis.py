@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # (c) 2014, Brian Coca, Josh Drake, et al
 # (c) 2017 Ansible Project
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -6,7 +7,7 @@ __metaclass__ = type
 
 DOCUMENTATION = '''
     author: Unknown (!UNKNOWN)
-    cache: redis
+    name: redis
     short_description: Use Redis DB for cache
     description:
         - This cache uses JSON formatted, per host records saved in Redis.
@@ -61,14 +62,16 @@ DOCUMENTATION = '''
         type: integer
 '''
 
+import re
 import time
 import json
 
 from ansible import constants as C
 from ansible.errors import AnsibleError
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 from ansible.parsing.ajson import AnsibleJSONEncoder, AnsibleJSONDecoder
 from ansible.plugins.cache import BaseCacheModule
+from ansible.release import __version__ as ansible_base_version
 from ansible.utils.display import Display
 
 try:
@@ -90,27 +93,19 @@ class CacheModule(BaseCacheModule):
     performance.
     """
     _sentinel_service_name = None
+    re_url_conn = re.compile(r'^([^:]+|\[[^]]+\]):(\d+):(\d+)(?::(.*))?$')
+    re_sent_conn = re.compile(r'^(.*):(\d+)$')
 
     def __init__(self, *args, **kwargs):
         uri = ''
 
-        try:
-            super(CacheModule, self).__init__(*args, **kwargs)
-            if self.get_option('_uri'):
-                uri = self.get_option('_uri')
-            self._timeout = float(self.get_option('_timeout'))
-            self._prefix = self.get_option('_prefix')
-            self._keys_set = self.get_option('_keyset_name')
-            self._sentinel_service_name = self.get_option('_sentinel_service_name')
-        except KeyError:
-            display.deprecated('Rather than importing CacheModules directly, '
-                               'use ansible.plugins.loader.cache_loader',
-                               version='2.0.0', collection_name='community.general')  # was Ansible 2.12
-            if C.CACHE_PLUGIN_CONNECTION:
-                uri = C.CACHE_PLUGIN_CONNECTION
-            self._timeout = float(C.CACHE_PLUGIN_TIMEOUT)
-            self._prefix = C.CACHE_PLUGIN_PREFIX
-            self._keys_set = 'ansible_cache_keys'
+        super(CacheModule, self).__init__(*args, **kwargs)
+        if self.get_option('_uri'):
+            uri = self.get_option('_uri')
+        self._timeout = float(self.get_option('_timeout'))
+        self._prefix = self.get_option('_prefix')
+        self._keys_set = self.get_option('_keyset_name')
+        self._sentinel_service_name = self.get_option('_sentinel_service_name')
 
         if not HAS_REDIS:
             raise AnsibleError("The 'redis' python module (version 2.4.5 or newer) is required for the redis fact cache, 'pip install redis'")
@@ -129,10 +124,17 @@ class CacheModule(BaseCacheModule):
             self._db = self._get_sentinel_connection(uri, kw)
         # normal connection
         else:
-            connection = uri.split(':')
+            connection = self._parse_connection(self.re_url_conn, uri)
             self._db = StrictRedis(*connection, **kw)
 
         display.vv('Redis connection: %s' % self._db)
+
+    @staticmethod
+    def _parse_connection(re_patt, uri):
+        match = re_patt.match(uri)
+        if not match:
+            raise AnsibleError("Unable to parse connection string")
+        return match.groups()
 
     def _get_sentinel_connection(self, uri, kw):
         """
@@ -157,7 +159,7 @@ class CacheModule(BaseCacheModule):
             except IndexError:
                 pass  # password is optional
 
-        sentinels = [tuple(shost.split(':')) for shost in connections]
+        sentinels = [self._parse_connection(self.re_sent_conn, shost) for shost in connections]
         display.vv('\nUsing redis sentinels: %s' % sentinels)
         scon = Sentinel(sentinels, **kw)
         try:
@@ -216,14 +218,12 @@ class CacheModule(BaseCacheModule):
         self._db.zrem(self._keys_set, key)
 
     def flush(self):
-        for key in self.keys():
+        for key in list(self.keys()):
             self.delete(key)
 
     def copy(self):
         # TODO: there is probably a better way to do this in redis
-        ret = dict()
-        for key in self.keys():
-            ret[key] = self.get(key)
+        ret = dict([(k, self.get(k)) for k in self.keys()])
         return ret
 
     def __getstate__(self):

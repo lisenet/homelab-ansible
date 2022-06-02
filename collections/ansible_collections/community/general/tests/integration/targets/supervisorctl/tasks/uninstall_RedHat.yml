@@ -1,4 +1,1 @@
-- name: uninstall supervisord
-  pip:
-    name: supervisor
-    state: absent
+uninstall_pip.yml

@@ -19,6 +19,7 @@ options:
     description:
       - File system, snapshot or volume name e.g. C(rpool/myfs).
     required: true
+    type: str
   state:
     description:
       - Whether to create (C(present)), or remove (C(absent)) a
@@ -26,13 +27,22 @@ options:
         will be created/destroyed as needed to reach the desired state.
     choices: [ absent, present ]
     required: true
+    type: str
   origin:
     description:
       - Snapshot from which to create a clone.
+    type: str
   extra_zfs_properties:
     description:
       - A dictionary of zfs properties to be set.
       - See the zfs(8) man page for more information.
+    type: dict
+notes:
+  - C(check_mode) is supported, but in certain situations it may report a task
+    as changed that will not be reported as changed when C(check_mode) is disabled.
+    For example, this might occur when the zpool C(altroot) option is set or when
+    a size is written using human-readable notation, such as C(1M) or C(1024K),
+    instead of as an unqualified byte count, such as C(1048576).
 author:
 - Johan Wiren (@johanwiren)
 '''
@@ -120,18 +130,15 @@ class Zfs(object):
 
     def exists(self):
         cmd = [self.zfs_cmd, 'list', '-t', 'all', self.name]
-        (rc, out, err) = self.module.run_command(' '.join(cmd))
-        if rc == 0:
-            return True
-        else:
-            return False
+        rc, dummy, dummy = self.module.run_command(cmd)
+        return rc == 0
 
     def create(self):
         if self.module.check_mode:
             self.changed = True
             return
         properties = self.properties
-        origin = self.module.params.get('origin', None)
+        origin = self.module.params.get('origin')
         cmd = [self.zfs_cmd]
 
         if "@" in self.name:
@@ -153,53 +160,63 @@ class Zfs(object):
                 elif prop == 'volblocksize':
                     cmd += ['-b', value]
                 else:
-                    cmd += ['-o', '%s="%s"' % (prop, value)]
+                    cmd += ['-o', '%s=%s' % (prop, value)]
         if origin and action == 'clone':
             cmd.append(origin)
         cmd.append(self.name)
-        (rc, out, err) = self.module.run_command(' '.join(cmd))
-        if rc == 0:
-            self.changed = True
-        else:
-            self.module.fail_json(msg=err)
+        self.module.run_command(cmd, check_rc=True)
+        self.changed = True
 
     def destroy(self):
         if self.module.check_mode:
             self.changed = True
             return
         cmd = [self.zfs_cmd, 'destroy', '-R', self.name]
-        (rc, out, err) = self.module.run_command(' '.join(cmd))
-        if rc == 0:
-            self.changed = True
-        else:
-            self.module.fail_json(msg=err)
+        self.module.run_command(cmd, check_rc=True)
+        self.changed = True
 
     def set_property(self, prop, value):
         if self.module.check_mode:
             self.changed = True
             return
         cmd = [self.zfs_cmd, 'set', prop + '=' + str(value), self.name]
-        (rc, out, err) = self.module.run_command(cmd)
-        if rc == 0:
-            self.changed = True
-        else:
-            self.module.fail_json(msg=err)
+        self.module.run_command(cmd, check_rc=True)
 
     def set_properties_if_changed(self):
+        diff = {'before': {'extra_zfs_properties': {}}, 'after': {'extra_zfs_properties': {}}}
         current_properties = self.get_current_properties()
         for prop, value in self.properties.items():
-            if current_properties.get(prop, None) != value:
+            current_value = current_properties.get(prop, None)
+            if current_value != value:
                 self.set_property(prop, value)
+                diff['before']['extra_zfs_properties'][prop] = current_value
+                diff['after']['extra_zfs_properties'][prop] = value
+        if self.module.check_mode:
+            return diff
+        updated_properties = self.get_current_properties()
+        for prop in self.properties:
+            value = updated_properties.get(prop, None)
+            if value is None:
+                self.module.fail_json(msg="zfsprop was not present after being successfully set: %s" % prop)
+            if current_properties.get(prop, None) != value:
+                self.changed = True
+            if prop in diff['after']['extra_zfs_properties']:
+                diff['after']['extra_zfs_properties'][prop] = value
+        return diff
 
     def get_current_properties(self):
-        cmd = [self.zfs_cmd, 'get', '-H']
+        cmd = [self.zfs_cmd, 'get', '-H', '-p', '-o', "property,value,source"]
         if self.enhanced_sharing:
             cmd += ['-e']
         cmd += ['all', self.name]
-        rc, out, err = self.module.run_command(" ".join(cmd))
+        rc, out, err = self.module.run_command(cmd)
         properties = dict()
-        for prop, value, source in [l.split('\t')[1:4] for l in out.splitlines()]:
-            if source == 'local':
+        for line in out.splitlines():
+            prop, value, source = line.split('\t')
+            # include source '-' so that creation-only properties are not removed
+            # to avoids errors when the dataset already exists and the property is not changed
+            # this scenario is most likely when the same playbook is run more than once
+            if source in ('local', 'received', '-'):
                 properties[prop] = value
         # Add alias for enhanced sharing properties
         if self.enhanced_sharing:
@@ -214,7 +231,7 @@ def main():
         argument_spec=dict(
             name=dict(type='str', required=True),
             state=dict(type='str', required=True, choices=['absent', 'present']),
-            origin=dict(type='str', default=None),
+            origin=dict(type='str'),
             extra_zfs_properties=dict(type='dict', default={}),
         ),
         supports_check_mode=True,
@@ -245,13 +262,20 @@ def main():
 
     if state == 'present':
         if zfs.exists():
-            zfs.set_properties_if_changed()
+            result['diff'] = zfs.set_properties_if_changed()
         else:
             zfs.create()
+            result['diff'] = {'before': {'state': 'absent'}, 'after': {'state': state}}
 
     elif state == 'absent':
         if zfs.exists():
             zfs.destroy()
+            result['diff'] = {'before': {'state': 'present'}, 'after': {'state': state}}
+        else:
+            result['diff'] = {}
+
+    result['diff']['before_header'] = name
+    result['diff']['after_header'] = name
 
     result.update(zfs.properties)
     result['changed'] = zfs.changed

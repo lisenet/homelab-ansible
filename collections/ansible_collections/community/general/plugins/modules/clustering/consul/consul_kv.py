@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 #
 # (c) 2015, Steve Gargan <steve.gargan@gmail.com>
 # (c) 2018 Genome Research Ltd.
@@ -37,6 +38,7 @@ options:
             'release' respectively. a valid session must be supplied to make the
             attempt changed will be true if the attempt is successful, false
             otherwise.
+        type: str
         choices: [ absent, acquire, present, release ]
         default: present
     key:
@@ -135,7 +137,7 @@ EXAMPLES = '''
     state: acquire
 '''
 
-from ansible.module_utils._text import to_text
+from ansible.module_utils.common.text.converters import to_text
 
 try:
     import consul
@@ -296,7 +298,7 @@ def main():
         argument_spec=dict(
             cas=dict(type='str'),
             flags=dict(type='str'),
-            key=dict(type='str', required=True),
+            key=dict(type='str', required=True, no_log=False),
             host=dict(type='str', default='localhost'),
             scheme=dict(type='str', default='http'),
             validate_certs=dict(type='bool', default=True),

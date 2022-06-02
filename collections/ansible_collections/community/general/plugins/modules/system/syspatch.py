@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 # Copyright: (c) 2019-2020, Andrew Klaus <andrewklaus@gmail.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -17,13 +18,6 @@ description:
     - "Manage OpenBSD system patches using syspatch."
 
 options:
-    apply:
-        type: bool
-        description:
-            - Apply all available system patches.
-            - By default, apply all patches.
-            - Deprecated. Will be removed in community.general 3.0.0.
-        default: yes
     revert:
         description:
             - Revert system patches.
@@ -37,7 +31,6 @@ author:
 EXAMPLES = '''
 - name: Apply all available system patches
   community.general.syspatch:
-    apply: true
 
 - name: Revert last patch
   community.general.syspatch:
@@ -50,7 +43,6 @@ EXAMPLES = '''
 # NOTE: You can reboot automatically if a patch requires it:
 - name: Apply all patches and store result
   community.general.syspatch:
-    apply: true
   register: syspatch
 
 - name: Reboot if patch requires it
@@ -86,14 +78,12 @@ from ansible.module_utils.basic import AnsibleModule
 def run_module():
     # define available arguments/parameters a user can pass to the module
     module_args = dict(
-        apply=dict(type='bool', default=True, removed_in_version='3.0.0', removed_from_collection='community.general'),
         revert=dict(type='str', choices=['all', 'one'])
     )
 
     module = AnsibleModule(
         argument_spec=module_args,
         supports_check_mode=True,
-        required_one_of=[['apply', 'revert']]
     )
 
     result = syspatch_run(module)
@@ -117,7 +107,7 @@ def syspatch_run(module):
             run_flag = ['-R']
         else:
             run_flag = ['-r']
-    elif module.params['apply']:
+    else:
         check_flag = ['-c']
         run_flag = []
 

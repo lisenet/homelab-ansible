@@ -4,11 +4,11 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = '''
-    become: dzdo
+    name: dzdo
     short_description: Centrify's Direct Authorize
     description:
         - This become plugins allows your remote/login user to execute commands as another user via the dzdo utility.
-    author: ansible (@core)
+    author: Ansible Core Team
     options:
         become_user:
             description: User you 'become' to execute the task

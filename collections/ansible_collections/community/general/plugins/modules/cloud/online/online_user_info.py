@@ -7,16 +7,14 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = r'''
----
 module: online_user_info
 short_description: Gather information about Online user.
 description:
   - Gather information about the user.
 author:
-  - "Remy Leone (@sieben)"
+  - "Remy Leone (@remyleone)"
 extends_documentation_fragment:
 - community.general.online
-
 '''
 
 EXAMPLES = r'''
@@ -29,11 +27,12 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
----
 online_user_info:
-  description: Response from Online API
+  description:
+    - Response from Online API.
+    - "For more details please refer to: U(https://console.online.net/en/api/)."
   returned: success
-  type: complex
+  type: dict
   sample:
     "online_user_info": {
         "company": "foobar LLC",

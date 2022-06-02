@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 # (c) 2016, Marcin Skarbek <github@skarbek.name>
 # (c) 2016, Andreas Olsson <andreas@arrakis.se>
@@ -28,51 +29,64 @@ options:
             - Manage DNS record.
         choices: ['present', 'absent']
         default: 'present'
+        type: str
     server:
         description:
             - Apply DNS modification on this server, specified by IPv4 or IPv6 address.
         required: true
+        type: str
     port:
         description:
             - Use this TCP port when connecting to C(server).
         default: 53
+        type: int
     key_name:
         description:
             - Use TSIG key name to authenticate against DNS C(server)
+        type: str
     key_secret:
         description:
             - Use TSIG key secret, associated with C(key_name), to authenticate against C(server)
+        type: str
     key_algorithm:
         description:
             - Specify key algorithm used by C(key_secret).
         choices: ['HMAC-MD5.SIG-ALG.REG.INT', 'hmac-md5', 'hmac-sha1', 'hmac-sha224', 'hmac-sha256', 'hmac-sha384',
                   'hmac-sha512']
         default: 'hmac-md5'
+        type: str
     zone:
         description:
             - DNS record will be modified on this C(zone).
             - When omitted DNS will be queried to attempt finding the correct zone.
             - Starting with Ansible 2.7 this parameter is optional.
+        type: str
     record:
         description:
             - Sets the DNS record to modify. When zone is omitted this has to be absolute (ending with a dot).
         required: true
+        type: str
     type:
         description:
             - Sets the record type.
         default: 'A'
+        type: str
     ttl:
         description:
             - Sets the record TTL.
         default: 3600
+        type: int
     value:
         description:
             - Sets the record value.
+        type: list
+        elements: str
     protocol:
         description:
             - Sets the transport protocol (TCP or UDP). TCP is the recommended and a more robust option.
         default: 'tcp'
         choices: ['tcp', 'udp']
+        type: str
 '''
 
 EXAMPLES = '''
@@ -185,7 +199,7 @@ except ImportError:
     HAVE_DNSPYTHON = False
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 class RecordManager(object):
@@ -432,7 +446,7 @@ def main():
             record=dict(required=True, type='str'),
             type=dict(required=False, default='A', type='str'),
             ttl=dict(required=False, default=3600, type='int'),
-            value=dict(required=False, default=None, type='list'),
+            value=dict(required=False, default=None, type='list', elements='str'),
             protocol=dict(required=False, default='tcp', choices=['tcp', 'udp'], type='str')
         ),
         supports_check_mode=True

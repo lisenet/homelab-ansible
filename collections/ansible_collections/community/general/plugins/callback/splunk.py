@@ -18,7 +18,7 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = '''
-    callback: splunk
+    name: splunk
     type: aggregate
     short_description: Sends task result events to Splunk HTTP Event Collector
     author: "Stuart Hirst (!UNKNOWN) <support@convergingdata.com>"
@@ -57,6 +57,27 @@ DOCUMENTATION = '''
         type: bool
         default: true
         version_added: '1.0.0'
+      include_milliseconds:
+        description: Whether to include milliseconds as part of the generated timestamp field in the event
+                     sent to the Splunk HTTP collector
+        env:
+          - name: SPLUNK_INCLUDE_MILLISECONDS
+        ini:
+          - section: callback_splunk
+            key: include_milliseconds
+        type: bool
+        default: false
+        version_added: 2.0.0
+      batch:
+        description:
+          - Correlation ID which can be set across multiple playbook executions.
+        env:
+          - name: SPLUNK_BATCH
+        ini:
+          - section: callback_splunk
+            key: batch
+        type: str
+        version_added: 3.3.0
 '''
 
 EXAMPLES = '''
@@ -96,7 +117,7 @@ class SplunkHTTPCollectorSource(object):
         self.ip_address = socket.gethostbyname(socket.gethostname())
         self.user = getpass.getuser()
 
-    def send_event(self, url, authtoken, validate_certs, state, result, runtime):
+    def send_event(self, url, authtoken, validate_certs, include_milliseconds, batch, state, result, runtime):
         if result._task_fields['args'].get('_ansible_check_mode') is True:
             self.ansible_check_mode = True
 
@@ -115,9 +136,16 @@ class SplunkHTTPCollectorSource(object):
         data = {}
         data['uuid'] = result._task._uuid
         data['session'] = self.session
+        if batch is not None:
+            data['batch'] = batch
         data['status'] = state
-        data['timestamp'] = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S '
-                                                       '+0000')
+
+        if include_milliseconds:
+            time_format = '%Y-%m-%d %H:%M:%S.%f +0000'
+        else:
+            time_format = '%Y-%m-%d %H:%M:%S +0000'
+
+        data['timestamp'] = datetime.utcnow().strftime(time_format)
         data['host'] = self.host
         data['ip_address'] = self.ip_address
         data['user'] = self.user
@@ -158,6 +186,8 @@ class CallbackModule(CallbackBase):
         self.url = None
         self.authtoken = None
         self.validate_certs = None
+        self.include_milliseconds = None
+        self.batch = None
         self.splunk = SplunkHTTPCollectorSource()
 
     def _runtime(self, result):
@@ -193,6 +223,10 @@ class CallbackModule(CallbackBase):
 
         self.validate_certs = self.get_option('validate_certs')
 
+        self.include_milliseconds = self.get_option('include_milliseconds')
+
+        self.batch = self.get_option('batch')
+
     def v2_playbook_on_start(self, playbook):
         self.splunk.ansible_playbook = basename(playbook._file_name)
 
@@ -207,6 +241,8 @@ class CallbackModule(CallbackBase):
             self.url,
             self.authtoken,
             self.validate_certs,
+            self.include_milliseconds,
+            self.batch,
             'OK',
             result,
             self._runtime(result)
@@ -217,6 +253,8 @@ class CallbackModule(CallbackBase):
             self.url,
             self.authtoken,
             self.validate_certs,
+            self.include_milliseconds,
+            self.batch,
             'SKIPPED',
             result,
             self._runtime(result)
@@ -227,6 +265,8 @@ class CallbackModule(CallbackBase):
             self.url,
             self.authtoken,
             self.validate_certs,
+            self.include_milliseconds,
+            self.batch,
             'FAILED',
             result,
             self._runtime(result)
@@ -237,6 +277,8 @@ class CallbackModule(CallbackBase):
             self.url,
             self.authtoken,
             self.validate_certs,
+            self.include_milliseconds,
+            self.batch,
             'FAILED',
             result,
             self._runtime(result)
@@ -247,6 +289,8 @@ class CallbackModule(CallbackBase):
             self.url,
             self.authtoken,
             self.validate_certs,
+            self.include_milliseconds,
+            self.batch,
             'UNREACHABLE',
             result,
             self._runtime(result)

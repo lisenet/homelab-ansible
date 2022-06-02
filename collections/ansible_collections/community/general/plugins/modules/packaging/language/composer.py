@@ -41,43 +41,36 @@ options:
             - Directory of your project (see --working-dir). This is required when
               the command is not run globally.
             - Will be ignored if C(global_command=true).
-        aliases: [ working-dir ]
     global_command:
         description:
             - Runs the specified command globally.
         type: bool
         default: false
-        aliases: [ global-command ]
     prefer_source:
         description:
             - Forces installation from package sources when possible (see --prefer-source).
         default: false
         type: bool
-        aliases: [ prefer-source ]
     prefer_dist:
         description:
             - Forces installation from package dist even for dev versions (see --prefer-dist).
         default: false
         type: bool
-        aliases: [ prefer-dist ]
     no_dev:
         description:
             - Disables installation of require-dev packages (see --no-dev).
         default: true
         type: bool
-        aliases: [ no-dev ]
     no_scripts:
         description:
             - Skips the execution of all scripts defined in composer.json (see --no-scripts).
         default: false
         type: bool
-        aliases: [ no-scripts ]
     no_plugins:
         description:
-            - Disables all plugins ( see --no-plugins ).
+            - Disables all plugins (see --no-plugins).
         default: false
         type: bool
-        aliases: [ no-plugins ]
     optimize_autoloader:
         description:
             - Optimize autoloader during autoloader dump (see --optimize-autoloader).
@@ -85,7 +78,6 @@ options:
             - Recommended especially for production, but can take a bit of time to run.
         default: true
         type: bool
-        aliases: [ optimize-autoloader ]
     classmap_authoritative:
         description:
             - Autoload classes from classmap only.
@@ -93,22 +85,24 @@ options:
             - Recommended especially for production, but can take a bit of time to run.
         default: false
         type: bool
-        aliases: [ classmap-authoritative ]
     apcu_autoloader:
         description:
             - Uses APCu to cache found/not-found classes
         default: false
         type: bool
-        aliases: [ apcu-autoloader ]
     ignore_platform_reqs:
         description:
             - Ignore php, hhvm, lib-* and ext-* requirements and force the installation even if the local machine does not fulfill these.
         default: false
         type: bool
-        aliases: [ ignore-platform-reqs ]
+    composer_executable:
+        type: path
+        description:
+            - Path to composer executable on the remote host, if composer is not in C(PATH) or a custom composer is needed.
+        version_added: 3.2.0
 requirements:
     - php
-    - composer installed in bin path (recommended /usr/local/bin)
+    - composer installed in bin path (recommended /usr/local/bin) or specified in I(composer_executable)
 notes:
     - Default options that are always appended in each execution are --no-ansi, --no-interaction and --no-progress if available.
     - We received reports about issues on macOS if composer was installed by Homebrew. Please use the official install method to avoid issues.
@@ -158,7 +152,7 @@ def has_changed(string):
 
 def get_available_options(module, command='install'):
     # get all available options from a composer command using composer help to json
-    rc, out, err = composer_command(module, "help %s --format=json" % command)
+    rc, out, err = composer_command(module, "help %s" % command, arguments="--no-interaction --format=json")
     if rc != 0:
         output = parse_out(err)
         module.fail_json(msg=output)
@@ -176,7 +170,11 @@ def composer_command(module, command, arguments="", options=None, global_command
     else:
         php_path = module.params['executable']
 
-    composer_path = module.get_bin_path("composer", True, ["/usr/local/bin"])
+    if module.params['composer_executable'] is None:
+        composer_path = module.get_bin_path("composer", True, ["/usr/local/bin"])
+    else:
+        composer_path = module.params['composer_executable']
+
     cmd = "%s %s %s %s %s %s" % (php_path, composer_path, "global" if global_command else "", command, " ".join(options), arguments)
     return module.run_command(cmd)
 
@@ -187,17 +185,18 @@ def main():
             command=dict(default="install", type="str"),
             arguments=dict(default="", type="str"),
             executable=dict(type="path", aliases=["php_path"]),
-            working_dir=dict(type="path", aliases=["working-dir"]),
-            global_command=dict(default=False, type="bool", aliases=["global-command"]),
-            prefer_source=dict(default=False, type="bool", aliases=["prefer-source"]),
-            prefer_dist=dict(default=False, type="bool", aliases=["prefer-dist"]),
-            no_dev=dict(default=True, type="bool", aliases=["no-dev"]),
-            no_scripts=dict(default=False, type="bool", aliases=["no-scripts"]),
-            no_plugins=dict(default=False, type="bool", aliases=["no-plugins"]),
-            apcu_autoloader=dict(default=False, type="bool", aliases=["apcu-autoloader"]),
-            optimize_autoloader=dict(default=True, type="bool", aliases=["optimize-autoloader"]),
-            classmap_authoritative=dict(default=False, type="bool", aliases=["classmap-authoritative"]),
-            ignore_platform_reqs=dict(default=False, type="bool", aliases=["ignore-platform-reqs"]),
+            working_dir=dict(type="path"),
+            global_command=dict(default=False, type="bool"),
+            prefer_source=dict(default=False, type="bool"),
+            prefer_dist=dict(default=False, type="bool"),
+            no_dev=dict(default=True, type="bool"),
+            no_scripts=dict(default=False, type="bool"),
+            no_plugins=dict(default=False, type="bool"),
+            apcu_autoloader=dict(default=False, type="bool"),
+            optimize_autoloader=dict(default=True, type="bool"),
+            classmap_authoritative=dict(default=False, type="bool"),
+            ignore_platform_reqs=dict(default=False, type="bool"),
+            composer_executable=dict(type="path"),
         ),
         required_if=[('global_command', False, ['working_dir'])],
         supports_check_mode=True

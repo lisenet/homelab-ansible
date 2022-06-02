@@ -21,6 +21,8 @@ except ImportError:
 
 
 from ansible.module_utils.basic import env_fallback, missing_required_lib
+from ansible.module_utils.common.text.converters import to_native
+from ansible_collections.community.general.plugins.module_utils.version import LooseVersion
 
 
 def proxmox_auth_argument_spec():
@@ -54,9 +56,23 @@ def proxmox_to_ansible_bool(value):
     return True if value == 1 else False
 
 
+def ansible_to_proxmox_bool(value):
+    '''Convert Ansible representation of a boolean to be proxmox-friendly'''
+    if value is None:
+        return None
+
+    if not isinstance(value, bool):
+        raise ValueError("%s must be of type bool not %s" % (value, type(value)))
+
+    return 1 if value else 0
+
+
 class ProxmoxAnsible(object):
     """Base class for Proxmox modules"""
     def __init__(self, module):
+        if not HAS_PROXMOXER:
+            module.fail_json(msg=missing_required_lib('proxmoxer'), exception=PROXMOXER_IMP_ERR)
+
         self.module = module
         self.proxmox_api = self._connect()
         # Test token validity
@@ -84,3 +100,39 @@ class ProxmoxAnsible(object):
             return ProxmoxAPI(api_host, verify_ssl=validate_certs, **auth_args)
         except Exception as e:
             self.module.fail_json(msg='%s' % e, exception=traceback.format_exc())
+
+    def version(self):
+        apireturn = self.proxmox_api.version.get()
+        return LooseVersion(apireturn['version'])
+
+    def get_node(self, node):
+        nodes = [n for n in self.proxmox_api.nodes.get() if n['node'] == node]
+        return nodes[0] if nodes else None
+
+    def get_nextvmid(self):
+        vmid = self.proxmox_api.cluster.nextid.get()
+        return vmid
+
+    def get_vmid(self, name, ignore_missing=False, choose_first_if_multiple=False):
+        vms = [vm['vmid'] for vm in self.proxmox_api.cluster.resources.get(type='vm') if vm.get('name') == name]
+
+        if not vms:
+            if ignore_missing:
+                return None
+
+            self.module.fail_json(msg='No VM with name %s found' % name)
+        elif len(vms) > 1:
+            self.module.fail_json(msg='Multiple VMs with name %s found, provide vmid instead' % name)
+
+        return vms[0]
+
+    def get_vm(self, vmid, ignore_missing=False):
+        vms = [vm for vm in self.proxmox_api.cluster.resources.get(type='vm') if vm['vmid'] == int(vmid)]
+
+        if vms:
+            return vms[0]
+        else:
+            if ignore_missing:
+                return None
+
+            self.module.fail_json(msg='VM with vmid %s does not exist in cluster' % vmid)

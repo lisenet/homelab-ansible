@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 # (c) 2018, Sean Myers <sean.myers@redhat.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -56,9 +57,9 @@ from ansible.module_utils.basic import AnsibleModule
 
 import re
 
-# Matches release-like values such as 7.2, 6.10, 10Server,
-# but rejects unlikely values, like 100Server, 100.0, 1.100, etc.
-release_matcher = re.compile(r'\b\d{1,2}(?:\.\d{1,2}|Server)\b')
+# Matches release-like values such as 7.2, 5.10, 6Server, 8
+# but rejects unlikely values, like 100Server, 1.100, 7server etc.
+release_matcher = re.compile(r'\b\d{1,2}(?:\.\d{1,2}|Server|Client|Workstation|)\b')
 
 
 def _sm_release(module, *args):

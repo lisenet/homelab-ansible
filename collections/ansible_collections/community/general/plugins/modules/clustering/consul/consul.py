@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 #
 # (c) 2015, Steve Gargan <steve.gargan@gmail.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -33,6 +34,7 @@ requirements:
 author: "Steve Gargan (@sgargan)"
 options:
     state:
+        type: str
         description:
           - register or deregister the consul service, defaults to present
         default: present
@@ -82,10 +84,11 @@ options:
         description:
           - the address to advertise that the service will be listening on.
             This value will be passed as the I(address) parameter to Consul's
-            U(/v1/agent/service/register) API method, so refer to the Consul API
+            C(/v1/agent/service/register) API method, so refer to the Consul API
             documentation for further details.
     tags:
         type: list
+        elements: str
         description:
           - tags that will be attached to the service registration.
     script:
@@ -330,7 +333,7 @@ def add_service(module, service):
                      service_id=result.id,
                      service_name=result.name,
                      service_port=result.port,
-                     checks=[check.to_dict() for check in service.checks],
+                     checks=[check.to_dict() for check in service.checks()],
                      tags=result.tags)
 
 
@@ -345,7 +348,7 @@ def remove_service(module, service_id):
     module.exit_json(changed=False, id=service_id)
 
 
-def get_consul_api(module, token=None):
+def get_consul_api(module):
     consulClient = consul.Consul(host=module.params.get('host'),
                                  port=module.params.get('port'),
                                  scheme=module.params.get('scheme'),
@@ -398,7 +401,7 @@ def parse_service(module):
         module.fail_json(msg="service_name is required to configure a service.")
 
 
-class ConsulService():
+class ConsulService(object):
 
     def __init__(self, service_id=None, name=None, address=None, port=-1,
                  tags=None, loaded=None):
@@ -408,7 +411,7 @@ class ConsulService():
         self.address = address
         self.port = port
         self.tags = tags
-        self.checks = []
+        self._checks = []
         if loaded:
             self.id = loaded['ID']
             self.name = loaded['Service']
@@ -421,8 +424,8 @@ class ConsulService():
         if self.port:
             optional['port'] = self.port
 
-        if len(self.checks) > 0:
-            optional['check'] = self.checks[0].check
+        if len(self._checks) > 0:
+            optional['check'] = self._checks[0].check
 
         consul_api.agent.service.register(
             self.name,
@@ -432,13 +435,13 @@ class ConsulService():
             **optional)
 
     def add_check(self, check):
-        self.checks.append(check)
+        self._checks.append(check)
 
     def checks(self):
-        return self.checks
+        return self._checks
 
     def has_checks(self):
-        return len(self.checks) > 0
+        return len(self._checks) > 0
 
     def __eq__(self, other):
         return (isinstance(other, self.__class__) and
@@ -456,8 +459,8 @@ class ConsulService():
             data['port'] = self.port
         if self.tags and len(self.tags) > 0:
             data['tags'] = self.tags
-        if len(self.checks) > 0:
-            data['check'] = self.checks[0].to_dict()
+        if len(self._checks) > 0:
+            data['check'] = self._checks[0].to_dict()
         return data
 
 
@@ -564,26 +567,26 @@ def main():
         argument_spec=dict(
             host=dict(default='localhost'),
             port=dict(default=8500, type='int'),
-            scheme=dict(required=False, default='http'),
-            validate_certs=dict(required=False, default=True, type='bool'),
-            check_id=dict(required=False),
-            check_name=dict(required=False),
-            check_node=dict(required=False),
-            check_host=dict(required=False),
-            notes=dict(required=False),
-            script=dict(required=False),
-            service_id=dict(required=False),
-            service_name=dict(required=False),
-            service_address=dict(required=False, type='str', default=None),
-            service_port=dict(required=False, type='int', default=None),
+            scheme=dict(default='http'),
+            validate_certs=dict(default=True, type='bool'),
+            check_id=dict(),
+            check_name=dict(),
+            check_node=dict(),
+            check_host=dict(),
+            notes=dict(),
+            script=dict(),
+            service_id=dict(),
+            service_name=dict(),
+            service_address=dict(type='str'),
+            service_port=dict(type='int'),
             state=dict(default='present', choices=['present', 'absent']),
-            interval=dict(required=False, type='str'),
-            ttl=dict(required=False, type='str'),
-            tcp=dict(required=False, type='str'),
-            http=dict(required=False, type='str'),
-            timeout=dict(required=False, type='str'),
-            tags=dict(required=False, type='list'),
-            token=dict(required=False, no_log=True)
+            interval=dict(type='str'),
+            ttl=dict(type='str'),
+            tcp=dict(type='str'),
+            http=dict(type='str'),
+            timeout=dict(type='str'),
+            tags=dict(type='list', elements='str'),
+            token=dict(no_log=True)
         ),
         supports_check_mode=False,
     )

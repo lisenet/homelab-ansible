@@ -6,7 +6,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 DOCUMENTATION = r"""
-lookup: dsv
+name: dsv
 author: Adam Migus (@amigus) <adam@migus.org>
 short_description: Get secrets from Thycotic DevOps Secrets Vault
 version_added: 1.0.0
@@ -105,11 +105,15 @@ display = Display()
 class LookupModule(LookupBase):
     @staticmethod
     def Client(vault_parameters):
-        return SecretsVault(**vault_parameters)
+        try:
+            vault = SecretsVault(**vault_parameters)
+            return vault
+        except TypeError:
+            raise AnsibleError("python-dsv-sdk==0.0.1 must be installed to use this plugin")
 
     def run(self, terms, variables, **kwargs):
         if sdk_is_missing:
-            raise AnsibleError("python-dsv-sdk must be installed to use this plugin")
+            raise AnsibleError("python-dsv-sdk==0.0.1 must be installed to use this plugin")
 
         self.set_options(var_options=variables, direct=kwargs)
 

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Based on jail.py
 # (c) 2013, Michael Scherer <misc@zarb.org>
 # (c) 2015, Toshio Kuratomi <tkuratomi@ansible.com>
@@ -10,7 +11,7 @@ __metaclass__ = type
 
 DOCUMENTATION = '''
     author: Stephan Lohse (!UNKNOWN) <dev-github@ploek.org>
-    connection: iocage
+    name: iocage
     short_description: Run tasks in iocage jails
     description:
         - Run commands or put/fetch files to an existing iocage jail
@@ -32,7 +33,7 @@ DOCUMENTATION = '''
 import subprocess
 
 from ansible_collections.community.general.plugins.connection.jail import Connection as Jail
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 from ansible.errors import AnsibleError
 from ansible.utils.display import Display
 
@@ -40,7 +41,7 @@ display = Display()
 
 
 class Connection(Jail):
-    ''' Local iocage based connections '''
+    """ Local iocage based connections """
 
     transport = 'community.general.iocage'
 

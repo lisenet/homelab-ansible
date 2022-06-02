@@ -7,6 +7,9 @@
   - name: Install EPEL repository (RHEL only)
     include_role:
       name: setup_epel
+    when:
+      - ansible_distribution in ['RedHat', 'CentOS']
+      - ansible_distribution_major_version is version('9', '<')
 
   - name: create required directories
     become: yes
@@ -42,6 +45,18 @@
     copy:
       src: httpd_echo.py
       dest: "{{ process_file }}"
+
+  - name: Install virtualenv
+    package:
+      name: virtualenv
+      state: present
+    when: ansible_distribution == 'CentOS' and ansible_distribution_major_version == '8'
+
+  - name: Install virtualenv
+    package:
+      name: python-virtualenv
+      state: present
+    when: ansible_os_family == 'Archlinux'
 
   - name: install dependencies
     pip:

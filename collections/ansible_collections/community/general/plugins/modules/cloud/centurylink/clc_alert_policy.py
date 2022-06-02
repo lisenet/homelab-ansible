@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 #
 # Copyright (c) 2015 CenturyLink
@@ -32,6 +33,7 @@ options:
       - A list of recipient email ids to notify the alert.
         This is required for state 'present'
     type: list
+    elements: str
   metric:
     description:
       - The metric on which to measure the condition that will trigger the alert.
@@ -159,7 +161,8 @@ __version__ = '${version}'
 import json
 import os
 import traceback
-from distutils.version import LooseVersion
+
+from ansible_collections.community.general.plugins.module_utils.version import LooseVersion
 
 REQUESTS_IMP_ERR = None
 try:
@@ -220,13 +223,12 @@ class ClcAlertPolicy:
             name=dict(),
             id=dict(),
             alias=dict(required=True),
-            alert_recipients=dict(type='list'),
+            alert_recipients=dict(type='list', elements='str'),
             metric=dict(
                 choices=[
                     'cpu',
                     'memory',
-                    'disk'],
-                default=None),
+                    'disk']),
             duration=dict(type='str'),
             threshold=dict(type='int'),
             state=dict(default='present', choices=['present', 'absent'])

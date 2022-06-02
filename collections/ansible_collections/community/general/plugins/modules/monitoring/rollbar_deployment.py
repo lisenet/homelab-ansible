@@ -84,7 +84,7 @@ import traceback
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six.moves.urllib.parse import urlencode
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 from ansible.module_utils.urls import fetch_url
 
 
@@ -92,7 +92,7 @@ def main():
 
     module = AnsibleModule(
         argument_spec=dict(
-            token=dict(required=True),
+            token=dict(required=True, no_log=True),
             environment=dict(required=True),
             revision=dict(required=True),
             user=dict(required=False),

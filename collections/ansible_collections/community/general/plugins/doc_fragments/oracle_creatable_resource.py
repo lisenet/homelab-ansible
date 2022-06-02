@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright (c) 2018, Oracle and/or its affiliates.
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
@@ -20,4 +21,5 @@ class ModuleDocFragment(object):
                          identify an instance of the resource. By default, all the attributes of a resource except
                          I(freeform_tags) are used to uniquely identify a resource.
             type: list
+            elements: str
     """

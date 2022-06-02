@@ -45,7 +45,7 @@ options:
         required: false
         type: bool
         description:
-            - Enable or disable the service according to local preferences in *.preset files.
+            - Enable or disable the service according to local preferences in C(*.preset) files.
               Mutually exclusive with I(enabled). Only has an effect if set to true. Will take
               effect prior to I(state=reset).
     user:
@@ -315,7 +315,7 @@ import json
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.service import fail_if_missing
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 def run_sys_ctl(module, args):

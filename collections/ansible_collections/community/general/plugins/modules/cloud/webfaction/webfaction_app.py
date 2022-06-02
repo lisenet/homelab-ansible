@@ -35,17 +35,20 @@ options:
         description:
             - The name of the application
         required: true
+        type: str
 
     state:
         description:
             - Whether the application should exist
         choices: ['present', 'absent']
         default: "present"
+        type: str
 
     type:
         description:
             - The type of application to create. See the Webfaction docs at U(https://docs.webfaction.com/xmlrpc-api/apps.html) for a list.
         required: true
+        type: str
 
     autostart:
         description:
@@ -57,6 +60,7 @@ options:
         description:
             - Any extra parameters required by the app
         default: ''
+        type: str
 
     port_open:
         description:
@@ -68,15 +72,18 @@ options:
         description:
             - The webfaction account to use
         required: true
+        type: str
 
     login_password:
         description:
             - The webfaction password to use
         required: true
+        type: str
 
     machine:
         description:
             - The machine name to use (optional for accounts with only one machine)
+        type: str
 
 '''
 
@@ -103,14 +110,14 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             name=dict(required=True),
-            state=dict(required=False, choices=['present', 'absent'], default='present'),
+            state=dict(choices=['present', 'absent'], default='present'),
             type=dict(required=True),
-            autostart=dict(required=False, type='bool', default=False),
-            extra_info=dict(required=False, default=""),
-            port_open=dict(required=False, type='bool', default=False),
+            autostart=dict(type='bool', default=False),
+            extra_info=dict(default=""),
+            port_open=dict(type='bool', default=False),
             login_name=dict(required=True),
             login_password=dict(required=True, no_log=True),
-            machine=dict(required=False, default=None),
+            machine=dict(),
         ),
         supports_check_mode=True
     )

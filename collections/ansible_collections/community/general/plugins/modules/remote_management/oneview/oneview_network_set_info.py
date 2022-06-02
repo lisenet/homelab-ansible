@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 # Copyright (c) 2016-2017 Hewlett Packard Enterprise Development LP
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
@@ -23,12 +24,15 @@ options:
     name:
       description:
         - Network Set name.
+      type: str
 
     options:
       description:
         - "List with options to gather information about Network Set.
           Option allowed: C(withoutEthernet).
           The option C(withoutEthernet) retrieves the list of network_sets excluding Ethernet networks."
+      type: list
+      elements: str
 
 extends_documentation_fragment:
 - community.general.oneview
@@ -47,10 +51,11 @@ EXAMPLES = '''
   delegate_to: localhost
   register: result
 
-- ansible.builtin.debug:
+- name: Print fetched information about Network Sets
+  ansible.builtin.debug:
     msg: "{{ result.network_sets }}"
 
-- name: Gather paginated, filtered, and sorted information about Network Sets
+- name: Gather paginated, filtered and sorted information about Network Sets
   community.general.oneview_network_set_info:
     hostname: 172.16.101.48
     username: administrator
@@ -65,7 +70,8 @@ EXAMPLES = '''
   delegate_to: localhost
   register: result
 
-- ansible.builtin.debug:
+- name: Print fetched information about paginated, filtered and sorted list of Network Sets
+  ansible.builtin.debug:
     msg: "{{ result.network_sets }}"
 
 - name: Gather information about all Network Sets, excluding Ethernet networks
@@ -80,7 +86,8 @@ EXAMPLES = '''
   delegate_to: localhost
   register: result
 
-- ansible.builtin.debug:
+- name: Print fetched information about Network Sets, excluding Ethernet networks
+  ansible.builtin.debug:
     msg: "{{ result.network_sets }}"
 
 - name: Gather information about a Network Set by name
@@ -94,7 +101,8 @@ EXAMPLES = '''
   delegate_to: localhost
   register: result
 
-- ansible.builtin.debug:
+- name: Print fetched information about Network Set found by name
+  ansible.builtin.debug:
     msg: "{{ result.network_sets }}"
 
 - name: Gather information about a Network Set by name, excluding Ethernet networks
@@ -110,7 +118,8 @@ EXAMPLES = '''
   delegate_to: localhost
   register: result
 
-- ansible.builtin.debug:
+- name: Print fetched information about Network Set found by name, excluding Ethernet networks
+  ansible.builtin.debug:
     msg: "{{ result.network_sets }}"
 '''
 
@@ -127,17 +136,15 @@ from ansible_collections.community.general.plugins.module_utils.oneview import O
 class NetworkSetInfoModule(OneViewModuleBase):
     argument_spec = dict(
         name=dict(type='str'),
-        options=dict(type='list'),
+        options=dict(type='list', elements='str'),
         params=dict(type='dict'),
     )
 
     def __init__(self):
-        super(NetworkSetInfoModule, self).__init__(additional_arg_spec=self.argument_spec)
-        self.is_old_facts = self.module._name in ('oneview_network_set_facts', 'community.general.oneview_network_set_facts')
-        if self.is_old_facts:
-            self.module.deprecate("The 'oneview_network_set_facts' module has been renamed to 'oneview_network_set_info', "
-                                  "and the renamed one no longer returns ansible_facts",
-                                  version='3.0.0', collection_name='community.general')  # was Ansible 2.13
+        super(NetworkSetInfoModule, self).__init__(
+            additional_arg_spec=self.argument_spec,
+            supports_check_mode=True,
+        )
 
     def execute_module(self):
 
@@ -151,11 +158,7 @@ class NetworkSetInfoModule(OneViewModuleBase):
         else:
             network_sets = self.oneview_client.network_sets.get_all(**self.facts_params)
 
-        if self.is_old_facts:
-            return dict(changed=False,
-                        ansible_facts=dict(network_sets=network_sets))
-        else:
-            return dict(changed=False, network_sets=network_sets)
+        return dict(changed=False, network_sets=network_sets)
 
 
 def main():

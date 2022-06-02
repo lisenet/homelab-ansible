@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 # Copyright: (c) 2018, Ansible Project
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -26,6 +27,7 @@ options:
       - Heroku API key
   apps:
     type: list
+    elements: str
     description:
       - List of Heroku App names
     required: true
@@ -109,7 +111,7 @@ def main():
     argument_spec = HerokuHelper.heroku_argument_spec()
     argument_spec.update(
         user=dict(required=True, type='str'),
-        apps=dict(required=True, type='list'),
+        apps=dict(required=True, type='list', elements='str'),
         suppress_invitation=dict(default=False, type='bool'),
         state=dict(default='present', type='str', choices=['present', 'absent']),
     )

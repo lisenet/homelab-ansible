@@ -30,7 +30,6 @@ options:
         description:
             - Keycloak realm name to authenticate to for API access.
         type: str
-        required: true
 
     auth_client_secret:
         description:
@@ -41,7 +40,6 @@ options:
         description:
             - Username to authenticate for API access with.
         type: str
-        required: true
         aliases:
           - username
 
@@ -49,13 +47,25 @@ options:
         description:
             - Password to authenticate for API access with.
         type: str
-        required: true
         aliases:
           - password
+
+    token:
+        description:
+            - Authentication token for Keycloak API.
+        type: str
+        version_added: 3.0.0
 
     validate_certs:
         description:
             - Verify TLS certificates (do not disable this in production).
         type: bool
         default: yes
+
+    connection_timeout:
+        description:
+            - Controls the HTTP connections timeout period (in seconds) to Keycloak API.
+        type: int
+        default: 10
+        version_added: 4.5.0
 '''

@@ -41,6 +41,16 @@ options:
       - The priority of the alternative.
     type: int
     default: 50
+  state:
+    description:
+      - C(present) - install the alternative (if not already installed), but do
+        not set it as the currently selected alternative for the group.
+      - C(selected) - install the alternative (if not already installed), and
+        set it as the currently selected alternative for the group.
+    choices: [ present, selected ]
+    default: selected
+    type: str
+    version_added: 4.8.0
 requirements: [ update-alternatives ]
 '''
 
@@ -61,6 +71,13 @@ EXAMPLES = r'''
     name: java
     path: /usr/lib/jvm/java-7-openjdk-i386/jre/bin/java
     priority: -10
+
+- name: Install Python 3.5 but do not select it
+  community.general.alternatives:
+    name: python
+    path: /usr/bin/python3.5
+    link: /usr/bin/python
+    state: present
 '''
 
 import os
@@ -68,6 +85,15 @@ import re
 import subprocess
 
 from ansible.module_utils.basic import AnsibleModule
+
+
+class AlternativeState:
+    PRESENT = "present"
+    SELECTED = "selected"
+
+    @classmethod
+    def to_list(cls):
+        return [cls.PRESENT, cls.SELECTED]
 
 
 def main():
@@ -78,6 +104,11 @@ def main():
             path=dict(type='path', required=True),
             link=dict(type='path'),
             priority=dict(type='int', default=50),
+            state=dict(
+                type='str',
+                choices=AlternativeState.to_list(),
+                default=AlternativeState.SELECTED,
+            ),
         ),
         supports_check_mode=True,
     )
@@ -87,6 +118,7 @@ def main():
     path = params['path']
     link = params['link']
     priority = params['priority']
+    state = params['state']
 
     UPDATE_ALTERNATIVES = module.get_bin_path('update-alternatives', True)
 
@@ -94,7 +126,7 @@ def main():
     all_alternatives = []
 
     # Run `update-alternatives --display <name>` to find existing alternatives
-    (rc, display_output, _) = module.run_command(
+    (rc, display_output, dummy) = module.run_command(
         ['env', 'LC_ALL=C', UPDATE_ALTERNATIVES, '--display', name]
     )
 
@@ -104,7 +136,7 @@ def main():
         # available alternatives
         current_path_regex = re.compile(r'^\s*link currently points to (.*)$',
                                         re.MULTILINE)
-        alternative_regex = re.compile(r'^(\/.*)\s-\spriority', re.MULTILINE)
+        alternative_regex = re.compile(r'^(\/.*)\s-\s(?:family\s\S+\s)?priority', re.MULTILINE)
 
         match = current_path_regex.search(display_output)
         if match:
@@ -117,7 +149,7 @@ def main():
             #
             # This is only compatible on Debian-based systems, as the other
             # alternatives don't have --query available
-            rc, query_output, _ = module.run_command(
+            rc, query_output, dummy = module.run_command(
                 ['env', 'LC_ALL=C', UPDATE_ALTERNATIVES, '--query', name]
             )
             if rc == 0:
@@ -126,9 +158,20 @@ def main():
                         link = line.split()[1]
                         break
 
+    changed = False
     if current_path != path:
+
+        # Check mode: expect a change if this alternative is not already
+        # installed, or if it is to be set as the current selection.
         if module.check_mode:
-            module.exit_json(changed=True, current_path=current_path)
+            module.exit_json(
+                changed=(
+                    path not in all_alternatives or
+                    state == AlternativeState.SELECTED
+                ),
+                current_path=current_path,
+            )
+
         try:
             # install the requested path if necessary
             if path not in all_alternatives:
@@ -141,18 +184,34 @@ def main():
                     [UPDATE_ALTERNATIVES, '--install', link, name, path, str(priority)],
                     check_rc=True
                 )
+                changed = True
 
-            # select the requested path
-            module.run_command(
-                [UPDATE_ALTERNATIVES, '--set', name, path],
-                check_rc=True
-            )
+            # set the current selection to this path (if requested)
+            if state == AlternativeState.SELECTED:
+                module.run_command(
+                    [UPDATE_ALTERNATIVES, '--set', name, path],
+                    check_rc=True
+                )
+                changed = True
 
-            module.exit_json(changed=True)
         except subprocess.CalledProcessError as cpe:
             module.fail_json(msg=str(dir(cpe)))
-    else:
-        module.exit_json(changed=False)
+    elif current_path == path and state == AlternativeState.PRESENT:
+        # Case where alternative is currently selected, but state is set
+        # to 'present'. In this case, we set to auto mode.
+        if module.check_mode:
+            module.exit_json(changed=True, current_path=current_path)
+
+        changed = True
+        try:
+            module.run_command(
+                [UPDATE_ALTERNATIVES, '--auto', name],
+                check_rc=True,
+            )
+        except subprocess.CalledProcessError as cpe:
+            module.fail_json(msg=str(dir(cpe)))
+
+    module.exit_json(changed=changed)
 
 
 if __name__ == '__main__':

@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 #
 # Copyright: (c) 2018, Ansible Project
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -18,22 +19,26 @@ options:
   repository:
     description:
       - Full name of the repository to configure a hook for
+    type: str
     required: true
     aliases:
       - repo
   url:
     description:
       - URL to which payloads will be delivered
+    type: str
     required: true
   content_type:
     description:
       - The media type used to serialize the payloads
+    type: str
     required: false
     choices: [ form, json ]
     default: form
   secret:
     description:
       - The shared secret between GitHub and the payload URL.
+    type: str
     required: false
   insecure_ssl:
     description:
@@ -61,24 +66,29 @@ options:
   state:
     description:
       - Whether the hook should be present or absent
+    type: str
     required: false
     choices: [ absent, present ]
     default: present
   user:
     description:
       - User to authenticate to GitHub as
+    type: str
     required: true
   password:
     description:
       - Password to authenticate to GitHub with
+    type: str
     required: false
   token:
     description:
       - Token to authenticate to GitHub with
+    type: str
     required: false
   github_url:
     description:
       - Base URL of the GitHub API
+    type: str
     required: false
     default: https://api.github.com
 
@@ -87,7 +97,7 @@ author:
 '''
 
 EXAMPLES = '''
-- name:  create a new webhook that triggers on push (password auth)
+- name: Create a new webhook that triggers on push (password auth)
   community.general.github_webhook:
     repository: ansible/ansible
     url: https://www.example.com/hooks/
@@ -139,7 +149,7 @@ except ImportError:
     HAS_GITHUB = False
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 def _create_hook_config(module):

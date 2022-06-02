@@ -23,20 +23,24 @@ description:
 options:
   host:
     description:
-    - The HP iLO hostname/address that is linked to the physical system.
+        - The HP iLO hostname/address that is linked to the physical system.
+    type: str
     required: true
   login:
     description:
-    - The login name to authenticate to the HP iLO interface.
+      - The login name to authenticate to the HP iLO interface.
+    type: str
     default: Administrator
   password:
     description:
-    - The password to authenticate to the HP iLO interface.
+      - The password to authenticate to the HP iLO interface.
+    type: str
     default: admin
   ssl_version:
     description:
       - Change the ssl_version used.
     default: TLSv1
+    type: str
     choices: [ "SSLv3", "SSLv23", "TLSv1", "TLSv1_1", "TLSv1_2" ]
 requirements:
 - hpilo
@@ -113,6 +117,15 @@ hw_uuid:
     returned: always
     type: str
     sample: 123456ABC78901D2
+
+host_power_status:
+    description:
+      - Power status of host.
+      - Will be one of C(ON), C(OFF) and C(UNKNOWN).
+    returned: always
+    type: str
+    sample: ON
+    version_added: 3.5.0
 '''
 
 import re
@@ -128,7 +141,7 @@ except ImportError:
     HAS_HPILO = False
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 # Suppress warnings from hpilo
@@ -159,11 +172,6 @@ def main():
         ),
         supports_check_mode=True,
     )
-    is_old_facts = module._name in ('hpilo_facts', 'community.general.hpilo_facts')
-    if is_old_facts:
-        module.deprecate("The 'hpilo_facts' module has been renamed to 'hpilo_info', "
-                         "and the renamed one no longer returns ansible_facts",
-                         version='3.0.0', collection_name='community.general')  # was Ansible 2.13
 
     if not HAS_HPILO:
         module.fail_json(msg=missing_required_lib('python-hpilo'), exception=HPILO_IMP_ERR)
@@ -182,6 +190,7 @@ def main():
     # TODO: Count number of CPUs, DIMMs and total memory
     try:
         data = ilo.get_host_data()
+        power_state = ilo.get_host_power_status()
     except hpilo.IloCommunicationError as e:
         module.fail_json(msg=to_native(e))
 
@@ -248,10 +257,10 @@ def main():
         # reformat into a text friendly format
         info['hw_memory_total'] = "{0} GB".format(info['hw_memory_total'])
 
-    if is_old_facts:
-        module.exit_json(ansible_facts=info)
-    else:
-        module.exit_json(**info)
+    # Report host state
+    info['host_power_status'] = power_state or 'UNKNOWN'
+
+    module.exit_json(**info)
 
 
 if __name__ == '__main__':

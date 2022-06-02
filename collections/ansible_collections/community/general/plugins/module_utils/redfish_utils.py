@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright (c) 2017-2018 Dell EMC Inc.
 # GNU General Public License v3.0+ (see LICENSE or https://www.gnu.org/licenses/gpl-3.0.txt)
 
@@ -6,8 +7,8 @@ __metaclass__ = type
 
 import json
 from ansible.module_utils.urls import open_url
-from ansible.module_utils._text import to_native
-from ansible.module_utils._text import to_text
+from ansible.module_utils.common.text.converters import to_native
+from ansible.module_utils.common.text.converters import to_text
 from ansible.module_utils.six.moves import http_client
 from ansible.module_utils.six.moves.urllib.error import URLError, HTTPError
 from ansible.module_utils.six.moves.urllib.parse import urlparse
@@ -19,17 +20,16 @@ PATCH_HEADERS = {'content-type': 'application/json', 'accept': 'application/json
                  'OData-Version': '4.0'}
 DELETE_HEADERS = {'accept': 'application/json', 'OData-Version': '4.0'}
 
-DEPRECATE_MSG = 'Issuing a data modification command without specifying the '\
-                'ID of the target %(resource)s resource when there is more '\
-                'than one %(resource)s will use the first one in the '\
-                'collection. Use the `resource_id` option to specify the '\
-                'target %(resource)s ID'
+FAIL_MSG = 'Issuing a data modification command without specifying the '\
+           'ID of the target %(resource)s resource when there is more '\
+           'than one %(resource)s is no longer allowed. Use the `resource_id` '\
+           'option to specify the target %(resource)s ID.'
 
 
 class RedfishUtils(object):
 
     def __init__(self, creds, root_uri, timeout, module, resource_id=None,
-                 data_modification=False):
+                 data_modification=False, strip_etag_quotes=False):
         self.root_uri = root_uri
         self.creds = creds
         self.timeout = timeout
@@ -37,15 +37,37 @@ class RedfishUtils(object):
         self.service_root = '/redfish/v1/'
         self.resource_id = resource_id
         self.data_modification = data_modification
+        self.strip_etag_quotes = strip_etag_quotes
         self._init_session()
+
+    def _auth_params(self, headers):
+        """
+        Return tuple of required authentication params based on the presence
+        of a token in the self.creds dict. If using a token, set the
+        X-Auth-Token header in the `headers` param.
+
+        :param headers: dict containing headers to send in request
+        :return: tuple of username, password and force_basic_auth
+        """
+        if self.creds.get('token'):
+            username = None
+            password = None
+            force_basic_auth = False
+            headers['X-Auth-Token'] = self.creds['token']
+        else:
+            username = self.creds['user']
+            password = self.creds['pswd']
+            force_basic_auth = True
+        return username, password, force_basic_auth
 
     # The following functions are to send GET/POST/PATCH/DELETE requests
     def get_request(self, uri):
+        req_headers = dict(GET_HEADERS)
+        username, password, basic_auth = self._auth_params(req_headers)
         try:
-            resp = open_url(uri, method="GET", headers=GET_HEADERS,
-                            url_username=self.creds['user'],
-                            url_password=self.creds['pswd'],
-                            force_basic_auth=True, validate_certs=False,
+            resp = open_url(uri, method="GET", headers=req_headers,
+                            url_username=username, url_password=password,
+                            force_basic_auth=basic_auth, validate_certs=False,
                             follow_redirects='all',
                             use_proxy=True, timeout=self.timeout)
             data = json.loads(to_native(resp.read()))
@@ -66,14 +88,16 @@ class RedfishUtils(object):
         return {'ret': True, 'data': data, 'headers': headers}
 
     def post_request(self, uri, pyld):
+        req_headers = dict(POST_HEADERS)
+        username, password, basic_auth = self._auth_params(req_headers)
         try:
             resp = open_url(uri, data=json.dumps(pyld),
-                            headers=POST_HEADERS, method="POST",
-                            url_username=self.creds['user'],
-                            url_password=self.creds['pswd'],
-                            force_basic_auth=True, validate_certs=False,
+                            headers=req_headers, method="POST",
+                            url_username=username, url_password=password,
+                            force_basic_auth=basic_auth, validate_certs=False,
                             follow_redirects='all',
                             use_proxy=True, timeout=self.timeout)
+            headers = dict((k.lower(), v) for (k, v) in resp.info().items())
         except HTTPError as e:
             msg = self._get_extended_message(e)
             return {'ret': False,
@@ -87,10 +111,10 @@ class RedfishUtils(object):
         except Exception as e:
             return {'ret': False,
                     'msg': "Failed POST request to '%s': '%s'" % (uri, to_text(e))}
-        return {'ret': True, 'resp': resp}
+        return {'ret': True, 'headers': headers, 'resp': resp}
 
     def patch_request(self, uri, pyld):
-        headers = PATCH_HEADERS
+        req_headers = dict(PATCH_HEADERS)
         r = self.get_request(uri)
         if r['ret']:
             # Get etag from etag header or @odata.etag property
@@ -98,15 +122,15 @@ class RedfishUtils(object):
             if not etag:
                 etag = r['data'].get('@odata.etag')
             if etag:
-                # Make copy of headers and add If-Match header
-                headers = dict(headers)
-                headers['If-Match'] = etag
+                if self.strip_etag_quotes:
+                    etag = etag.strip('"')
+                req_headers['If-Match'] = etag
+        username, password, basic_auth = self._auth_params(req_headers)
         try:
             resp = open_url(uri, data=json.dumps(pyld),
-                            headers=headers, method="PATCH",
-                            url_username=self.creds['user'],
-                            url_password=self.creds['pswd'],
-                            force_basic_auth=True, validate_certs=False,
+                            headers=req_headers, method="PATCH",
+                            url_username=username, url_password=password,
+                            force_basic_auth=basic_auth, validate_certs=False,
                             follow_redirects='all',
                             use_proxy=True, timeout=self.timeout)
         except HTTPError as e:
@@ -125,13 +149,14 @@ class RedfishUtils(object):
         return {'ret': True, 'resp': resp}
 
     def delete_request(self, uri, pyld=None):
+        req_headers = dict(DELETE_HEADERS)
+        username, password, basic_auth = self._auth_params(req_headers)
         try:
             data = json.dumps(pyld) if pyld else None
             resp = open_url(uri, data=data,
-                            headers=DELETE_HEADERS, method="DELETE",
-                            url_username=self.creds['user'],
-                            url_password=self.creds['pswd'],
-                            force_basic_auth=True, validate_certs=False,
+                            headers=req_headers, method="DELETE",
+                            url_username=username, url_password=password,
+                            force_basic_auth=basic_auth, validate_certs=False,
                             follow_redirects='all',
                             use_proxy=True, timeout=self.timeout)
         except HTTPError as e:
@@ -163,7 +188,12 @@ class RedfishUtils(object):
                 body = error.read().decode('utf-8')
                 data = json.loads(body)
                 ext_info = data['error']['@Message.ExtendedInfo']
-                msg = ext_info[0]['Message']
+                # if the ExtendedInfo contains a user friendly message send it
+                # otherwise try to send the entire contents of ExtendedInfo
+                try:
+                    msg = ext_info[0]['Message']
+                except Exception:
+                    msg = str(data['error']['@Message.ExtendedInfo'])
             except Exception:
                 pass
         return msg
@@ -245,8 +275,7 @@ class RedfishUtils(object):
                         'ret': False,
                         'msg': "System resource %s not found" % self.resource_id}
             elif len(self.systems_uris) > 1:
-                self.module.deprecate(DEPRECATE_MSG % {'resource': 'System'},
-                                      version='3.0.0', collection_name='community.general')  # was Ansible 2.14
+                self.module.fail_json(msg=FAIL_MSG % {'resource': 'System'})
         return {'ret': True}
 
     def _find_updateservice_resource(self):
@@ -296,8 +325,7 @@ class RedfishUtils(object):
                         'ret': False,
                         'msg': "Chassis resource %s not found" % self.resource_id}
             elif len(self.chassis_uris) > 1:
-                self.module.deprecate(DEPRECATE_MSG % {'resource': 'Chassis'},
-                                      version='3.0.0', collection_name='community.general')  # was Ansible 2.14
+                self.module.fail_json(msg=FAIL_MSG % {'resource': 'Chassis'})
         return {'ret': True}
 
     def _find_managers_resource(self):
@@ -326,8 +354,7 @@ class RedfishUtils(object):
                         'ret': False,
                         'msg': "Manager resource %s not found" % self.resource_id}
             elif len(self.manager_uris) > 1:
-                self.module.deprecate(DEPRECATE_MSG % {'resource': 'Manager'},
-                                      version='3.0.0', collection_name='community.general')  # was Ansible 2.14
+                self.module.fail_json(msg=FAIL_MSG % {'resource': 'Manager'})
         return {'ret': True}
 
     def _get_all_action_info_values(self, action):
@@ -469,7 +496,7 @@ class RedfishUtils(object):
         controller_results = []
         # Get these entries, but does not fail if not found
         properties = ['CacheSummary', 'FirmwareVersion', 'Identifiers',
-                      'Location', 'Manufacturer', 'Model', 'Name',
+                      'Location', 'Manufacturer', 'Model', 'Name', 'Id',
                       'PartNumber', 'SerialNumber', 'SpeedGbps', 'Status']
         key = "StorageControllers"
 
@@ -710,14 +737,22 @@ class RedfishUtils(object):
     def get_multi_volume_inventory(self):
         return self.aggregate_systems(self.get_volume_inventory)
 
-    def manage_indicator_led(self, command):
+    def manage_system_indicator_led(self, command):
+        return self.manage_indicator_led(command, self.systems_uri)
+
+    def manage_chassis_indicator_led(self, command):
+        return self.manage_indicator_led(command, self.chassis_uri)
+
+    def manage_indicator_led(self, command, resource_uri=None):
         result = {}
         key = 'IndicatorLED'
+        if resource_uri is None:
+            resource_uri = self.chassis_uri
 
         payloads = {'IndicatorLedOn': 'Lit', 'IndicatorLedOff': 'Off', "IndicatorLedBlink": 'Blinking'}
 
         result = {}
-        response = self.get_request(self.root_uri + self.chassis_uri)
+        response = self.get_request(self.root_uri + resource_uri)
         if response['ret'] is False:
             return response
         result['ret'] = True
@@ -727,7 +762,7 @@ class RedfishUtils(object):
 
         if command in payloads.keys():
             payload = {'IndicatorLED': payloads[command]}
-            response = self.patch_request(self.root_uri + self.chassis_uri, payload)
+            response = self.patch_request(self.root_uri + resource_uri, payload)
             if response['ret'] is False:
                 return response
         else:
@@ -957,6 +992,8 @@ class RedfishUtils(object):
             payload['Password'] = user.get('account_password')
         if user.get('account_roleid'):
             payload['RoleId'] = user.get('account_roleid')
+        if user.get('account_id'):
+            payload['Id'] = user.get('account_id')
 
         response = self.post_request(self.root_uri + self.accounts_uri, payload)
         if not response['ret']:
@@ -1195,6 +1232,54 @@ class RedfishUtils(object):
                 return response
 
         return {'ret': True, 'changed': True, 'msg': "Clear all sessions successfully"}
+
+    def create_session(self):
+        if not self.creds.get('user') or not self.creds.get('pswd'):
+            return {'ret': False, 'msg':
+                    'Must provide the username and password parameters for '
+                    'the CreateSession command'}
+
+        payload = {
+            'UserName': self.creds['user'],
+            'Password': self.creds['pswd']
+        }
+        response = self.post_request(self.root_uri + self.sessions_uri, payload)
+        if response['ret'] is False:
+            return response
+
+        headers = response['headers']
+        if 'x-auth-token' not in headers:
+            return {'ret': False, 'msg':
+                    'The service did not return the X-Auth-Token header in '
+                    'the response from the Sessions collection POST'}
+
+        if 'location' not in headers:
+            self.module.warn(
+                'The service did not return the Location header for the '
+                'session URL in the response from the Sessions collection '
+                'POST')
+            session_uri = None
+        else:
+            session_uri = urlparse(headers.get('location')).path
+
+        session = dict()
+        session['token'] = headers.get('x-auth-token')
+        session['uri'] = session_uri
+        return {'ret': True, 'changed': True, 'session': session,
+                'msg': 'Session created successfully'}
+
+    def delete_session(self, session_uri):
+        if not session_uri:
+            return {'ret': False, 'msg':
+                    'Must provide the session_uri parameter for the '
+                    'DeleteSession command'}
+
+        response = self.delete_request(self.root_uri + session_uri)
+        if response['ret'] is False:
+            return response
+
+        return {'ret': True, 'changed': True,
+                'msg': 'Session deleted successfully'}
 
     def get_firmware_update_capabilities(self):
         result = {}
@@ -1499,6 +1584,7 @@ class RedfishUtils(object):
         uefi_target = boot_opts.get('uefi_target')
         boot_next = boot_opts.get('boot_next')
         override_enabled = boot_opts.get('override_enabled')
+        boot_override_mode = boot_opts.get('boot_override_mode')
 
         if not bootdevice and override_enabled != 'Disabled':
             return {'ret': False,
@@ -1516,19 +1602,21 @@ class RedfishUtils(object):
 
         boot = data[key]
 
-        annotation = 'BootSourceOverrideTarget@Redfish.AllowableValues'
-        if annotation in boot:
-            allowable_values = boot[annotation]
-            if isinstance(allowable_values, list) and bootdevice not in allowable_values:
-                return {'ret': False,
-                        'msg': "Boot device %s not in list of allowable values (%s)" %
-                               (bootdevice, allowable_values)}
+        if override_enabled != 'Disabled':
+            annotation = 'BootSourceOverrideTarget@Redfish.AllowableValues'
+            if annotation in boot:
+                allowable_values = boot[annotation]
+                if isinstance(allowable_values, list) and bootdevice not in allowable_values:
+                    return {'ret': False,
+                            'msg': "Boot device %s not in list of allowable values (%s)" %
+                                   (bootdevice, allowable_values)}
 
         # read existing values
         cur_enabled = boot.get('BootSourceOverrideEnabled')
         target = boot.get('BootSourceOverrideTarget')
         cur_uefi_target = boot.get('UefiTargetBootSourceOverride')
         cur_boot_next = boot.get('BootNext')
+        cur_override_mode = boot.get('BootSourceOverrideMode')
 
         if override_enabled == 'Disabled':
             payload = {
@@ -1565,7 +1653,8 @@ class RedfishUtils(object):
                 }
             }
         else:
-            if cur_enabled == override_enabled and target == bootdevice:
+            if (cur_enabled == override_enabled and target == bootdevice and
+                    (cur_override_mode == boot_override_mode or not boot_override_mode)):
                 # If properties are already set, no changes needed
                 return {'ret': True, 'changed': False}
             payload = {
@@ -1574,6 +1663,8 @@ class RedfishUtils(object):
                     'BootSourceOverrideTarget': bootdevice
                 }
             }
+            if boot_override_mode:
+                payload['Boot']['BootSourceOverrideMode'] = boot_override_mode
 
         response = self.patch_request(self.root_uri + self.systems_uri, payload)
         if response['ret'] is False:
@@ -1605,19 +1696,31 @@ class RedfishUtils(object):
 
         # Make a copy of the attributes dict
         attrs_to_patch = dict(attributes)
+        # List to hold attributes not found
+        attrs_bad = {}
 
         # Check the attributes
-        for attr in attributes:
-            if attr not in data[u'Attributes']:
-                return {'ret': False, 'msg': "BIOS attribute %s not found" % attr}
+        for attr_name, attr_value in attributes.items():
+            # Check if attribute exists
+            if attr_name not in data[u'Attributes']:
+                # Remove and proceed to next attribute if this isn't valid
+                attrs_bad.update({attr_name: attr_value})
+                del attrs_to_patch[attr_name]
+                continue
+
             # If already set to requested value, remove it from PATCH payload
-            if data[u'Attributes'][attr] == attributes[attr]:
-                del attrs_to_patch[attr]
+            if data[u'Attributes'][attr_name] == attributes[attr_name]:
+                del attrs_to_patch[attr_name]
+
+        warning = ""
+        if attrs_bad:
+            warning = "Incorrect attributes %s" % (attrs_bad)
 
         # Return success w/ changed=False if no attrs need to be changed
         if not attrs_to_patch:
             return {'ret': True, 'changed': False,
-                    'msg': "BIOS attributes already set"}
+                    'msg': "BIOS attributes already set",
+                    'warning': warning}
 
         # Get the SettingsObject URI
         set_bios_attr_uri = data["@Redfish.Settings"]["SettingsObject"]["@odata.id"]
@@ -1627,7 +1730,9 @@ class RedfishUtils(object):
         response = self.patch_request(self.root_uri + set_bios_attr_uri, payload)
         if response['ret'] is False:
             return response
-        return {'ret': True, 'changed': True, 'msg': "Modified BIOS attribute"}
+        return {'ret': True, 'changed': True,
+                'msg': "Modified BIOS attributes %s" % (attrs_to_patch),
+                'warning': warning}
 
     def set_boot_order(self, boot_list):
         if not boot_list:
@@ -1700,7 +1805,7 @@ class RedfishUtils(object):
         chassis_results = []
 
         # Get these entries, but does not fail if not found
-        properties = ['ChassisType', 'PartNumber', 'AssetTag',
+        properties = ['Name', 'Id', 'ChassisType', 'PartNumber', 'AssetTag',
                       'Manufacturer', 'IndicatorLED', 'SerialNumber', 'Model']
 
         # Go through list
@@ -1724,7 +1829,7 @@ class RedfishUtils(object):
         fan_results = []
         key = "Thermal"
         # Get these entries, but does not fail if not found
-        properties = ['FanName', 'Reading', 'ReadingUnits', 'Status']
+        properties = ['Name', 'FanName', 'Reading', 'ReadingUnits', 'Status']
 
         # Go through list
         for chassis_uri in self.chassis_uris:
@@ -1742,12 +1847,16 @@ class RedfishUtils(object):
                 result['ret'] = True
                 data = response['data']
 
-                for device in data[u'Fans']:
-                    fan = {}
-                    for property in properties:
-                        if property in device:
-                            fan[property] = device[property]
-                    fan_results.append(fan)
+                # Checking if fans are present
+                if u'Fans' in data:
+                    for device in data[u'Fans']:
+                        fan = {}
+                        for property in properties:
+                            if property in device:
+                                fan[property] = device[property]
+                        fan_results.append(fan)
+                else:
+                    return {'ret': False, 'msg': "No Fans present"}
         result["entries"] = fan_results
         return result
 
@@ -1799,7 +1908,7 @@ class RedfishUtils(object):
                       'LowerThresholdCritical', 'LowerThresholdFatal',
                       'LowerThresholdNonCritical', 'MaxReadingRangeTemp',
                       'MinReadingRangeTemp', 'ReadingCelsius', 'RelatedItem',
-                      'SensorNumber']
+                      'SensorNumber', 'Status']
 
         # Go through list
         for chassis_uri in self.chassis_uris:
@@ -1836,8 +1945,8 @@ class RedfishUtils(object):
         cpu_results = []
         key = "Processors"
         # Get these entries, but does not fail if not found
-        properties = ['Id', 'Manufacturer', 'Model', 'MaxSpeedMHz', 'TotalCores',
-                      'TotalThreads', 'Status']
+        properties = ['Id', 'Name', 'Manufacturer', 'Model', 'MaxSpeedMHz',
+                      'TotalCores', 'TotalThreads', 'Status']
 
         # Search for 'key' entry and extract URI from it
         response = self.get_request(self.root_uri + systems_uri)
@@ -1886,7 +1995,7 @@ class RedfishUtils(object):
         memory_results = []
         key = "Memory"
         # Get these entries, but does not fail if not found
-        properties = ['SerialNumber', 'MemoryDeviceType', 'PartNumber',
+        properties = ['Id', 'SerialNumber', 'MemoryDeviceType', 'PartNumber',
                       'MemoryLocation', 'RankCount', 'CapacityMiB', 'OperatingMemoryModes', 'Status', 'Manufacturer', 'Name']
 
         # Search for 'key' entry and extract URI from it
@@ -1937,15 +2046,28 @@ class RedfishUtils(object):
     def get_multi_memory_inventory(self):
         return self.aggregate_systems(self.get_memory_inventory)
 
+    def get_nic(self, resource_uri):
+        result = {}
+        properties = ['Name', 'Id', 'Description', 'FQDN', 'IPv4Addresses', 'IPv6Addresses',
+                      'NameServers', 'MACAddress', 'PermanentMACAddress',
+                      'SpeedMbps', 'MTUSize', 'AutoNeg', 'Status']
+        response = self.get_request(self.root_uri + resource_uri)
+        if response['ret'] is False:
+            return response
+        result['ret'] = True
+        data = response['data']
+        nic = {}
+        for property in properties:
+            if property in data:
+                nic[property] = data[property]
+        result['entries'] = nic
+        return(result)
+
     def get_nic_inventory(self, resource_uri):
         result = {}
         nic_list = []
         nic_results = []
         key = "EthernetInterfaces"
-        # Get these entries, but does not fail if not found
-        properties = ['Description', 'FQDN', 'IPv4Addresses', 'IPv6Addresses',
-                      'NameServers', 'MACAddress', 'PermanentMACAddress',
-                      'SpeedMbps', 'MTUSize', 'AutoNeg', 'Status']
 
         response = self.get_request(self.root_uri + resource_uri)
         if response['ret'] is False:
@@ -1969,18 +2091,9 @@ class RedfishUtils(object):
             nic_list.append(nic[u'@odata.id'])
 
         for n in nic_list:
-            nic = {}
-            uri = self.root_uri + n
-            response = self.get_request(uri)
-            if response['ret'] is False:
-                return response
-            data = response['data']
-
-            for property in properties:
-                if property in data:
-                    nic[property] = data[property]
-
-            nic_results.append(nic)
+            nic = self.get_nic(n)
+            if nic['ret']:
+                nic_results.append(nic['entries'])
         result["entries"] = nic_results
         return result
 
@@ -2128,7 +2241,7 @@ class RedfishUtils(object):
                 payload[param] = options.get(option)
         return payload
 
-    def virtual_media_insert_via_patch(self, options, param_map, uri, data):
+    def virtual_media_insert_via_patch(self, options, param_map, uri, data, image_only=False):
         # get AllowableValues
         ai = dict((k[:-24],
                    {'AllowableValues': v}) for k, v in data.items()
@@ -2137,6 +2250,13 @@ class RedfishUtils(object):
         payload = self._insert_virt_media_payload(options, param_map, data, ai)
         if 'Inserted' not in payload:
             payload['Inserted'] = True
+
+        # Some hardware (such as iLO 4) only supports the Image property on the PATCH operation
+        # Inserted and WriteProtected are not writable
+        if image_only:
+            del payload['Inserted']
+            del payload['WriteProtected']
+
         # PATCH the resource
         response = self.patch_request(self.root_uri + uri, payload)
         if response['ret'] is False:
@@ -2152,6 +2272,7 @@ class RedfishUtils(object):
             'TransferProtocolType': 'transfer_protocol_type',
             'TransferMethod': 'transfer_method'
         }
+        image_only = False
         image_url = options.get('image_url')
         if not image_url:
             return {'ret': False,
@@ -2165,6 +2286,12 @@ class RedfishUtils(object):
         data = response['data']
         if 'VirtualMedia' not in data:
             return {'ret': False, 'msg': "VirtualMedia resource not found"}
+
+        # Some hardware (such as iLO 4) only supports the Image property on the PATCH operation
+        # Inserted and WriteProtected are not writable
+        if data["FirmwareVersion"].startswith("iLO 4"):
+            image_only = True
+
         virt_media_uri = data["VirtualMedia"]["@odata.id"]
         response = self.get_request(self.root_uri + virt_media_uri)
         if response['ret'] is False:
@@ -2207,7 +2334,7 @@ class RedfishUtils(object):
                             'msg': "%s action not found and PATCH not allowed"
                             % '#VirtualMedia.InsertMedia'}
             return self.virtual_media_insert_via_patch(options, param_map,
-                                                       uri, data)
+                                                       uri, data, image_only)
 
         # get the action property
         action = data['Actions']['#VirtualMedia.InsertMedia']
@@ -2226,12 +2353,18 @@ class RedfishUtils(object):
             return response
         return {'ret': True, 'changed': True, 'msg': "VirtualMedia inserted"}
 
-    def virtual_media_eject_via_patch(self, uri):
+    def virtual_media_eject_via_patch(self, uri, image_only=False):
         # construct payload
         payload = {
             'Inserted': False,
             'Image': None
         }
+
+        # Some hardware (such as iLO 4) only supports the Image property on the PATCH operation
+        # Inserted is not writable
+        if image_only:
+            del payload['Inserted']
+
         # PATCH resource
         response = self.patch_request(self.root_uri + uri, payload)
         if response['ret'] is False:
@@ -2252,6 +2385,13 @@ class RedfishUtils(object):
         data = response['data']
         if 'VirtualMedia' not in data:
             return {'ret': False, 'msg': "VirtualMedia resource not found"}
+
+        # Some hardware (such as iLO 4) only supports the Image property on the PATCH operation
+        # Inserted is not writable
+        image_only = False
+        if data["FirmwareVersion"].startswith("iLO 4"):
+            image_only = True
+
         virt_media_uri = data["VirtualMedia"]["@odata.id"]
         response = self.get_request(self.root_uri + virt_media_uri)
         if response['ret'] is False:
@@ -2276,7 +2416,7 @@ class RedfishUtils(object):
                         return {'ret': False,
                                 'msg': "%s action not found and PATCH not allowed"
                                        % '#VirtualMedia.EjectMedia'}
-                return self.virtual_media_eject_via_patch(uri)
+                return self.virtual_media_eject_via_patch(uri, image_only)
             else:
                 # POST to the EjectMedia Action
                 action = data['Actions']['#VirtualMedia.EjectMedia']
@@ -2368,7 +2508,7 @@ class RedfishUtils(object):
         properties = ['Status', 'HostName', 'PowerState', 'Model', 'Manufacturer',
                       'PartNumber', 'SystemType', 'AssetTag', 'ServiceTag',
                       'SerialNumber', 'SKU', 'BiosVersion', 'MemorySummary',
-                      'ProcessorSummary', 'TrustedModules']
+                      'ProcessorSummary', 'TrustedModules', 'Name', 'Id']
 
         response = self.get_request(self.root_uri + systems_uri)
         if response['ret'] is False:
@@ -2605,39 +2745,14 @@ class RedfishUtils(object):
         return self.aggregate_managers(self.get_manager_health_report)
 
     def set_manager_nic(self, nic_addr, nic_config):
-        # Get EthernetInterface collection
-        response = self.get_request(self.root_uri + self.manager_uri)
-        if response['ret'] is False:
-            return response
-        data = response['data']
-        if 'EthernetInterfaces' not in data:
-            return {'ret': False, 'msg': "EthernetInterfaces resource not found"}
-        ethernetinterfaces_uri = data["EthernetInterfaces"]["@odata.id"]
-        response = self.get_request(self.root_uri + ethernetinterfaces_uri)
-        if response['ret'] is False:
-            return response
-        data = response['data']
-        uris = [a.get('@odata.id') for a in data.get('Members', []) if
-                a.get('@odata.id')]
+        # Get the manager ethernet interface uri
+        nic_info = self.get_manager_ethernet_uri(nic_addr)
 
-        # Find target EthernetInterface
-        target_ethernet_uri = None
-        target_ethernet_current_setting = None
-        if nic_addr == 'null':
-            # Find root_uri matched EthernetInterface when nic_addr is not specified
-            nic_addr = (self.root_uri).split('/')[-1]
-            nic_addr = nic_addr.split(':')[0]  # split port if existing
-        for uri in uris:
-            response = self.get_request(self.root_uri + uri)
-            if response['ret'] is False:
-                return response
-            data = response['data']
-            if '"' + nic_addr + '"' in str(data) or "'" + nic_addr + "'" in str(data):
-                target_ethernet_uri = uri
-                target_ethernet_current_setting = data
-                break
-        if target_ethernet_uri is None:
-            return {'ret': False, 'msg': "No matched EthernetInterface found under Manager"}
+        if nic_info.get('nic_addr') is None:
+            return nic_info
+        else:
+            target_ethernet_uri = nic_info['nic_addr']
+            target_ethernet_current_setting = nic_info['ethernet_setting']
 
         # Convert input to payload and check validity
         payload = {}
@@ -2669,17 +2784,25 @@ class RedfishUtils(object):
             if isinstance(set_value, dict):
                 for subprop in payload[property].keys():
                     if subprop not in target_ethernet_current_setting[property]:
-                        return {'ret': False, 'msg': "Sub-property %s in nic_config is invalid" % subprop}
+                        # Not configured already; need to apply the request
+                        need_change = True
+                        break
                     sub_set_value = payload[property][subprop]
                     sub_cur_value = target_ethernet_current_setting[property][subprop]
                     if sub_set_value != sub_cur_value:
                         need_change = True
             # type is list
             if isinstance(set_value, list):
+                if len(set_value) != len(cur_value):
+                    # if arrays are not the same len, no need to check each element
+                    need_change = True
+                    continue
                 for i in range(len(set_value)):
                     for subprop in payload[property][i].keys():
                         if subprop not in target_ethernet_current_setting[property][i]:
-                            return {'ret': False, 'msg': "Sub-property %s in nic_config is invalid" % subprop}
+                            # Not configured already; need to apply the request
+                            need_change = True
+                            break
                         sub_set_value = payload[property][i][subprop]
                         sub_cur_value = target_ethernet_current_setting[property][i][subprop]
                         if sub_set_value != sub_cur_value:
@@ -2692,3 +2815,208 @@ class RedfishUtils(object):
         if response['ret'] is False:
             return response
         return {'ret': True, 'changed': True, 'msg': "Modified Manager NIC"}
+
+    # A helper function to get the EthernetInterface URI
+    def get_manager_ethernet_uri(self, nic_addr='null'):
+        # Get EthernetInterface collection
+        response = self.get_request(self.root_uri + self.manager_uri)
+        if not response['ret']:
+            return response
+        data = response['data']
+        if 'EthernetInterfaces' not in data:
+            return {'ret': False, 'msg': "EthernetInterfaces resource not found"}
+        ethernetinterfaces_uri = data["EthernetInterfaces"]["@odata.id"]
+        response = self.get_request(self.root_uri + ethernetinterfaces_uri)
+        if not response['ret']:
+            return response
+        data = response['data']
+        uris = [a.get('@odata.id') for a in data.get('Members', []) if
+                a.get('@odata.id')]
+
+        # Find target EthernetInterface
+        target_ethernet_uri = None
+        target_ethernet_current_setting = None
+        if nic_addr == 'null':
+            # Find root_uri matched EthernetInterface when nic_addr is not specified
+            nic_addr = (self.root_uri).split('/')[-1]
+            nic_addr = nic_addr.split(':')[0]  # split port if existing
+        for uri in uris:
+            response = self.get_request(self.root_uri + uri)
+            if not response['ret']:
+                return response
+            data = response['data']
+            data_string = json.dumps(data)
+            if nic_addr.lower() in data_string.lower():
+                target_ethernet_uri = uri
+                target_ethernet_current_setting = data
+                break
+
+        nic_info = {}
+        nic_info['nic_addr'] = target_ethernet_uri
+        nic_info['ethernet_setting'] = target_ethernet_current_setting
+
+        if target_ethernet_uri is None:
+            return {}
+        else:
+            return nic_info
+
+    def set_hostinterface_attributes(self, hostinterface_config, hostinterface_id=None):
+        response = self.get_request(self.root_uri + self.manager_uri)
+        if response['ret'] is False:
+            return response
+        data = response['data']
+        if 'HostInterfaces' not in data:
+            return {'ret': False, 'msg': "HostInterfaces resource not found"}
+
+        hostinterfaces_uri = data["HostInterfaces"]["@odata.id"]
+        response = self.get_request(self.root_uri + hostinterfaces_uri)
+        if response['ret'] is False:
+            return response
+        data = response['data']
+        uris = [a.get('@odata.id') for a in data.get('Members', []) if a.get('@odata.id')]
+        # Capture list of URIs that match a specified HostInterface resource ID
+        if hostinterface_id:
+            matching_hostinterface_uris = [uri for uri in uris if hostinterface_id in uri.split('/')[-1]]
+
+        if hostinterface_id and matching_hostinterface_uris:
+            hostinterface_uri = list.pop(matching_hostinterface_uris)
+        elif hostinterface_id and not matching_hostinterface_uris:
+            return {'ret': False, 'msg': "HostInterface ID %s not present." % hostinterface_id}
+        elif len(uris) == 1:
+            hostinterface_uri = list.pop(uris)
+        else:
+            return {'ret': False, 'msg': "HostInterface ID not defined and multiple interfaces detected."}
+
+        response = self.get_request(self.root_uri + hostinterface_uri)
+        if response['ret'] is False:
+            return response
+        current_hostinterface_config = response['data']
+        payload = {}
+        for property in hostinterface_config.keys():
+            value = hostinterface_config[property]
+            if property not in current_hostinterface_config:
+                return {'ret': False, 'msg': "Property %s in hostinterface_config is invalid" % property}
+            if isinstance(value, dict):
+                if isinstance(current_hostinterface_config[property], dict):
+                    payload[property] = value
+                elif isinstance(current_hostinterface_config[property], list):
+                    payload[property] = list()
+                    payload[property].append(value)
+                else:
+                    return {'ret': False, 'msg': "Value of property %s in hostinterface_config is invalid" % property}
+            else:
+                payload[property] = value
+
+        need_change = False
+        for property in payload.keys():
+            set_value = payload[property]
+            cur_value = current_hostinterface_config[property]
+            if not isinstance(set_value, dict) and not isinstance(set_value, list):
+                if set_value != cur_value:
+                    need_change = True
+            if isinstance(set_value, dict):
+                for subprop in payload[property].keys():
+                    if subprop not in current_hostinterface_config[property]:
+                        need_change = True
+                        break
+                    sub_set_value = payload[property][subprop]
+                    sub_cur_value = current_hostinterface_config[property][subprop]
+                    if sub_set_value != sub_cur_value:
+                        need_change = True
+            if isinstance(set_value, list):
+                if len(set_value) != len(cur_value):
+                    need_change = True
+                    continue
+                for i in range(len(set_value)):
+                    for subprop in payload[property][i].keys():
+                        if subprop not in current_hostinterface_config[property][i]:
+                            need_change = True
+                            break
+                        sub_set_value = payload[property][i][subprop]
+                        sub_cur_value = current_hostinterface_config[property][i][subprop]
+                        if sub_set_value != sub_cur_value:
+                            need_change = True
+        if not need_change:
+            return {'ret': True, 'changed': False, 'msg': "Host Interface already configured"}
+
+        response = self.patch_request(self.root_uri + hostinterface_uri, payload)
+        if response['ret'] is False:
+            return response
+        return {'ret': True, 'changed': True, 'msg': "Modified Host Interface"}
+
+    def get_hostinterfaces(self):
+        result = {}
+        hostinterface_results = []
+        properties = ['Id', 'Name', 'Description', 'HostInterfaceType', 'Status',
+                      'InterfaceEnabled', 'ExternallyAccessible', 'AuthenticationModes',
+                      'AuthNoneRoleId', 'CredentialBootstrapping']
+        manager_uri_list = self.manager_uris
+        for manager_uri in manager_uri_list:
+            response = self.get_request(self.root_uri + manager_uri)
+            if response['ret'] is False:
+                return response
+
+            result['ret'] = True
+            data = response['data']
+
+            if 'HostInterfaces' in data:
+                hostinterfaces_uri = data[u'HostInterfaces'][u'@odata.id']
+            else:
+                continue
+
+            response = self.get_request(self.root_uri + hostinterfaces_uri)
+            data = response['data']
+
+            if 'Members' in data:
+                for hostinterface in data['Members']:
+                    hostinterface_uri = hostinterface['@odata.id']
+                    hostinterface_response = self.get_request(self.root_uri + hostinterface_uri)
+                    # dictionary for capturing individual HostInterface properties
+                    hostinterface_data_temp = {}
+                    if hostinterface_response['ret'] is False:
+                        return hostinterface_response
+                    hostinterface_data = hostinterface_response['data']
+                    for property in properties:
+                        if property in hostinterface_data:
+                            if hostinterface_data[property] is not None:
+                                hostinterface_data_temp[property] = hostinterface_data[property]
+                    # Check for the presence of a ManagerEthernetInterface
+                    # object, a link to a _single_ EthernetInterface that the
+                    # BMC uses to communicate with the host.
+                    if 'ManagerEthernetInterface' in hostinterface_data:
+                        interface_uri = hostinterface_data['ManagerEthernetInterface']['@odata.id']
+                        interface_response = self.get_nic(interface_uri)
+                        if interface_response['ret'] is False:
+                            return interface_response
+                        hostinterface_data_temp['ManagerEthernetInterface'] = interface_response['entries']
+
+                    # Check for the presence of a HostEthernetInterfaces
+                    # object, a link to a _collection_ of EthernetInterfaces
+                    # that the host uses to communicate with the BMC.
+                    if 'HostEthernetInterfaces' in hostinterface_data:
+                        interfaces_uri = hostinterface_data['HostEthernetInterfaces']['@odata.id']
+                        interfaces_response = self.get_request(self.root_uri + interfaces_uri)
+                        if interfaces_response['ret'] is False:
+                            return interfaces_response
+                        interfaces_data = interfaces_response['data']
+                        if 'Members' in interfaces_data:
+                            for interface in interfaces_data['Members']:
+                                interface_uri = interface['@odata.id']
+                                interface_response = self.get_nic(interface_uri)
+                                if interface_response['ret'] is False:
+                                    return interface_response
+                                # Check if this is the first
+                                # HostEthernetInterfaces item and create empty
+                                # list if so.
+                                if 'HostEthernetInterfaces' not in hostinterface_data_temp:
+                                    hostinterface_data_temp['HostEthernetInterfaces'] = []
+
+                                hostinterface_data_temp['HostEthernetInterfaces'].append(interface_response['entries'])
+
+                    hostinterface_results.append(hostinterface_data_temp)
+            else:
+                continue
+        result["entries"] = hostinterface_results
+        if not result["entries"]:
+            return {'ret': False, 'msg': "No HostInterface objects found"}
+        return result

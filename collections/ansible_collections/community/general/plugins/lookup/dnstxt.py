@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # (c) 2012, Jan-Piet Mens <jpmens(at)gmail.com>
 # (c) 2017 Ansible Project
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -5,7 +6,7 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = '''
-    lookup: dnstxt
+    name: dnstxt
     author: Jan-Piet Mens (@jpmens) <jpmens(at)gmail.com>
     short_description: query a domain(s)'s DNS txt fields
     requirements:
@@ -17,6 +18,7 @@ DOCUMENTATION = '''
         description: domain or list of domains to query TXT records from
         required: True
         type: list
+        elements: string
 '''
 
 EXAMPLES = """
@@ -54,7 +56,7 @@ except ImportError:
     pass
 
 from ansible.errors import AnsibleError
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 from ansible.plugins.lookup import LookupBase
 
 # ==============================================================

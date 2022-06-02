@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # (c) 2013, Serge van Ginderachter <serge@vanginderachter.be>
 # (c) 2017 Ansible Project
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -5,7 +6,7 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = '''
-    lookup: flattened
+    name: flattened
     author: Serge van Ginderachter (!UNKNOWN) <serge@vanginderachter.be>
     short_description: return single list completely flattened
     description:
@@ -22,7 +23,7 @@ DOCUMENTATION = '''
 EXAMPLES = """
 - name: "'unnest' all elements into single list"
   ansible.builtin.debug:
-    msg: "all in one list {{lookup('community.general.flattened', [1,2,3,[5,6]], [a,b,c], [[5,6,1,3], [34,a,b,c]])}}"
+    msg: "all in one list {{lookup('community.general.flattened', [1,2,3,[5,6]], ['a','b','c'], [[5,6,1,3], [34,'a','b','c']])}}"
 """
 
 RETURN = """

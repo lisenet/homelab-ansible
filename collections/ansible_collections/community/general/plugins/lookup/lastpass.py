@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # (c) 2016, Andrew Zenk <azenk@umn.edu>
 # (c) 2017 Ansible Project
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -5,7 +6,7 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = '''
-    lookup: lastpass
+    name: lastpass
     author:
       - Andrew Zenk (!UNKNOWN) <azenk@umn.edu>
     requirements:
@@ -39,7 +40,7 @@ RETURN = """
 from subprocess import Popen, PIPE
 
 from ansible.errors import AnsibleError
-from ansible.module_utils._text import to_bytes, to_text
+from ansible.module_utils.common.text.converters import to_bytes, to_text
 from ansible.plugins.lookup import LookupBase
 
 

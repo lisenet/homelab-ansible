@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # (C) 2014, Matt Martz <matt@sivel.net>
 # (c) 2017 Ansible Project
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -7,7 +8,7 @@ __metaclass__ = type
 
 DOCUMENTATION = '''
     author: Unknown (!UNKNOWN)
-    callback: hipchat
+    name: hipchat
     type: notification
     requirements:
       - whitelist in configuration.
@@ -173,8 +174,7 @@ class CallbackModule(CallbackBase):
         # Displays info about playbook being started by a person on an
         # inventory, as well as Tags, Skip Tags and Limits
         if not self.printed_playbook:
-            self.playbook_name, _ = os.path.splitext(
-                os.path.basename(self.play.playbook.filename))
+            self.playbook_name, dummy = os.path.splitext(os.path.basename(self.play.playbook.filename))
             host_list = self.play.playbook.inventory.host_list
             inventory = os.path.basename(os.path.realpath(host_list))
             self.send_msg("%s: Playbook initiated by %s against %s" %

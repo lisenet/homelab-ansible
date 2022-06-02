@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 # GNU General Public License v3.0+ (see COPYING or
 # https://www.gnu.org/licenses/gpl-3.0.txt)
 #
@@ -20,6 +21,7 @@ options:
   uuid:
     description:
       uuid of device, this is string with length greater than 16.
+    type: str
 
   command_options:
     description:
@@ -31,10 +33,12 @@ options:
         - nodes_by_chassis_uuid
         - nodes_status_managed
         - nodes_status_unmanaged
+    type: str
 
   chassis:
     description:
       uuid of chassis, this is string with length greater than 16.
+    type: str
 
 extends_documentation_fragment:
 - community.general.lxca_common

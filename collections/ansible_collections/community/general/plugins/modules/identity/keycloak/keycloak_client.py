@@ -62,17 +62,17 @@ options:
 
     name:
         description:
-            - Name of the client (this is not the same as I(client_id))
+            - Name of the client (this is not the same as I(client_id)).
         type: str
 
     description:
         description:
-            - Description of the client in Keycloak
+            - Description of the client in Keycloak.
         type: str
 
     root_url:
         description:
-            - Root URL appended to relative URLs for this client
+            - Root URL appended to relative URLs for this client.
               This is 'rootUrl' in the Keycloak REST API.
         aliases:
             - rootUrl
@@ -80,7 +80,7 @@ options:
 
     admin_url:
         description:
-            - URL to the admin interface of the client
+            - URL to the admin interface of the client.
               This is 'adminUrl' in the Keycloak REST API.
         aliases:
             - adminUrl
@@ -137,6 +137,7 @@ options:
         aliases:
             - defaultRoles
         type: list
+        elements: str
 
     redirect_uris:
         description:
@@ -145,6 +146,7 @@ options:
         aliases:
             - redirectUris
         type: list
+        elements: str
 
     web_origins:
         description:
@@ -153,6 +155,7 @@ options:
         aliases:
             - webOrigins
         type: list
+        elements: str
 
     not_before:
         description:
@@ -298,6 +301,15 @@ options:
             - useTemplateMappers
         type: bool
 
+    always_display_in_console:
+        description:
+            - Whether or not to display this client in account console, even if the
+              user does not have an active session.
+        aliases:
+            - alwaysDisplayInConsole
+        type: bool
+        version_added: 4.7.0
+
     surrogate_auth_required:
         description:
             - Whether or not surrogate auth is required.
@@ -314,6 +326,32 @@ options:
         type: dict
         aliases:
             - authorizationSettings
+
+    authentication_flow_binding_overrides:
+        description:
+            - Override realm authentication flow bindings.
+        type: dict
+        aliases:
+            - authenticationFlowBindingOverrides
+        version_added: 3.4.0
+
+    default_client_scopes:
+        description:
+            - List of default client scopes.
+        aliases:
+            - defaultClientScopes
+        type: list
+        elements: str
+        version_added: 4.7.0
+
+    optional_client_scopes:
+        description:
+            - List of optional client scopes.
+        aliases:
+            - optionalClientScopes
+        type: list
+        elements: str
+        version_added: 4.7.0
 
     protocol_mappers:
         description:
@@ -346,7 +384,7 @@ options:
 
             protocol:
                 description:
-                    - This is either C(openid-connect) or C(saml), this specifies for which protocol this protocol mapper
+                    - This is either C(openid-connect) or C(saml), this specifies for which protocol this protocol mapper.
                       is active.
                 choices: ['openid-connect', 'saml']
                 type: str
@@ -502,26 +540,35 @@ options:
 extends_documentation_fragment:
 - community.general.keycloak
 
-
 author:
     - Eike Frost (@eikef)
 '''
 
 EXAMPLES = '''
-- name: Create or update Keycloak client (minimal example)
-  local_action:
-    module: keycloak_client
-    auth_client_id: admin-cli
+- name: Create or update Keycloak client (minimal example), authentication with credentials
+  community.general.keycloak_client:
     auth_keycloak_url: https://auth.example.com/auth
     auth_realm: master
     auth_username: USERNAME
     auth_password: PASSWORD
     client_id: test
     state: present
+  delegate_to: localhost
+
+
+- name: Create or update Keycloak client (minimal example), authentication with token
+  community.general.keycloak_client:
+    auth_client_id: admin-cli
+    auth_keycloak_url: https://auth.example.com/auth
+    auth_realm: master
+    token: TOKEN
+    client_id: test
+    state: present
+  delegate_to: localhost
+
 
 - name: Delete a Keycloak client
-  local_action:
-    module: keycloak_client
+  community.general.keycloak_client:
     auth_client_id: admin-cli
     auth_keycloak_url: https://auth.example.com/auth
     auth_realm: master
@@ -529,10 +576,11 @@ EXAMPLES = '''
     auth_password: PASSWORD
     client_id: test
     state: absent
+  delegate_to: localhost
+
 
 - name: Create or update a Keycloak client (with all the bells and whistles)
-  local_action:
-    module: keycloak_client
+  community.general.keycloak_client:
     auth_client_id: admin-cli
     auth_keycloak_url: https://auth.example.com/auth
     auth_realm: master
@@ -572,6 +620,7 @@ EXAMPLES = '''
     use_template_config: False
     use_template_scope: false
     use_template_mappers: no
+    always_display_in_console: true
     registered_nodes:
       node01.example.com: 1507828202
     registration_access_token: eyJWT_TOKEN
@@ -579,6 +628,8 @@ EXAMPLES = '''
     default_roles:
       - test01
       - test02
+    authentication_flow_binding_overrides:
+        browser: 4c90336b-bf1d-4b87-916d-3677ba4e5fbb
     protocol_mappers:
       - config:
           access.token.claim: True
@@ -616,24 +667,26 @@ EXAMPLES = '''
       use.jwks.url: true
       jwks.url: JWKS_URL_FOR_CLIENT_AUTH_JWT
       jwt.credential.certificate: JWT_CREDENTIAL_CERTIFICATE_FOR_CLIENT_AUTH
+  delegate_to: localhost
 '''
 
 RETURN = '''
 msg:
-  description: Message as to what action was taken
-  returned: always
-  type: str
-  sample: "Client testclient has been updated"
+    description: Message as to what action was taken.
+    returned: always
+    type: str
+    sample: "Client testclient has been updated"
 
 proposed:
-    description: client representation of proposed changes to client
+    description: Representation of proposed client.
     returned: always
     type: dict
     sample: {
       clientId: "test"
     }
+
 existing:
-    description: client representation of existing client (sample is truncated)
+    description: Representation of existing client (sample is truncated).
     returned: always
     type: dict
     sample: {
@@ -642,9 +695,10 @@ existing:
             "request.object.signature.alg": "RS256",
         }
     }
+
 end_state:
-    description: client representation of client after module execution (sample is truncated)
-    returned: always
+    description: Representation of client after module execution (sample is truncated).
+    returned: on success
     type: dict
     sample: {
         "adminUrl": "http://www.example.com/admin_url",
@@ -659,8 +713,38 @@ from ansible_collections.community.general.plugins.module_utils.identity.keycloa
 from ansible.module_utils.basic import AnsibleModule
 
 
+def normalise_cr(clientrep, remove_ids=False):
+    """ Re-sorts any properties where the order so that diff's is minimised, and adds default values where appropriate so that the
+    the change detection is more effective.
+
+    :param clientrep: the clientrep dict to be sanitized
+    :param remove_ids: If set to true, then the unique ID's of objects is removed to make the diff and checks for changed
+                       not alert when the ID's of objects are not usually known, (e.g. for protocol_mappers)
+    :return: normalised clientrep dict
+    """
+    # Avoid the dict passed in to be modified
+    clientrep = clientrep.copy()
+
+    if 'attributes' in clientrep:
+        clientrep['attributes'] = list(sorted(clientrep['attributes']))
+
+    if 'redirectUris' in clientrep:
+        clientrep['redirectUris'] = list(sorted(clientrep['redirectUris']))
+
+    if 'protocolMappers' in clientrep:
+        clientrep['protocolMappers'] = sorted(clientrep['protocolMappers'], key=lambda x: (x.get('name'), x.get('protocol'), x.get('protocolMapper')))
+        for mapper in clientrep['protocolMappers']:
+            if remove_ids:
+                mapper.pop('id', None)
+
+            # Set to a default value.
+            mapper['consentRequired'] = mapper.get('consentRequired', False)
+
+    return clientrep
+
+
 def sanitize_cr(clientrep):
-    """ Removes probably sensitive details from a client representation
+    """ Removes probably sensitive details from a client representation.
 
     :param clientrep: the clientrep dict to be sanitized
     :return: sanitized clientrep dict
@@ -671,7 +755,7 @@ def sanitize_cr(clientrep):
     if 'attributes' in result:
         if 'saml.signing.private.key' in result['attributes']:
             result['attributes']['saml.signing.private.key'] = 'no_log'
-    return result
+    return normalise_cr(result)
 
 
 def main():
@@ -707,10 +791,10 @@ def main():
         enabled=dict(type='bool'),
         client_authenticator_type=dict(type='str', choices=['client-secret', 'client-jwt'], aliases=['clientAuthenticatorType']),
         secret=dict(type='str', no_log=True),
-        registration_access_token=dict(type='str', aliases=['registrationAccessToken']),
-        default_roles=dict(type='list', aliases=['defaultRoles']),
-        redirect_uris=dict(type='list', aliases=['redirectUris']),
-        web_origins=dict(type='list', aliases=['webOrigins']),
+        registration_access_token=dict(type='str', aliases=['registrationAccessToken'], no_log=True),
+        default_roles=dict(type='list', elements='str', aliases=['defaultRoles']),
+        redirect_uris=dict(type='list', elements='str', aliases=['redirectUris']),
+        web_origins=dict(type='list', elements='str', aliases=['webOrigins']),
         not_before=dict(type='int', aliases=['notBefore']),
         bearer_only=dict(type='bool', aliases=['bearerOnly']),
         consent_required=dict(type='bool', aliases=['consentRequired']),
@@ -730,28 +814,27 @@ def main():
         use_template_config=dict(type='bool', aliases=['useTemplateConfig']),
         use_template_scope=dict(type='bool', aliases=['useTemplateScope']),
         use_template_mappers=dict(type='bool', aliases=['useTemplateMappers']),
+        always_display_in_console=dict(type='bool', aliases=['alwaysDisplayInConsole']),
+        authentication_flow_binding_overrides=dict(type='dict', aliases=['authenticationFlowBindingOverrides']),
         protocol_mappers=dict(type='list', elements='dict', options=protmapper_spec, aliases=['protocolMappers']),
         authorization_settings=dict(type='dict', aliases=['authorizationSettings']),
+        default_client_scopes=dict(type='list', elements='str', aliases=['defaultClientScopes']),
+        optional_client_scopes=dict(type='list', elements='str', aliases=['optionalClientScopes']),
     )
+
     argument_spec.update(meta_args)
 
     module = AnsibleModule(argument_spec=argument_spec,
                            supports_check_mode=True,
-                           required_one_of=([['client_id', 'id']]))
+                           required_one_of=([['client_id', 'id'],
+                                             ['token', 'auth_realm', 'auth_username', 'auth_password']]),
+                           required_together=([['auth_realm', 'auth_username', 'auth_password']]))
 
     result = dict(changed=False, msg='', diff={}, proposed={}, existing={}, end_state={})
 
     # Obtain access token, initialize API
     try:
-        connection_header = get_token(
-            base_url=module.params.get('auth_keycloak_url'),
-            validate_certs=module.params.get('validate_certs'),
-            auth_realm=module.params.get('auth_realm'),
-            client_id=module.params.get('auth_client_id'),
-            auth_username=module.params.get('auth_username'),
-            auth_password=module.params.get('auth_password'),
-            client_secret=module.params.get('auth_client_secret'),
-        )
+        connection_header = get_token(module.params)
     except KeycloakError as e:
         module.fail_json(msg=str(e))
 
@@ -761,12 +844,12 @@ def main():
     cid = module.params.get('id')
     state = module.params.get('state')
 
-    # convert module parameters to client representation parameters (if they belong in there)
+    # Filter and map the parameters names that apply to the client
     client_params = [x for x in module.params
                      if x not in list(keycloak_argument_spec().keys()) + ['state', 'realm'] and
                      module.params.get(x) is not None]
-    keycloak_argument_spec().keys()
-    # See whether the client already exists in Keycloak
+
+    # See if it already exists in Keycloak
     if cid is None:
         before_client = kc.get_client_by_clientid(module.params.get('client_id'), realm=realm)
         if before_client is not None:
@@ -775,10 +858,10 @@ def main():
         before_client = kc.get_client_by_id(cid, realm=realm)
 
     if before_client is None:
-        before_client = dict()
+        before_client = {}
 
     # Build a proposed changeset from parameters given to this module
-    changeset = dict()
+    changeset = {}
 
     for client_param in client_params:
         new_param_value = module.params.get(client_param)
@@ -797,54 +880,63 @@ def main():
 
         changeset[camel(client_param)] = new_param_value
 
-    # Whether creating or updating a client, take the before-state and merge the changeset into it
-    updated_client = before_client.copy()
-    updated_client.update(changeset)
+    # Prepare the desired values using the existing values (non-existence results in a dict that is save to use as a basis)
+    desired_client = before_client.copy()
+    desired_client.update(changeset)
 
     result['proposed'] = sanitize_cr(changeset)
     result['existing'] = sanitize_cr(before_client)
 
-    # If the client does not exist yet, before_client is still empty
-    if before_client == dict():
+    # Cater for when it doesn't exist (an empty dict)
+    if not before_client:
         if state == 'absent':
-            # do nothing and exit
+            # Do nothing and exit
             if module._diff:
                 result['diff'] = dict(before='', after='')
-            result['msg'] = 'Client does not exist, doing nothing.'
+            result['changed'] = False
+            result['end_state'] = {}
+            result['msg'] = 'Client does not exist; doing nothing.'
             module.exit_json(**result)
 
-        # create new client
+        # Process a creation
         result['changed'] = True
-        if 'clientId' not in updated_client:
+
+        if 'clientId' not in desired_client:
             module.fail_json(msg='client_id needs to be specified when creating a new client')
 
         if module._diff:
-            result['diff'] = dict(before='', after=sanitize_cr(updated_client))
+            result['diff'] = dict(before='', after=sanitize_cr(desired_client))
 
         if module.check_mode:
             module.exit_json(**result)
 
-        kc.create_client(updated_client, realm=realm)
-        after_client = kc.get_client_by_clientid(updated_client['clientId'], realm=realm)
+        # create it
+        kc.create_client(desired_client, realm=realm)
+        after_client = kc.get_client_by_clientid(desired_client['clientId'], realm=realm)
 
         result['end_state'] = sanitize_cr(after_client)
 
-        result['msg'] = 'Client %s has been created.' % updated_client['clientId']
+        result['msg'] = 'Client %s has been created.' % desired_client['clientId']
         module.exit_json(**result)
+
     else:
         if state == 'present':
-            # update existing client
+            # Process an update
             result['changed'] = True
+
             if module.check_mode:
                 # We can only compare the current client with the proposed updates we have
+                before_norm = normalise_cr(before_client, remove_ids=True)
+                desired_norm = normalise_cr(desired_client, remove_ids=True)
                 if module._diff:
-                    result['diff'] = dict(before=sanitize_cr(before_client),
-                                          after=sanitize_cr(updated_client))
-                result['changed'] = (before_client != updated_client)
+                    result['diff'] = dict(before=sanitize_cr(before_norm),
+                                          after=sanitize_cr(desired_norm))
+                result['changed'] = (before_norm != desired_norm)
 
                 module.exit_json(**result)
 
-            kc.update_client(cid, updated_client, realm=realm)
+            # do the update
+            kc.update_client(cid, desired_client, realm=realm)
 
             after_client = kc.get_client_by_id(cid, realm=realm)
             if before_client == after_client:
@@ -852,25 +944,29 @@ def main():
             if module._diff:
                 result['diff'] = dict(before=sanitize_cr(before_client),
                                       after=sanitize_cr(after_client))
+
             result['end_state'] = sanitize_cr(after_client)
 
-            result['msg'] = 'Client %s has been updated.' % updated_client['clientId']
+            result['msg'] = 'Client %s has been updated.' % desired_client['clientId']
             module.exit_json(**result)
+
         else:
-            # Delete existing client
+            # Process a deletion (because state was not 'present')
             result['changed'] = True
+
             if module._diff:
-                result['diff']['before'] = sanitize_cr(before_client)
-                result['diff']['after'] = ''
+                result['diff'] = dict(before=sanitize_cr(before_client), after='')
 
             if module.check_mode:
                 module.exit_json(**result)
 
+            # delete it
             kc.delete_client(cid, realm=realm)
-            result['proposed'] = dict()
-            result['end_state'] = dict()
+            result['proposed'] = {}
+
+            result['end_state'] = {}
+
             result['msg'] = 'Client %s has been deleted.' % before_client['clientId']
-            module.exit_json(**result)
 
     module.exit_json(**result)
 

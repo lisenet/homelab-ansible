@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 #
 # Copyright: (c) Ansible Project
 #
@@ -33,12 +34,12 @@ options:
     type: str
     description:
       - Password to authenticate with the Jenkins server.
-      - This is a required parameter, if C(token) is not provided.
+      - This is mutually exclusive with I(token).
   token:
     type: str
     description:
       - API token used to authenticate with the Jenkins server.
-      - This is a required parameter, if C(password) is not provided.
+      - This is mutually exclusive with I(password).
   url:
     type: str
     description:
@@ -59,6 +60,11 @@ author:
 '''
 
 EXAMPLES = '''
+# Get all Jenkins jobs anonymously
+- community.general.jenkins_job_info:
+    user: admin
+  register: my_jenkins_job_info
+
 # Get all Jenkins jobs using basic auth
 - community.general.jenkins_job_info:
     user: admin
@@ -146,7 +152,7 @@ except ImportError:
     HAS_JENKINS = False
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 def get_jenkins_connection(module):
@@ -232,14 +238,8 @@ def main():
             ['password', 'token'],
             ['name', 'glob'],
         ],
-        required_one_of=[
-            ['password', 'token'],
-        ],
         supports_check_mode=True,
     )
-    if module._name in ('jenkins_job_facts', 'community.general.jenkins_job_facts'):
-        module.deprecate("The 'jenkins_job_facts' module has been renamed to 'jenkins_job_info'",
-                         version='3.0.0', collection_name='community.general')  # was Ansible 2.13
 
     test_dependencies(module)
     jobs = list()
