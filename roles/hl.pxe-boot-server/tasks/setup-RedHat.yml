@@ -54,6 +54,7 @@
     state: directory
     mode: 0755
   loop:
+    - "{{ networkboot_directory_rocky9 }}"
     - "{{ networkboot_directory_rocky8 }}"
     - "{{ networkboot_directory_centos7 }}"
 
@@ -66,6 +67,8 @@
     mode: 0644
     force: yes
   loop:
+  - "{{ kickstart_file_rocky9_host }}"
+  - "{{ kickstart_file_rocky9_packer }}"
   - "{{ kickstart_file_rocky8_host }}"
   - "{{ kickstart_file_rocky8_packer }}"
   - "{{ kickstart_file_centos7_packer }}"
@@ -94,6 +97,7 @@
     state: directory
     mode: 0755
   loop:
+    - "{{ networkboot_directory_rocky9 }}"
     - "{{ networkboot_directory_rocky8 }}"
     - "{{ networkboot_directory_centos7 }}"
     - "{{ networkboot_directory_ubuntu1804server }}"
@@ -227,6 +231,7 @@
   when: var_freespace.stdout|float is lt 3000000
 
 - name: RedHat | Download Packer ISO with check (sha256) - this will take time
+  ignore_errors: yes
   get_url:
     url: "{{ item.iso_url }}"
     dest: "{{ nginx_directory }}/pub/isos/"
