@@ -20,7 +20,7 @@ sysctl_config:
 k8s_user: "ansible"
 k8s_user_home: "/home/{{ k8s_user }}"
 
-calico_net_url: "https://docs.projectcalico.org/archive/v3.22/manifests/calico.yaml"
+calico_net_url: "https://docs.projectcalico.org/archive/v3.23/manifests/calico.yaml"
 calico_net_config: "calico.yaml"
 
 k8s_token_file_master: "join-master-command"
