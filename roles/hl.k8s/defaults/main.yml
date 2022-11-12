@@ -3,7 +3,7 @@
 ## priority of any variables available, and can be easily overridden 
 ## by any other variable, including inventory variables.
 
-k8s_version: "1.23.5"
+k8s_version: "1.24.6"
 
 # nfs-utils is required to configure NFS based Persistent Volumes
 packages:
@@ -14,7 +14,7 @@ packages:
   - nfs-utils
 
 dependencies:
-  - kubernetes-cni-0.8.7-0.x86_64
+  - kubernetes-cni-1.1.1-0.x86_64
   - kubelet-{{ k8s_version }}-0.x86_64
 
 systemd_service: "kubelet"

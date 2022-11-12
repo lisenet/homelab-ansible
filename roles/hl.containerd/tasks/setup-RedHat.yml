@@ -1,0 +1,59 @@
+---
+- name: RedHat | Configure Sysctl Values
+  sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+  loop: "{{ sysctl_config }}"
+
+- name: RedHat | Install Prerequisites Packages
+  package: 
+    name: "{{ item }}"
+    state: present
+  loop: "{{ prerequisites_packages }}"
+
+- name: RedHat | Add Docker Repository Sources
+  yum_repository:
+    file: "docker-ce-stable"
+    name: "docker-ce-stable"
+    description: "Docker CE Stable - $basearch"
+    baseurl: "{{ docker_repository_redhat }}"
+    gpgcheck: yes
+    gpgkey: "{{ docker_gpg_key_redhat }}"
+    enabled: yes
+
+- name: RedHat | Remove Docker Packages
+  package: 
+    name: "{{ item }}"
+    state: absent
+  loop:
+    - docker-ce
+    - docker-ce-cli
+
+- name: RedHat | Install Packages
+  package: 
+    name: "{{ item }}"
+    state: present
+    allow_downgrade: yes
+  loop: "{{ packages }}"
+
+- name: RedHat | Create {{ systemd_service }} Directory
+  file:
+    path: /etc/{{ systemd_service }}
+    state: directory
+    mode: 0755
+
+- name: RedHat | Generate Containerd Config
+  shell: containerd config default > /etc/{{ systemd_service }}/config.toml
+  become: yes
+  args: 
+    creates: /etc/{{ systemd_service }}/config.toml
+
+- name: RedHat | Start and Enable Service {{ systemd_service }}
+  service:
+    name: "{{ systemd_service }}"
+    state: started
+    enabled: yes
+
+- name: RedHat | systemctl restart {{ systemd_service }}
+  command: systemctl restart {{ systemd_service }}

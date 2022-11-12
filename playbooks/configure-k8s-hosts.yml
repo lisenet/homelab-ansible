@@ -17,7 +17,7 @@
     - hl.hardening
     - hl.common
     - hl.node-exporter
-    - hl.docker
+    - hl.containerd
     - hl.k8s
     - hl.k8s-cluster
 ...
