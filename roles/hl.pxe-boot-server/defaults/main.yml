@@ -94,8 +94,8 @@ pxe_boot_media:
       - initrd.img
       - vmlinuz
   - name: "rocky8"
-    iso_url: "https://download.rockylinux.org/pub/rocky/8/isos/x86_64/Rocky-8.6-x86_64-dvd1.iso"
-    iso_sha256: "1d48e0af63d07ff4e582a1819348e714c694e7fd33207f48879c2bc806960786"
+    iso_url: "https://download.rockylinux.org/pub/rocky/8/isos/x86_64/Rocky-8.7-x86_64-dvd1.iso"
+    iso_sha256: "4827dce1c58560d3ca470a5053e8d86ba059cbb77cfca3b5f6a5863d2aac5b84"
     source_directory: "{{ ftp_directory }}/pxe/{{ networkboot_directory_rocky8 }}/"
     netboot_directory: "{{ tftp_directory }}/networkboot/{{ networkboot_directory_rocky8 }}/"
     setype: "public_content_t"
@@ -118,7 +118,7 @@ pxe_boot_media:
 packer_media:
   - iso_url: "https://download.rockylinux.org/pub/rocky/9/isos/x86_64/Rocky-9.0-x86_64-boot.iso"
     iso_sha256: "fc6b306b9fc8d327d7545373ce88c48bd1f7e84d29548814a91e84676b7d26e4"
-  - iso_url: "https://download.rockylinux.org/pub/rocky/8/isos/x86_64/Rocky-8.6-x86_64-boot.iso"
-    iso_sha256: "fe77cc293a2f2fe6ddbf5d4bc2b5c820024869bc7ea274c9e55416d215db0cc5"
+  - iso_url: "https://download.rockylinux.org/pub/rocky/8/isos/x86_64/Rocky-8.7-x86_64-boot.iso"
+    iso_sha256: "94402815f251d982e748dc3466517db13fa5f9ea58fad491dcbd2cc821a360a2"
   - iso_url: "https://mirror.ox.ac.uk/sites/mirror.centos.org/7.9.2009/isos/x86_64/CentOS-7-x86_64-Minimal-2009.iso"
     iso_sha256: "07b94e6b1a0b0260b94c83d6bb76b26bf7a310dc78d7a9c7432809fb9bc6194a"
