@@ -12,8 +12,8 @@ Ansible infrastructure for my homelab.
 ## Install Ansible
 
 ```
-sudo apt-get -y install python3 python3-pip
-python -m pip install --user ansible
+sudo apt install -y python3 python3-pip
+python3 -m pip install --user ansible==4.10
 ```
 
 The following collections are required to be installed:
