@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-# (c) 2012, Jan-Piet Mens <jpmens(at)gmail.com>
-# (c) 2017 Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2012, Jan-Piet Mens <jpmens(at)gmail.com>
+# Copyright (c) 2017 Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
@@ -16,9 +17,16 @@ DOCUMENTATION = '''
     options:
       _terms:
         description: domain or list of domains to query TXT records from
-        required: True
+        required: true
         type: list
         elements: string
+      real_empty:
+        description:
+          - Return empty result without empty strings, and return empty list instead of C(NXDOMAIN).
+          - The default for this option will likely change to C(true) in the future.
+        default: false
+        type: bool
+        version_added: 6.0.0
 '''
 
 EXAMPLES = """
@@ -70,9 +78,12 @@ from ansible.plugins.lookup import LookupBase
 class LookupModule(LookupBase):
 
     def run(self, terms, variables=None, **kwargs):
+        self.set_options(var_options=variables, direct=kwargs)
 
         if HAVE_DNS is False:
             raise AnsibleError("Can't LOOKUP(dnstxt): module dns.resolver is not installed")
+
+        real_empty = self.get_option('real_empty')
 
         ret = []
         for term in terms:
@@ -85,10 +96,16 @@ class LookupModule(LookupBase):
                     string.append(s[1:-1])  # Strip outside quotes on TXT rdata
 
             except dns.resolver.NXDOMAIN:
+                if real_empty:
+                    continue
                 string = 'NXDOMAIN'
             except dns.resolver.Timeout:
+                if real_empty:
+                    continue
                 string = ''
             except dns.resolver.NoAnswer:
+                if real_empty:
+                    continue
                 string = ''
             except DNSException as e:
                 raise AnsibleError("dns.resolver unhandled exception %s" % to_native(e))

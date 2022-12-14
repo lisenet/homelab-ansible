@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-# (c) 2022, Alexei Znamensky <russoz@gmail.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2022, Alexei Znamensky <russoz@gmail.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -87,9 +88,10 @@ class FormatError(CmdRunnerException):
 
 
 class _ArgFormat(object):
-    def __init__(self, func, ignore_none=None):
+    def __init__(self, func, ignore_none=None, ignore_missing_value=False):
         self.func = func
         self.ignore_none = ignore_none
+        self.ignore_missing_value = ignore_missing_value
 
     def __call__(self, value, ctx_ignore_none):
         ignore_none = self.ignore_none if self.ignore_none is not None else ctx_ignore_none
@@ -101,8 +103,13 @@ class _ArgFormat(object):
 
 class _Format(object):
     @staticmethod
-    def as_bool(args):
-        return _ArgFormat(lambda value: _ensure_list(args) if value else [])
+    def as_bool(args_true, args_false=None, ignore_none=None):
+        if args_false is not None:
+            if ignore_none is None:
+                ignore_none = False
+        else:
+            args_false = []
+        return _ArgFormat(lambda value: _ensure_list(args_true) if value else _ensure_list(args_false), ignore_none=ignore_none)
 
     @staticmethod
     def as_bool_not(args):
@@ -126,7 +133,7 @@ class _Format(object):
 
     @staticmethod
     def as_fixed(args):
-        return _ArgFormat(lambda value: _ensure_list(args), ignore_none=False)
+        return _ArgFormat(lambda value: _ensure_list(args), ignore_none=False, ignore_missing_value=True)
 
     @staticmethod
     def as_func(func, ignore_none=None):
@@ -134,14 +141,15 @@ class _Format(object):
 
     @staticmethod
     def as_map(_map, default=None, ignore_none=None):
+        if default is None:
+            default = []
         return _ArgFormat(lambda value: _ensure_list(_map.get(value, default)), ignore_none=ignore_none)
 
     @staticmethod
     def as_default_type(_type, arg="", ignore_none=None):
         fmt = _Format
         if _type == "dict":
-            return fmt.as_func(lambda d: ["--{0}={1}".format(*a) for a in iteritems(d)],
-                               ignore_none=ignore_none)
+            return fmt.as_func(lambda d: ["--{0}={1}".format(*a) for a in iteritems(d)], ignore_none=ignore_none)
         if _type == "list":
             return fmt.as_func(lambda value: ["--{0}".format(x) for x in value], ignore_none=ignore_none)
         if _type == "bool":
@@ -191,13 +199,13 @@ class CmdRunner(object):
             environ_update = {}
         self.environ_update = environ_update
 
-        self.command[0] = module.get_bin_path(command[0], opt_dirs=path_prefix, required=True)
+        self.command[0] = module.get_bin_path(self.command[0], opt_dirs=path_prefix, required=True)
 
         for mod_param_name, spec in iteritems(module.argument_spec):
             if mod_param_name not in self.arg_formats:
                 self.arg_formats[mod_param_name] = _Format.as_default_type(spec['type'], mod_param_name)
 
-    def context(self, args_order=None, output_process=None, ignore_value_none=True, **kwargs):
+    def __call__(self, args_order=None, output_process=None, ignore_value_none=True, check_mode_skip=False, check_mode_return=None, **kwargs):
         if output_process is None:
             output_process = _process_as_is
         if args_order is None:
@@ -209,18 +217,25 @@ class CmdRunner(object):
         return _CmdRunnerContext(runner=self,
                                  args_order=args_order,
                                  output_process=output_process,
-                                 ignore_value_none=ignore_value_none, **kwargs)
+                                 ignore_value_none=ignore_value_none,
+                                 check_mode_skip=check_mode_skip,
+                                 check_mode_return=check_mode_return, **kwargs)
 
     def has_arg_format(self, arg):
         return arg in self.arg_formats
 
+    # not decided whether to keep it or not, but if deprecating it will happen in a farther future.
+    context = __call__
+
 
 class _CmdRunnerContext(object):
-    def __init__(self, runner, args_order, output_process, ignore_value_none, **kwargs):
+    def __init__(self, runner, args_order, output_process, ignore_value_none, check_mode_skip, check_mode_return, **kwargs):
         self.runner = runner
         self.args_order = tuple(args_order)
         self.output_process = output_process
         self.ignore_value_none = ignore_value_none
+        self.check_mode_skip = check_mode_skip
+        self.check_mode_return = check_mode_return
         self.run_command_args = dict(kwargs)
 
         self.environ_update = runner.environ_update
@@ -253,13 +268,18 @@ class _CmdRunnerContext(object):
         for arg_name in self.args_order:
             value = None
             try:
-                value = named_args[arg_name]
+                if arg_name in named_args:
+                    value = named_args[arg_name]
+                elif not runner.arg_formats[arg_name].ignore_missing_value:
+                    raise MissingArgumentValue(self.args_order, arg_name)
                 self.cmd.extend(runner.arg_formats[arg_name](value, ctx_ignore_none=self.ignore_value_none))
-            except KeyError:
-                raise MissingArgumentValue(self.args_order, arg_name)
+            except MissingArgumentValue:
+                raise
             except Exception as e:
                 raise FormatError(arg_name, value, runner.arg_formats[arg_name], e)
 
+        if self.check_mode_skip and module.check_mode:
+            return self.check_mode_return
         results = module.run_command(self.cmd, **self.run_command_args)
         self.results_rc, self.results_out, self.results_err = results
         self.results_processed = self.output_process(*results)
@@ -288,4 +308,12 @@ class _CmdRunnerContext(object):
         return False
 
 
-fmt = _Format()
+cmd_runner_fmt = _Format()
+
+#
+# The fmt form is deprecated and will be removed in community.general 7.0.0
+# Please use:
+#   cmd_runner_fmt
+# Or, to retain the same effect, use:
+#   from ansible_collections.community.general.plugins.module_utils.cmd_runner import cmd_runner_fmt as fmt
+fmt = cmd_runner_fmt

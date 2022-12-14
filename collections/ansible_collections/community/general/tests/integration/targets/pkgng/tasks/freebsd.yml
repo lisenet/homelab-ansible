@@ -1,4 +1,8 @@
 ---
+# Copyright (c) Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 ##
 ## pkgng - prepare test environment
 ##
@@ -135,6 +139,42 @@
           - pkgng_example4_checkmode.changed
           - pkgng_example4.changed
           - not pkgng_example4_idempotent.changed
+
+##
+## pkgng - example - state=latest for out-of-date package without privileges
+##
+- name: Install intentionally out-of-date package and try to upgrade it with unprivileged user
+  block:
+    - ansible.builtin.user:
+        name: powerless
+        shell: /bin/bash
+
+    - name: Create out-of-date test package
+      import_tasks: create-outofdate-pkg.yml
+
+    - name: Install out-of-date test package
+      command: 'pkg add {{ pkgng_test_outofdate_pkg_path }}'
+      register: pkgng_example4_nopower_prepare
+
+    - name: Check for any available package upgrades with unprivileged user
+      become: true
+      become_user: powerless
+      pkgng:
+        name: '*'
+        state: latest
+      register: pkgng_example4_nopower_wildcard
+      ignore_errors: true
+
+    - name: Remove test out-of-date package
+      pkgng:
+        name: '{{ pkgng_test_pkg_name }}'
+        state: absent
+
+    - name: Ensure pkgng upgrades package correctly
+      assert:
+        that:
+          - not pkgng_example4_nopower_prepare.failed
+          - pkgng_example4_nopower_wildcard.failed
 
 ##
 ## pkgng - example - Install multiple packages in one command
@@ -461,10 +501,15 @@
   # NOTE: FreeBSD 12.0 test runner receives a "connection reset by peer" after ~20% downloaded so we are
   #       only running this on 12.1 or higher
   #
+  # NOTE: FreeBSD 13.0 fails to update the package catalogue for unknown reasons (someone with FreeBSD
+  #       knowledge has to take a look)
+  #
   # NOTE: FreeBSD 13.1 fails to update the package catalogue for unknown reasons (someone with FreeBSD
   #       knowledge has to take a look)
   #
-  when: ansible_distribution_version is version('12.01', '>=') and ansible_distribution_version is version('13.1', '<')
+  when: >-
+    (ansible_distribution_version is version('12.01', '>=') and ansible_distribution_version is version('13.0', '<'))
+    or ansible_distribution_version is version('13.2', '>=')
   block:
     - name: Setup testjail
       include: setup-testjail.yml

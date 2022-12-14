@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2016, Peter Sagerson <psagers@ignorare.net>
-# Copyright: (c) 2016, Jiri Tyr <jiri.tyr@gmail.com>
-# Copyright: (c) 2017-2018 Keller Fuchs (@KellerFuchs) <kellerfuchs@hashbang.sh>
+# Copyright (c) 2016, Peter Sagerson <psagers@ignorare.net>
+# Copyright (c) 2016, Jiri Tyr <jiri.tyr@gmail.com>
+# Copyright (c) 2017-2018 Keller Fuchs (@KellerFuchs) <kellerfuchs@hashbang.sh>
 #
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -14,6 +15,8 @@ from ansible.module_utils.common.text.converters import to_native
 
 try:
     import ldap
+    import ldap.dn
+    import ldap.filter
     import ldap.sasl
 
     HAS_LDAP = True
@@ -47,7 +50,6 @@ class LdapGeneric(object):
         self.module = module
         self.bind_dn = self.module.params['bind_dn']
         self.bind_pw = self.module.params['bind_pw']
-        self.dn = self.module.params['dn']
         self.referrals_chasing = self.module.params['referrals_chasing']
         self.server_uri = self.module.params['server_uri']
         self.start_tls = self.module.params['start_tls']
@@ -57,12 +59,33 @@ class LdapGeneric(object):
         # Establish connection
         self.connection = self._connect_to_ldap()
 
+        # Try to find the X_ORDERed version of the DN
+        self.dn = self._find_dn()
+
     def fail(self, msg, exn):
         self.module.fail_json(
             msg=msg,
             details=to_native(exn),
             exception=traceback.format_exc()
         )
+
+    def _find_dn(self):
+        dn = self.module.params['dn']
+
+        explode_dn = ldap.dn.explode_dn(dn)
+
+        if len(explode_dn) > 1:
+            try:
+                escaped_value = ldap.filter.escape_filter_chars(explode_dn[0])
+                filterstr = "(%s)" % escaped_value
+                dns = self.connection.search_s(','.join(explode_dn[1:]),
+                                               ldap.SCOPE_ONELEVEL, filterstr)
+                if len(dns) == 1:
+                    dn, dummy = dns[0]
+            except Exception:
+                pass
+
+        return dn
 
     def _connect_to_ldap(self):
         if not self.verify_cert:

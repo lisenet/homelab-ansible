@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Copyright (c) Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 set -o pipefail -eux
 
@@ -9,9 +12,9 @@ image="${args[1]}"
 python="${args[2]}"
 
 if [ "${#args[@]}" -gt 3 ]; then
-    target="shippable/posix/group${args[3]}/"
+    target="azp/posix/${args[3]}/"
 else
-    target="shippable/posix/"
+    target="azp/posix/"
 fi
 
 # shellcheck disable=SC2086

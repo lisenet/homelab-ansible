@@ -1,14 +1,30 @@
 # -*- coding: utf-8 -*-
+# Copyright (c) Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 import json
 import re
 import sys
+import datetime
+import time
+import traceback
 
-from ansible.module_utils.basic import env_fallback
+from ansible.module_utils.basic import env_fallback, missing_required_lib
 from ansible.module_utils.urls import fetch_url
 from ansible.module_utils.six.moves.urllib.parse import urlencode
+
+SCALEWAY_SECRET_IMP_ERR = None
+try:
+    from passlib.hash import argon2
+    HAS_SCALEWAY_SECRET_PACKAGE = True
+except Exception:
+    argon2 = None
+    SCALEWAY_SECRET_IMP_ERR = traceback.format_exc()
+    HAS_SCALEWAY_SECRET_PACKAGE = False
 
 
 def scaleway_argument_spec():
@@ -19,6 +35,14 @@ def scaleway_argument_spec():
         api_timeout=dict(type='int', default=30, aliases=['timeout']),
         query_parameters=dict(type='dict', default={}),
         validate_certs=dict(default=True, type='bool'),
+    )
+
+
+def scaleway_waitable_resource_argument_spec():
+    return dict(
+        wait=dict(type="bool", default=True),
+        wait_timeout=dict(type="int", default=300),
+        wait_sleep_time=dict(type="int", default=3),
     )
 
 
@@ -57,6 +81,63 @@ def parse_pagination_link(header):
             data = match.groupdict()
             parsed_relations[data['relation']] = data['target_IRI']
         return parsed_relations
+
+
+def filter_sensitive_attributes(container, attributes):
+    for attr in attributes:
+        container[attr] = "SENSITIVE_VALUE"
+
+    return container
+
+
+class SecretVariables(object):
+    @staticmethod
+    def ensure_scaleway_secret_package(module):
+        if not HAS_SCALEWAY_SECRET_PACKAGE:
+            module.fail_json(
+                msg=missing_required_lib("passlib[argon2]", url='https://passlib.readthedocs.io/en/stable/'),
+                exception=SCALEWAY_SECRET_IMP_ERR
+            )
+
+    @staticmethod
+    def dict_to_list(source_dict):
+        return [
+            dict(key=var[0], value=var[1])
+            for var in source_dict.items()
+        ]
+
+    @staticmethod
+    def list_to_dict(source_list, hashed=False):
+        key_value = 'hashed_value' if hashed else 'value'
+        return dict(
+            (var['key'], var[key_value])
+            for var in source_list
+        )
+
+    @classmethod
+    def decode(cls, secrets_list, values_list):
+        secrets_dict = cls.list_to_dict(secrets_list, hashed=True)
+        values_dict = cls.list_to_dict(values_list, hashed=False)
+        for key in values_dict:
+            if key in secrets_dict:
+                if argon2.verify(values_dict[key], secrets_dict[key]):
+                    secrets_dict[key] = values_dict[key]
+                else:
+                    secrets_dict[key] = secrets_dict[key]
+
+        return cls.dict_to_list(secrets_dict)
+
+
+def resource_attributes_should_be_changed(target, wished, verifiable_mutable_attributes, mutable_attributes):
+    diff = dict()
+    for attr in verifiable_mutable_attributes:
+        if wished[attr] is not None and target[attr] != wished[attr]:
+            diff[attr] = wished[attr]
+
+    if diff:
+        return dict((attr, wished[attr]) for attr in mutable_attributes)
+    else:
+        return diff
 
 
 class Response(object):
@@ -164,6 +245,78 @@ class Scaleway(object):
 
     def warn(self, x):
         self.module.warn(str(x))
+
+    def fetch_state(self, resource):
+        self.module.debug("fetch_state of resource: %s" % resource["id"])
+        response = self.get(path=self.api_path + "/%s" % resource["id"])
+
+        if response.status_code == 404:
+            return "absent"
+
+        if not response.ok:
+            msg = 'Error during state fetching: (%s) %s' % (response.status_code, response.json)
+            self.module.fail_json(msg=msg)
+
+        try:
+            self.module.debug("Resource %s in state: %s" % (resource["id"], response.json["status"]))
+            return response.json["status"]
+        except KeyError:
+            self.module.fail_json(msg="Could not fetch state in %s" % response.json)
+
+    def fetch_paginated_resources(self, resource_key, **pagination_kwargs):
+        response = self.get(
+            path=self.api_path,
+            params=pagination_kwargs)
+
+        status_code = response.status_code
+        if not response.ok:
+            self.module.fail_json(msg='Error getting {0} [{1}: {2}]'.format(
+                resource_key,
+                response.status_code, response.json['message']))
+
+        return response.json[resource_key]
+
+    def fetch_all_resources(self, resource_key, **pagination_kwargs):
+        resources = []
+
+        result = [None]
+        while len(result) != 0:
+            result = self.fetch_paginated_resources(resource_key, **pagination_kwargs)
+            resources += result
+            if 'page' in pagination_kwargs:
+                pagination_kwargs['page'] += 1
+            else:
+                pagination_kwargs['page'] = 2
+
+        return resources
+
+    def wait_to_complete_state_transition(self, resource, stable_states, force_wait=False):
+        wait = self.module.params["wait"]
+
+        if not (wait or force_wait):
+            return
+
+        wait_timeout = self.module.params["wait_timeout"]
+        wait_sleep_time = self.module.params["wait_sleep_time"]
+
+        # Prevent requesting the ressource status too soon
+        time.sleep(wait_sleep_time)
+
+        start = datetime.datetime.utcnow()
+        end = start + datetime.timedelta(seconds=wait_timeout)
+
+        while datetime.datetime.utcnow() < end:
+            self.module.debug("We are going to wait for the resource to finish its transition")
+
+            state = self.fetch_state(resource)
+            if state in stable_states:
+                self.module.debug("It seems that the resource is not in transition anymore.")
+                self.module.debug("load-balancer in state: %s" % self.fetch_state(resource))
+                break
+
+            time.sleep(wait_sleep_time)
+        else:
+            self.module.fail_json(msg="Server takes too long to finish its transition")
 
 
 SCALEWAY_LOCATION = {

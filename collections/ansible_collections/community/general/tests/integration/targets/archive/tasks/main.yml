@@ -1,28 +1,48 @@
+---
 ####################################################################
 # WARNING: These are designed specifically for Ansible tests       #
 # and should not be used as examples of how to write Ansible roles #
 ####################################################################
 
 # Test code for the archive module.
-# (c) 2017, Abhijeet Kasurde <akasurde@redhat.com>
+# Copyright (c) 2017, Abhijeet Kasurde <akasurde@redhat.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
-# This file is part of Ansible
-#
-# Ansible is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Ansible is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 # Make sure we start fresh
 
 # Test setup
+- name: prep our files
+  copy: src={{ item }} dest={{remote_tmp_dir}}/{{ item }}
+  with_items:
+    - foo.txt
+    - bar.txt
+    - empty.txt
+    - sub
+    - sub/subfile.txt
+
+# Run twice without lzma backport installed, to make sure it does not crash
+- name: Archive - pre-test - first run
+  archive:
+    path: "{{ remote_tmp_dir }}/*.txt"
+    dest: "{{ remote_tmp_dir }}/archive_pretest_1.tar"
+    format: "tar"
+  register: pretest_1
+
+- name: Archive - pre-test - second run
+  archive:
+    path: "{{ remote_tmp_dir }}/*.txt"
+    dest: "{{ remote_tmp_dir }}/archive_pretest_1.tar"
+    format: "tar"
+  register: pretest_2
+
+- name: Archive - validate pre-test
+  assert:
+    that:
+      - pretest_1 is changed
+      - pretest_2 is not changed
+
+# Install dependencies
 - name: Ensure zip is present to create test archive (yum)
   yum: name=zip state=latest
   when: ansible_facts.pkg_mgr == 'yum'
@@ -73,15 +93,6 @@
   pip: name=backports.lzma state=latest
   when: ansible_python_version.split('.')[0] == '2'
   register: backports_lzma_pip
-
-- name: prep our files
-  copy: src={{ item }} dest={{remote_tmp_dir}}/{{ item }}
-  with_items:
-    - foo.txt
-    - bar.txt
-    - empty.txt
-    - sub
-    - sub/subfile.txt
 
 - name: Define formats to test
   set_fact:
