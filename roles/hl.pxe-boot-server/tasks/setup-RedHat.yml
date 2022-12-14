@@ -102,6 +102,8 @@
     - "{{ networkboot_directory_centos7 }}"
     - "{{ networkboot_directory_ubuntu1804server }}"
     - "{{ networkboot_directory_ubuntu1804desktop }}"
+    - "{{ networkboot_directory_ubuntu2004server }}"
+    - "{{ networkboot_directory_ubuntu2004desktop }}"
 
 - name: RedHat | Copy Syslinux Files to TFTP Directory
   copy:
@@ -137,6 +139,8 @@
   loop:
     - "{{ networkboot_directory_ubuntu1804server }}"
     - "{{ networkboot_directory_ubuntu1804desktop }}"
+    - "{{ networkboot_directory_ubuntu2004server }}"
+    - "{{ networkboot_directory_ubuntu2004desktop }}"
 
 - name: RedHat | Create NFS Exports File
   template:
@@ -214,6 +218,24 @@
   template:
     src: "{{ kickstart_file_ubuntu1804desktop }}.j2"
     dest: "{{ nfs_directory }}/{{ networkboot_directory_ubuntu1804desktop }}/preseed/{{ kickstart_file_ubuntu1804desktop }}"
+    owner: root
+    group: root
+    mode: 0644
+    force: yes
+
+- name: RedHat | Copy Kickstart File for Ubuntu 20.04 Server
+  template:
+    src: "{{ kickstart_file_ubuntu2004server }}.j2"
+    dest: "{{ nfs_directory }}/{{ networkboot_directory_ubuntu2004server }}/preseed/{{ kickstart_file_ubuntu2004server }}"
+    owner: root
+    group: root
+    mode: 0644
+    force: yes
+
+- name: RedHat | Copy Kickstart File for Ubuntu 20.04 Desktop
+  template:
+    src: "{{ kickstart_file_ubuntu2004desktop }}.j2"
+    dest: "{{ nfs_directory }}/{{ networkboot_directory_ubuntu2004desktop }}/preseed/{{ kickstart_file_ubuntu2004desktop }}"
     owner: root
     group: root
     mode: 0644
