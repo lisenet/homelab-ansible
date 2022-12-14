@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 # (c) 2020, Alexei Znamensky <russoz@gmail.com>
-# Copyright: (c) 2020, Ansible Project
-# Simplified BSD License (see licenses/simplified_bsd.txt or https://opensource.org/licenses/BSD-2-Clause)
+# Copyright (c) 2020, Ansible Project
+# Simplified BSD License (see LICENSES/BSD-2-Clause.txt or https://opensource.org/licenses/BSD-2-Clause)
+# SPDX-License-Identifier: BSD-2-Clause
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -12,7 +13,7 @@ from ansible_collections.community.general.plugins.module_utils.mh.base import M
 from ansible_collections.community.general.plugins.module_utils.mh.mixins.cmd import CmdMixin
 from ansible_collections.community.general.plugins.module_utils.mh.mixins.state import StateMixin
 from ansible_collections.community.general.plugins.module_utils.mh.mixins.deps import DependencyMixin
-from ansible_collections.community.general.plugins.module_utils.mh.mixins.vars import VarsMixin, VarDict as _VD
+from ansible_collections.community.general.plugins.module_utils.mh.mixins.vars import VarsMixin
 from ansible_collections.community.general.plugins.module_utils.mh.mixins.deprecate_attrs import DeprecateAttrsMixin
 
 
@@ -24,8 +25,6 @@ class ModuleHelper(DeprecateAttrsMixin, VarsMixin, DependencyMixin, ModuleHelper
     change_params = ()
     facts_params = ()
 
-    VarDict = _VD  # for backward compatibility, will be deprecated at some point
-
     def __init__(self, module=None):
         super(ModuleHelper, self).__init__(module)
         for name, value in self.module.params.items():
@@ -36,16 +35,6 @@ class ModuleHelper(DeprecateAttrsMixin, VarsMixin, DependencyMixin, ModuleHelper
                 change=None if not self.change_params else name in self.change_params,
                 fact=name in self.facts_params,
             )
-
-        self._deprecate_attr(
-            attr="VarDict",
-            msg="ModuleHelper.VarDict attribute is deprecated, use VarDict from "
-                "the ansible_collections.community.general.plugins.module_utils.mh.mixins.vars module instead",
-            version="6.0.0",
-            collection_name="community.general",
-            target=ModuleHelper,
-            module=self.module,
-        )
 
     def update_output(self, **kwargs):
         self.update_vars(meta={"output": True}, **kwargs)
@@ -83,8 +72,16 @@ class StateModuleHelper(StateMixin, ModuleHelper):
 
 
 class CmdModuleHelper(CmdMixin, ModuleHelper):
+    """
+    THIS CLASS IS BEING DEPRECATED.
+    See the deprecation notice in ``CmdMixin.__init__()``.
+    """
     pass
 
 
 class CmdStateModuleHelper(CmdMixin, StateMixin, ModuleHelper):
+    """
+    THIS CLASS IS BEING DEPRECATED.
+    See the deprecation notice in ``CmdMixin.__init__()``.
+    """
     pass

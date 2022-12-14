@@ -7,7 +7,8 @@
 #
 # Copyright (c), Michael DeHaan <michael.dehaan@gmail.com>, 2012-2013
 #
-# Simplified BSD License (see licenses/simplified_bsd.txt or https://opensource.org/licenses/BSD-2-Clause)
+# Simplified BSD License (see LICENSES/BSD-2-Clause.txt or https://opensource.org/licenses/BSD-2-Clause)
+# SPDX-License-Identifier: BSD-2-Clause
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
@@ -122,8 +123,7 @@ def rax_find_image(module, rax_module, image, exit=True):
     except ValueError:
         try:
             image = cs.images.find(human_id=image)
-        except(cs.exceptions.NotFound,
-               cs.exceptions.NoUniqueMatch):
+        except (cs.exceptions.NotFound, cs.exceptions.NoUniqueMatch):
             try:
                 image = cs.images.find(name=image)
             except (cs.exceptions.NotFound,
@@ -314,3 +314,21 @@ def setup_rax_module(module, rax_module, region_required=True):
                          (region, ','.join(rax_module.regions)))
 
     return rax_module
+
+
+def rax_scaling_group_personality_file(module, files):
+    if not files:
+        return []
+
+    results = []
+    for rpath, lpath in files.items():
+        lpath = os.path.expanduser(lpath)
+        try:
+            with open(lpath, 'r') as f:
+                results.append({
+                    'path': rpath,
+                    'contents': f.read(),
+                })
+        except Exception as e:
+            module.fail_json(msg='Failed to load %s: %s' % (lpath, str(e)))
+    return results

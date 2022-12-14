@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2017 Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
@@ -125,7 +126,6 @@ import os
 from ansible.errors import AnsibleError, AnsibleParserError
 from ansible.module_utils.six import string_types
 from ansible.plugins.inventory import BaseInventoryPlugin, Constructable, Cacheable
-from ansible.template import Templar
 
 
 try:
@@ -144,22 +144,14 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
     def _build_client(self, loader):
         """Build the Linode client."""
 
-        t = Templar(loader=loader)
-
         access_token = self.get_option('access_token')
-        if t.is_template(access_token):
-            access_token = t.template(variable=access_token, disable_lookups=False)
-
-        if access_token is None:
-            try:
-                access_token = os.environ['LINODE_ACCESS_TOKEN']
-            except KeyError:
-                pass
+        if self.templar.is_template(access_token):
+            access_token = self.templar.template(variable=access_token, disable_lookups=False)
 
         if access_token is None:
             raise AnsibleError((
                 'Could not retrieve Linode access token '
-                'from plugin configuration or environment'
+                'from plugin configuration sources'
             ))
 
         self.client = LinodeClient(access_token)

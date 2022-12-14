@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-
-# Simplified BSD License (see licenses/simplified_bsd.txt or https://opensource.org/licenses/BSD-2-Clause)
+# Copyright (c) Ansible project
+# Simplified BSD License (see LICENSES/BSD-2-Clause.txt or https://opensource.org/licenses/BSD-2-Clause)
+# SPDX-License-Identifier: BSD-2-Clause
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
@@ -27,7 +28,7 @@ class BitbucketHelper:
             # TODO:
             # - Rename user to username once current usage of username is removed
             # - Alias user to username and deprecate it
-            user=dict(type='str', fallback=(env_fallback, ['BITBUCKET_USERNAME'])),
+            user=dict(type='str', aliases=['username'], fallback=(env_fallback, ['BITBUCKET_USERNAME'])),
             password=dict(type='str', no_log=True, fallback=(env_fallback, ['BITBUCKET_PASSWORD'])),
         )
 

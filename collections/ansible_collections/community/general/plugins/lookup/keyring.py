@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-# (c) 2016, Samuel Boucher <boucher.samuel.c@gmail.com>
-# (c) 2017 Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2016, Samuel Boucher <boucher.samuel.c@gmail.com>
+# Copyright (c) 2017 Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
@@ -18,14 +19,16 @@ DOCUMENTATION = '''
 '''
 
 EXAMPLES = """
-- name : output secrets to screen (BAD IDEA)
+- name: output secrets to screen (BAD IDEA)
   ansible.builtin.debug:
     msg: "Password: {{item}}"
   with_community.general.keyring:
     - 'servicename username'
 
 - name: access mysql with password from keyring
-  mysql_db: login_password={{lookup('community.general.keyring','mysql joe')}} login_user=joe
+  community.mysql.mysql_db:
+    login_password: "{{ lookup('community.general.keyring', 'mysql joe') }}"
+    login_user: joe
 """
 
 RETURN = """
@@ -52,9 +55,11 @@ display = Display()
 
 class LookupModule(LookupBase):
 
-    def run(self, terms, **kwargs):
+    def run(self, terms, variables=None, **kwargs):
         if not HAS_KEYRING:
             raise AnsibleError(u"Can't LOOKUP(keyring): missing required python library 'keyring'")
+
+        self.set_options(var_options=variables, direct=kwargs)
 
         display.vvvv(u"keyring: %s" % keyring.get_keyring())
         ret = []
