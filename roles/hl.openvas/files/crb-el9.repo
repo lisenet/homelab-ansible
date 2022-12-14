@@ -1,0 +1,9 @@
+[crb]
+name=Rocky Linux $releasever - CRB
+mirrorlist=https://mirrors.rockylinux.org/mirrorlist?arch=$basearch&repo=CRB-$releasever$rltype
+#baseurl=http://dl.rockylinux.org/$contentdir/$releasever/CRB/$basearch/os/
+gpgcheck=1
+enabled=1
+countme=1
+metadata_expire=6h
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Rocky-9

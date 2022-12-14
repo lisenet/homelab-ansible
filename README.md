@@ -69,6 +69,12 @@ ansible-playbook ./playbooks/configure-admin-hosts.yml
 ansible-playbook ./playbooks/configure-k8s-hosts.yml
 ```
 
+### Configure OpenVAS Hosts
+
+```
+ansible-playbook ./playbooks/configure-openvas-hosts.yml
+```
+
 ### Optional: Configure New Relic Agent
 
 ```
