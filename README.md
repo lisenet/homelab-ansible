@@ -12,8 +12,8 @@ Ansible infrastructure for my homelab.
 ## Install Ansible
 
 ```
-sudo apt-get -y install python3 python3-pip
-python -m pip install --user ansible
+sudo apt install -y python3 python3-pip
+python3 -m pip install --user ansible==4.10
 ```
 
 The following collections are required to be installed:
@@ -74,6 +74,13 @@ ansible-playbook ./playbooks/configure-k8s-hosts.yml
 ```
 ansible-playbook ./playbooks/configure-newrelic-hosts.yml
 ```
+
+## Ansible-configured PXE Boot Server
+
+Note that user password for PXE boot Kickstart files is set to `packer`.
+
+![Homelab PXE Boot Menu](./images/homelab-pxe-boot-menu.png)
+
 
 ## Homelab Network Diagram
 
