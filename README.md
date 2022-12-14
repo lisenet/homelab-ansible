@@ -75,6 +75,13 @@ ansible-playbook ./playbooks/configure-k8s-hosts.yml
 ansible-playbook ./playbooks/configure-newrelic-hosts.yml
 ```
 
+## Ansible-configured PXE Boot Server
+
+Note that user password for PXE boot Kickstart files is set to `packer`.
+
+![Homelab PXE Boot Menu](./images/homelab-pxe-boot-menu.png)
+
+
 ## Homelab Network Diagram
 
 ![Homelab Network Diagram](./images/kubernetes-homelab-diagram.png)
