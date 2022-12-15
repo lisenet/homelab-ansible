@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# Copyright: (c) 2015, Brian Coca <bcoca@ansible.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2015, Brian Coca <bcoca@ansible.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -12,7 +13,7 @@ DOCUMENTATION = '''
 module: svc
 author:
 - Brian Coca (@bcoca)
-short_description:  Manage daemontools services
+short_description: Manage daemontools services
 description:
     - Controls daemontools services on remote hosts using the svc utility.
 options:
@@ -91,7 +92,7 @@ import re
 import traceback
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 def _load_dist_subclass(cls, *args, **kwargs):
@@ -172,7 +173,7 @@ class Svc(object):
             self.execute_command([self.svc_cmd, '-dx', src_log])
 
     def get_status(self):
-        (rc, out, err) = self.execute_command([self.svstat_cmd, self.svc_full])
+        rc, out, err = self.execute_command([self.svstat_cmd, self.svc_full])
 
         if err is not None and err:
             self.full_state = self.state = err
@@ -223,7 +224,7 @@ class Svc(object):
 
     def execute_command(self, cmd):
         try:
-            (rc, out, err) = self.module.run_command(' '.join(cmd))
+            rc, out, err = self.module.run_command(cmd)
         except Exception as e:
             self.module.fail_json(msg="failed to execute: %s" % to_native(e), exception=traceback.format_exc())
         return (rc, out, err)

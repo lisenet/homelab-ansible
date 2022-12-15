@@ -1,6 +1,8 @@
 #!/usr/bin/python
-# Copyright: Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# -*- coding: utf-8 -*-
+# Copyright Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -9,7 +11,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: rax_clb
-short_description: create / delete a load balancer in Rackspace Public Cloud
+short_description: Create / delete a load balancer in Rackspace Public Cloud
 description:
      - creates / deletes a Rackspace Public Cloud load balancer.
 options:
@@ -26,13 +28,14 @@ options:
     default: LEAST_CONNECTIONS
   meta:
     type: dict
+    default: {}
     description:
       - A hash of metadata to associate with the instance
   name:
     type: str
     description:
       - Name to give the load balancer
-    required: yes
+    required: true
   port:
     type: int
     description:
@@ -92,7 +95,7 @@ options:
     description:
       - wait for the balancer to be in state 'running' before returning
     type: bool
-    default: 'no'
+    default: false
   wait_timeout:
     type: int
     description:
@@ -109,7 +112,7 @@ extends_documentation_fragment:
 
 EXAMPLES = '''
 - name: Build a Load Balancer
-  gather_facts: False
+  gather_facts: false
   hosts: local
   connection: local
   tasks:
@@ -123,7 +126,7 @@ EXAMPLES = '''
         type: SERVICENET
         timeout: 30
         region: DFW
-        wait: yes
+        wait: true
         state: present
         meta:
           app: my-cool-app

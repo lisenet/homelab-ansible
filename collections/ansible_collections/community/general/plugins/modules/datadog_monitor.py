@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2015, Sebastian Kornehl <sebastian.kornehl@asideas.de>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2015, Sebastian Kornehl <sebastian.kornehl@asideas.de>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -15,6 +16,7 @@ short_description: Manages Datadog monitors
 description:
   - Manages monitors within Datadog.
   - Options as described on https://docs.datadoghq.com/api/.
+  - The type C(event-v2) was added in community.general 4.8.0.
 author: Sebastian Kornehl (@skornehl)
 requirements: [datadog]
 options:
@@ -46,10 +48,23 @@ options:
           - A list of tags to associate with your monitor when creating or updating.
           - This can help you categorize and filter monitors.
         type: list
+        elements: str
     type:
         description:
           - The type of the monitor.
-        choices: ['metric alert', 'service check', 'event alert', 'process alert', 'log alert']
+          - The types C(query alert), C(trace-analytics alert) and C(rum alert) were added in community.general 2.1.0.
+          - The type C(composite) was added in community.general 3.4.0.
+        choices:
+            - metric alert
+            - service check
+            - event alert
+            - event-v2 alert
+            - process alert
+            - log alert
+            - query alert
+            - trace-analytics alert
+            - rum alert
+            - composite
         type: str
     query:
         description:
@@ -66,20 +81,17 @@ options:
           - A message to include with notifications for this monitor.
           - Email notifications can be sent to specific users by using the same '@username' notation as events.
           - Monitor message template variables can be accessed by using double square brackets, i.e '[[' and ']]'.
-          - C(message) alias is deprecated in community.general 0.2.0, since it is used internally by Ansible Core Engine.
         type: str
-        aliases: [ 'message' ]
     silenced:
         type: dict
         description:
           - Dictionary of scopes to silence, with timestamps or None.
           - Each scope will be muted until the given POSIX timestamp or forever if the value is None.
-        default: ""
     notify_no_data:
         description:
           - Whether this monitor will notify when data stops reporting.
         type: bool
-        default: 'no'
+        default: false
     no_data_timeframe:
         description:
           - The number of minutes before a monitor will notify when data stops reporting.
@@ -104,7 +116,7 @@ options:
         description:
           - Whether tagged users will be notified on changes to this monitor.
         type: bool
-        default: 'no'
+        default: false
     thresholds:
         type: dict
         description:
@@ -116,7 +128,7 @@ options:
         description:
           - Whether changes to this monitor should be restricted to the creator or admins.
         type: bool
-        default: 'no'
+        default: false
     require_full_window:
         description:
           - Whether this monitor needs a full window of data before it gets evaluated.
@@ -141,8 +153,13 @@ options:
         description:
           - Whether notifications from this monitor automatically inserts its triggering tags into the title.
         type: bool
-        default: yes
+        default: true
         version_added: 1.3.0
+    priority:
+        description:
+          - Integer from 1 (high) to 5 (low) indicating alert severity.
+        type: int
+        version_added: 4.6.0
 '''
 
 EXAMPLES = '''
@@ -198,46 +215,44 @@ except Exception:
     HAS_DATADOG = False
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 def main():
     module = AnsibleModule(
         argument_spec=dict(
             api_key=dict(required=True, no_log=True),
-            api_host=dict(required=False),
+            api_host=dict(),
             app_key=dict(required=True, no_log=True),
             state=dict(required=True, choices=['present', 'absent', 'mute', 'unmute']),
-            type=dict(required=False, choices=['metric alert', 'service check', 'event alert', 'process alert', 'log alert']),
+            type=dict(choices=['metric alert', 'service check', 'event alert', 'event-v2 alert', 'process alert',
+                               'log alert', 'query alert', 'trace-analytics alert',
+                               'rum alert', 'composite']),
             name=dict(required=True),
-            query=dict(required=False),
-            notification_message=dict(required=False, no_log=True, default=None, aliases=['message'],
-                                      deprecated_aliases=[dict(name='message', version='3.0.0',
-                                                               collection_name='community.general')]),  # was Ansible 2.14
-            silenced=dict(required=False, default=None, type='dict'),
-            notify_no_data=dict(required=False, default=False, type='bool'),
-            no_data_timeframe=dict(required=False, default=None),
-            timeout_h=dict(required=False, default=None),
-            renotify_interval=dict(required=False, default=None),
-            escalation_message=dict(required=False, default=None),
-            notify_audit=dict(required=False, default=False, type='bool'),
-            thresholds=dict(required=False, type='dict', default=None),
-            tags=dict(required=False, type='list', default=None),
-            locked=dict(required=False, default=False, type='bool'),
-            require_full_window=dict(required=False, default=None, type='bool'),
-            new_host_delay=dict(required=False, default=None),
-            evaluation_delay=dict(required=False, default=None),
-            id=dict(required=False),
+            query=dict(),
+            notification_message=dict(no_log=True),
+            silenced=dict(type='dict'),
+            notify_no_data=dict(default=False, type='bool'),
+            no_data_timeframe=dict(),
+            timeout_h=dict(),
+            renotify_interval=dict(),
+            escalation_message=dict(),
+            notify_audit=dict(default=False, type='bool'),
+            thresholds=dict(type='dict', default=None),
+            tags=dict(type='list', elements='str', default=None),
+            locked=dict(default=False, type='bool'),
+            require_full_window=dict(type='bool'),
+            new_host_delay=dict(),
+            evaluation_delay=dict(),
+            id=dict(),
             include_tags=dict(required=False, default=True, type='bool'),
+            priority=dict(type='int'),
         )
     )
 
     # Prepare Datadog
     if not HAS_DATADOG:
         module.fail_json(msg=missing_required_lib('datadogpy'), exception=DATADOG_IMP_ERR)
-
-    if 'message' in module.params:
-        module.fail_json(msg="'message' is reserved keyword, please change this parameter to 'notification_message'")
 
     options = {
         'api_key': module.params['api_key'],
@@ -291,6 +306,7 @@ def _post_monitor(module, options):
                       name=_fix_template_vars(module.params['name']),
                       message=_fix_template_vars(module.params['notification_message']),
                       escalation_message=_fix_template_vars(module.params['escalation_message']),
+                      priority=module.params['priority'],
                       options=options)
         if module.params['tags'] is not None:
             kwargs['tags'] = module.params['tags']
@@ -315,6 +331,7 @@ def _update_monitor(module, monitor, options):
                       name=_fix_template_vars(module.params['name']),
                       message=_fix_template_vars(module.params['notification_message']),
                       escalation_message=_fix_template_vars(module.params['escalation_message']),
+                      priority=module.params['priority'],
                       options=options)
         if module.params['tags'] is not None:
             kwargs['tags'] = module.params['tags']
@@ -348,7 +365,7 @@ def install_monitor(module):
 
     if module.params['type'] == "service check":
         options["thresholds"] = module.params['thresholds'] or {'ok': 1, 'critical': 1, 'warning': 1}
-    if module.params['type'] in ["metric alert", "log alert"] and module.params['thresholds'] is not None:
+    if module.params['type'] in ["metric alert", "log alert", "query alert", "trace-analytics alert", "rum alert"] and module.params['thresholds'] is not None:
         options["thresholds"] = module.params['thresholds']
 
     monitor = _get_monitor(module)

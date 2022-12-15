@@ -1,23 +1,46 @@
-# (c) 2020 Ansible Project
-#
-# This file is part of Ansible
-#
-# Ansible is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Ansible is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
+# -*- coding: utf-8 -*-
+# Copyright (c) 2020 Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 # Make coding more python3-ish
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
+
+DOCUMENTATION = '''
+  name: random_mac
+  short_description: Generate a random MAC address
+  description:
+    - Generates random networking interfaces MAC addresses for a given prefix.
+  options:
+    _input:
+      description: A string prefix to use as a basis for the random MAC generated.
+      type: string
+      required: true
+    seed:
+      description:
+        - A randomization seed to initialize the process, used to get repeatable results.
+        - If no seed is provided, a system random source such as C(/dev/urandom) is used.
+      required: false
+      type: string
+'''
+
+EXAMPLES = '''
+- name: Random MAC given a prefix
+  ansible.builtin.debug:
+    msg: "{{ '52:54:00' | community.general.random_mac }}"
+    # => '52:54:00:ef:1c:03'
+
+- name: With a seed
+  ansible.builtin.debug:
+    msg: "{{ '52:54:00' | community.general.random_mac(seed=inventory_hostname) }}"
+'''
+
+RETURN = '''
+  _value:
+    description: The generated MAC.
+    type: string
+'''
 
 import re
 from random import Random, SystemRandom

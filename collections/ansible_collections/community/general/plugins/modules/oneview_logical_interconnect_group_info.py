@@ -1,7 +1,9 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
-# Copyright: (c) 2016-2017, Hewlett Packard Enterprise Development LP
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2016-2017, Hewlett Packard Enterprise Development LP
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
@@ -24,9 +26,12 @@ options:
     name:
       description:
         - Logical Interconnect Group name.
+      type: str
 extends_documentation_fragment:
-- community.general.oneview
-- community.general.oneview.factsparams
+  - community.general.oneview
+  - community.general.oneview.factsparams
+  - community.general.attributes
+  - community.general.attributes.info_module
 
 '''
 
@@ -41,7 +46,8 @@ EXAMPLES = '''
   delegate_to: localhost
   register: result
 
-- ansible.builtin.debug:
+- name: Print fetched information about Logical Interconnect Groups
+  ansible.builtin.debug:
     msg: "{{ result.logical_interconnect_groups }}"
 
 - name: Gather paginated, filtered and sorted information about Logical Interconnect Groups
@@ -59,7 +65,8 @@ EXAMPLES = '''
   delegate_to: localhost
   register: result
 
-- ansible.builtin.debug:
+- name: Print fetched information about paginated, filtered and sorted list of Logical Interconnect Groups
+  ansible.builtin.debug:
     msg: "{{ result.logical_interconnect_groups }}"
 
 - name: Gather information about a Logical Interconnect Group by name
@@ -73,7 +80,8 @@ EXAMPLES = '''
   delegate_to: localhost
   register: result
 
-- ansible.builtin.debug:
+- name: Print fetched information about Logical Interconnect Group found by name
+  ansible.builtin.debug:
     msg: "{{ result.logical_interconnect_groups }}"
 '''
 
@@ -95,12 +103,10 @@ class LogicalInterconnectGroupInfoModule(OneViewModuleBase):
             params=dict(type='dict'),
         )
 
-        super(LogicalInterconnectGroupInfoModule, self).__init__(additional_arg_spec=argument_spec)
-        self.is_old_facts = self.module._name in ('oneview_logical_interconnect_group_facts', 'community.general.oneview_logical_interconnect_group_facts')
-        if self.is_old_facts:
-            self.module.deprecate("The 'oneview_logical_interconnect_group_facts' module has been renamed to 'oneview_logical_interconnect_group_info', "
-                                  "and the renamed one no longer returns ansible_facts",
-                                  version='3.0.0', collection_name='community.general')  # was Ansible 2.13
+        super(LogicalInterconnectGroupInfoModule, self).__init__(
+            additional_arg_spec=argument_spec,
+            supports_check_mode=True,
+        )
 
     def execute_module(self):
         if self.module.params.get('name'):
@@ -108,10 +114,7 @@ class LogicalInterconnectGroupInfoModule(OneViewModuleBase):
         else:
             ligs = self.oneview_client.logical_interconnect_groups.get_all(**self.facts_params)
 
-        if self.is_old_facts:
-            return dict(changed=False, ansible_facts=dict(logical_interconnect_groups=ligs))
-        else:
-            return dict(changed=False, logical_interconnect_groups=ligs)
+        return dict(changed=False, logical_interconnect_groups=ligs)
 
 
 def main():

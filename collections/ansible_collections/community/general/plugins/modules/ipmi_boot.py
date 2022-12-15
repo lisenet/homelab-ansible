@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# Copyright: Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -19,18 +20,28 @@ options:
     description:
       - Hostname or ip address of the BMC.
     required: true
+    type: str
   port:
     description:
       - Remote RMCP port.
     default: 623
+    type: int
   user:
     description:
       - Username to use to connect to the BMC.
     required: true
+    type: str
   password:
     description:
       - Password to connect to the BMC.
     required: true
+    type: str
+  key:
+    description:
+      - Encryption key to connect to the BMC in hex format.
+    required: false
+    type: str
+    version_added: 4.1.0
   bootdev:
     description:
       - Set boot device to use on next reboot
@@ -51,6 +62,7 @@ options:
       - optical
       - setup
       - default
+    type: str
   state:
     description:
       - Whether to ensure that boot devices is desired.
@@ -59,19 +71,20 @@ options:
             - absent -- Request system turn on"
     default: present
     choices: [ present, absent ]
+    type: str
   persistent:
     description:
       - If set, ask that system firmware uses this device beyond next boot.
         Be aware many systems do not honor this.
     type: bool
-    default: 'no'
+    default: false
   uefiboot:
     description:
       - If set, request UEFI boot explicitly.
         Strictly speaking, the spec suggests that if not set, the system should BIOS boot and offers no "don't care" option.
         In practice, this flag not being set does not preclude UEFI boot on any system I've encountered.
     type: bool
-    default: 'no'
+    default: false
 requirements:
   - "python >= 2.6"
   - pyghmi
@@ -109,11 +122,13 @@ EXAMPLES = '''
     name: test.testdomain.com
     user: admin
     password: password
+    key: 1234567890AABBCCDEFF000000EEEE12
     bootdev: network
     state: absent
 '''
 
 import traceback
+import binascii
 
 PYGHMI_IMP_ERR = None
 try:
@@ -132,6 +147,7 @@ def main():
             port=dict(default=623, type='int'),
             user=dict(required=True, no_log=True),
             password=dict(required=True, no_log=True),
+            key=dict(type='str', no_log=True),
             state=dict(default='present', choices=['present', 'absent']),
             bootdev=dict(required=True, choices=['network', 'hd', 'floppy', 'safe', 'optical', 'setup', 'default']),
             persistent=dict(default=False, type='bool'),
@@ -156,10 +172,18 @@ def main():
     if state == 'absent' and bootdev == 'default':
         module.fail_json(msg="The bootdev 'default' cannot be used with state 'absent'.")
 
+    try:
+        if module.params['key']:
+            key = binascii.unhexlify(module.params['key'])
+        else:
+            key = None
+    except Exception as e:
+        module.fail_json(msg="Unable to convert 'key' from hex string.")
+
     # --- run command ---
     try:
         ipmi_cmd = command.Command(
-            bmc=name, userid=user, password=password, port=port
+            bmc=name, userid=user, password=password, port=port, kg=key
         )
         module.debug('ipmi instantiated - name: "%s"' % name)
         current = ipmi_cmd.get_bootdev()

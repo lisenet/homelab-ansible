@@ -1,17 +1,18 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# (c) 2013, Patrick Callahan <pmc@patrickcallahan.com>
+# Copyright (c) 2013, Patrick Callahan <pmc@patrickcallahan.com>
 # based on
 #     openbsd_pkg
-#         (c) 2013
+#         Copyright (c) 2013
 #         Patrik Lundin <patrik.lundin.swe@gmail.com>
 #
 #     yum
-#         (c) 2012, Red Hat, Inc
+#         Copyright (c) 2012, Red Hat, Inc
 #         Written by Seth Vidal <skvidal at fedoraproject.org>
 #
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -29,6 +30,7 @@ author:
 short_description: Manage packages on SUSE and openSUSE
 description:
     - Manage packages on SUSE and openSUSE using the zypper and rpm tools.
+    - Also supports transactional updates, by running zypper inside C(/sbin/transactional-update --continue --drop-if-no-change --quiet run).
 options:
     name:
         description:
@@ -36,7 +38,7 @@ options:
         - Can include a version like C(name=1.0), C(name>3.4) or C(name<=2.7). If a version is given, C(oldpackage) is implied and zypper is allowed to
           update the package within the version range given.
         - You can also pass a url or a local path to a rpm file.
-        - When using state=latest, this can be '*', which updates all installed packages.
+        - When using I(state=latest), this can be '*', which updates all installed packages.
         required: true
         aliases: [ 'pkg' ]
         type: list
@@ -71,33 +73,33 @@ options:
             signature being installed. Has an effect only if state is
             I(present) or I(latest).
         required: false
-        default: "no"
+        default: false
         type: bool
     disable_recommends:
         description:
-          - Corresponds to the C(--no-recommends) option for I(zypper). Default behavior (C(yes)) modifies zypper's default behavior; C(no) does
+          - Corresponds to the C(--no-recommends) option for I(zypper). Default behavior (C(true)) modifies zypper's default behavior; C(false) does
             install recommended packages.
         required: false
-        default: "yes"
+        default: true
         type: bool
     force:
         description:
           - Adds C(--force) option to I(zypper). Allows to downgrade packages and change vendor or architecture.
         required: false
-        default: "no"
+        default: false
         type: bool
     force_resolution:
         description:
           - Adds C(--force-resolution) option to I(zypper). Allows to (un)install packages with conflicting requirements (resolver will choose a solution).
         required: false
-        default: "no"
+        default: false
         type: bool
         version_added: '0.2.0'
     update_cache:
         description:
           - Run the equivalent of C(zypper refresh) before the operation. Disabled in check mode.
         required: false
-        default: "no"
+        default: false
         type: bool
         aliases: [ "refresh" ]
     oldpackage:
@@ -105,7 +107,7 @@ options:
           - Adds C(--oldpackage) option to I(zypper). Allows to downgrade packages with less side-effects than force. This is implied as soon as a
             version is specified as part of the package name.
         required: false
-        default: "no"
+        default: false
         type: bool
     extra_args:
         required: false
@@ -127,9 +129,16 @@ options:
         description:
           - Adds C(--replacefiles) option to I(zypper) install/update command.
         version_added: '0.2.0'
+    clean_deps:
+        type: bool
+        required: false
+        default: false
+        description:
+          - Adds C(--clean-deps) option to I(zypper) remove command.
+        version_added: '4.6.0'
 notes:
-  - When used with a `loop:` each package will be processed individually,
-    it is much more efficient to pass the list directly to the `name` option.
+  - When used with a C(loop:) each package will be processed individually,
+    it is much more efficient to pass the list directly to the I(name) option.
 # informational: requirements for nodes
 requirements:
     - "zypper >= 1.0  # included in openSUSE >= 11.1 or SUSE Linux Enterprise Server/Desktop >= 11.0"
@@ -147,7 +156,7 @@ EXAMPLES = '''
   community.general.zypper:
     name: apache2
     state: present
-    disable_recommends: no
+    disable_recommends: false
 
 - name: Apply a given patch
   community.general.zypper:
@@ -198,7 +207,7 @@ EXAMPLES = '''
   community.general.zypper:
     name: openssl
     state: present
-    update_cache: yes
+    update_cache: true
 
 - name: "Install specific version (possible comparisons: <, >, <=, >=, =)"
   community.general.zypper:
@@ -213,10 +222,11 @@ EXAMPLES = '''
     ZYPP_LOCK_TIMEOUT: 20
 '''
 
+import os.path
 import xml
 import re
 from xml.dom.minidom import parseString as parseXML
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 # import module snippets
 from ansible.module_utils.basic import AnsibleModule
@@ -314,6 +324,8 @@ def parse_zypper_xml(m, cmd, fail_not_found=True, packages=None):
         if packages is None:
             firstrun = True
             packages = {}
+        else:
+            firstrun = False
         solvable_list = dom.getElementsByTagName('solvable')
         for solvable in solvable_list:
             name = solvable.getAttribute('name')
@@ -336,7 +348,9 @@ def get_cmd(m, subcommand):
     "puts together the basic zypper command arguments with those passed to the module"
     is_install = subcommand in ['install', 'update', 'patch', 'dist-upgrade']
     is_refresh = subcommand == 'refresh'
-    cmd = ['/usr/bin/zypper', '--quiet', '--non-interactive', '--xmlout']
+    cmd = [m.get_bin_path('zypper', required=True), '--quiet', '--non-interactive', '--xmlout']
+    if transactional_updates():
+        cmd = [m.get_bin_path('transactional-update', required=True), '--continue', '--drop-if-no-change', '--quiet', 'run'] + cmd
     if m.params['extra_args_precommand']:
         args_list = m.params['extra_args_precommand'].split()
         cmd.extend(args_list)
@@ -364,6 +378,9 @@ def get_cmd(m, subcommand):
             cmd.append('--oldpackage')
         if m.params['replacefiles']:
             cmd.append('--replacefiles')
+    if subcommand == 'remove':
+        if m.params['clean_deps']:
+            cmd.append('--clean-deps')
     if subcommand == 'dist-upgrade' and m.params['allow_vendor_change']:
         cmd.append('--allow-vendor-change')
     if m.params['extra_args']:
@@ -413,7 +430,9 @@ def package_present(m, name, want_latest):
         # if a version is given leave the package in to let zypper handle the version
         # resolution
         packageswithoutversion = [p for p in packages if not p.version]
-        prerun_state = get_installed_state(m, packageswithoutversion)
+        prerun_state = {}
+        if packageswithoutversion:
+            prerun_state = get_installed_state(m, packageswithoutversion)
         # generate lists of packages to install or remove
         packages = [p for p in packages if p.shouldinstall != (p.name in prerun_state)]
 
@@ -491,6 +510,10 @@ def repo_refresh(m):
 
     return retvals
 
+
+def transactional_updates():
+    return os.path.exists('/var/lib/misc/transactional-update.state')
+
 # ===========================================
 # Main control flow
 
@@ -510,7 +533,8 @@ def main():
             oldpackage=dict(required=False, default=False, type='bool'),
             extra_args=dict(required=False, default=None),
             allow_vendor_change=dict(required=False, default=False, type='bool'),
-            replacefiles=dict(required=False, default=False, type='bool')
+            replacefiles=dict(required=False, default=False, type='bool'),
+            clean_deps=dict(required=False, default=False, type='bool'),
         ),
         supports_check_mode=True
     )

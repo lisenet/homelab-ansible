@@ -1,4 +1,7 @@
 ---
+# Copyright (c) Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 - name: run check deploy nomad job
   nomad_job:
@@ -56,6 +59,15 @@
     content: "{{ lookup('file', 'job.hcl') }}"
   register: job_deployed_idempotence
 
+- name: get list of nomad jobs
+  nomad_job_info:
+    host: localhost
+    use_ssl: false
+  register: list_nomad_jobs
+
+- debug:
+    msg: "{{ list_nomad_jobs }}"
+
 - name: run check delete nomad job
   nomad_job:
     host: localhost
@@ -79,6 +91,15 @@
     use_ssl: false
     name: example
   register: get_job_delete
+
+- name: get list of nomad jobs
+  nomad_job_info:
+    host: localhost
+    use_ssl: false
+  register: list_nomad_jobs
+
+- debug:
+    msg: "{{ list_nomad_jobs }}"
 
 - name: assert idempotence
   assert:

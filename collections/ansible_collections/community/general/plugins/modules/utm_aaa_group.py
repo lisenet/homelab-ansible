@@ -1,7 +1,9 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
-# Copyright: (c) 2018, Johannes Brunswicker <johannes.brunswicker@gmail.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2018, Johannes Brunswicker <johannes.brunswicker@gmail.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
@@ -13,7 +15,7 @@ module: utm_aaa_group
 author:
     - Johannes Brunswicker (@MatrixCrawler)
 
-short_description: Create, update or destroy an aaa group object in Sophos UTM.
+short_description: Create, update or destroy an aaa group object in Sophos UTM
 
 description:
     - Create, update or destroy an aaa group object in Sophos UTM.
@@ -31,10 +33,12 @@ options:
           - List of adirectory group strings.
         type: list
         elements: str
+        default: []
     adirectory_groups_sids:
         description:
           - Dictionary of group sids.
         type: dict
+        default: {}
     backend_match:
         description:
           - The backend for the group.
@@ -66,18 +70,22 @@ options:
           - List of edirectory group strings.
         type: list
         elements: str
+        default: []
     ipsec_dn:
         description:
           - The ipsec dn string.
         type: str
+        default: ''
     ldap_attribute:
         description:
           - The ldap attribute to check against.
         type: str
+        default: ''
     ldap_attribute_value:
         description:
           - The ldap attribute value to check against.
         type: str
+        default: ''
     members:
         description:
           - A list of user ref names (aaa/user).
@@ -188,7 +196,7 @@ result:
 """
 
 from ansible_collections.community.general.plugins.module_utils.utm_utils import UTM, UTMModule
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 def main():

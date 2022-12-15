@@ -1,20 +1,9 @@
 #!/usr/bin/python
-# (c) 2017, Arie Bregman <abregman@redhat.com>
-#
-# This file is a module for Ansible that interacts with Network Manager
-#
-# Ansible is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Ansible is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Ansible.    If not, see <http://www.gnu.org/licenses/>.
+# -*- coding: utf-8 -*-
+# Copyright (c) 2017, Arie Bregman <abregman@redhat.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
@@ -58,7 +47,7 @@ RETURN = '''
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_text
+from ansible.module_utils.common.text.converters import to_text
 
 
 class Namespace(object):
@@ -75,7 +64,7 @@ class Namespace(object):
 
     def exists(self):
         '''Check if the namespace already exists'''
-        rc, out, err = self.module.run_command('ip netns list')
+        rc, out, err = self.module.run_command(['ip', 'netns', 'list'])
         if rc != 0:
             self.module.fail_json(msg=to_text(err))
         return self.name in out

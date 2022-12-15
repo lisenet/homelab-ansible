@@ -4,6 +4,10 @@
 # and should not be used as examples of how to write Ansible roles #
 ####################################################################
 
+# Copyright (c) Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 - name: test cloud-init
   # TODO: check for a workaround
   # install 'cloud-init'' failed: dpkg-divert: error: `diversion of /etc/init/ureadahead.conf
@@ -15,6 +19,9 @@
   when:
   - not (ansible_distribution == "Ubuntu" and ansible_distribution_major_version|int == 14)
   - not (ansible_os_family == "Suse" and ansible_distribution_major_version|int != 42 and ansible_python.version.major != 3)
+  - not (ansible_distribution == "CentOS" and ansible_distribution_major_version|int == 8)  # TODO: cannot start service
+  - not (ansible_distribution == 'Archlinux')  # TODO: package seems to be broken, cannot be downloaded from mirrors?
+  - not (ansible_distribution == 'Alpine')  # TODO: not sure what's wrong here, the module doesn't return what the tests expect
   block:
   - name: setup install cloud-init
     package:

@@ -3,7 +3,8 @@
 
 # (c) 2017 David Gunter <david.gunter@tivix.com>
 # Copyright (c) 2017 Chris Hoffman <christopher.hoffman@gmail.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 
 from __future__ import absolute_import, division, print_function
@@ -43,7 +44,7 @@ options:
     description:
       - Install the node.js library globally
     required: false
-    default: no
+    default: false
     type: bool
   executable:
     type: path
@@ -55,14 +56,14 @@ options:
       - Use the --ignore-scripts flag when installing.
     required: false
     type: bool
-    default: no
+    default: false
   production:
     description:
       - Install dependencies in production mode.
       - Yarn will ignore any dependencies under devDependencies in package.json
     required: false
     type: bool
-    default: no
+    default: false
   registry:
     type: str
     description:
@@ -95,12 +96,12 @@ EXAMPLES = '''
 - name: Install "imagemin" node.js package globally.
   community.general.yarn:
     name: imagemin
-    global: yes
+    global: true
 
 - name: Remove the globally-installed package "imagemin".
   community.general.yarn:
     name: imagemin
-    global: yes
+    global: true
     state: absent
 
 - name: Install "imagemin" node.js package from custom registry.
@@ -147,7 +148,7 @@ invocation:
             }
         }
 out:
-    description: Output generated from Yarn with emojis removed.
+    description: Output generated from Yarn.
     returned: always
     type: str
     sample: "yarn add v0.16.1[1/4] Resolving packages...[2/4] Fetching packages...[3/4] Linking dependencies...[4/4]
@@ -155,7 +156,6 @@ out:
 '''
 
 import os
-import re
 import json
 
 from ansible.module_utils.basic import AnsibleModule
@@ -163,7 +163,7 @@ from ansible.module_utils.basic import AnsibleModule
 
 class Yarn(object):
 
-    DEFAULT_GLOBAL_INSTALLATION_PATH = '~/.config/yarn/global'
+    DEFAULT_GLOBAL_INSTALLATION_PATH = os.path.expanduser('~/.config/yarn/global')
 
     def __init__(self, module, **kwargs):
         self.module = module
@@ -205,9 +205,6 @@ class Yarn(object):
                 cmd.append('--registry')
                 cmd.append(self.registry)
 
-            # always run Yarn without emojis when called via Ansible
-            cmd.append('--no-emoji')
-
             # If path is specified, cd into that path and run the command.
             cwd = None
             if self.path and not self.globally:
@@ -224,7 +221,7 @@ class Yarn(object):
             rc, out, err = self.module.run_command(cmd, check_rc=check_rc, cwd=cwd)
             return out, err
 
-        return(None, None)
+        return None, None
 
     def list(self):
         cmd = ['list', '--depth=0', '--json']
@@ -241,16 +238,19 @@ class Yarn(object):
         if error:
             self.module.fail_json(msg=error)
 
-        data = json.loads(result)
-        try:
-            dependencies = data['data']['trees']
-        except KeyError:
-            missing.append(self.name)
-            return installed, missing
+        for json_line in result.strip().split('\n'):
+            data = json.loads(json_line)
+            if self.globally:
+                if data['type'] == 'list' and data['data']['type'].startswith('bins-'):
+                    # This is a string in format: 'bins-<PACKAGE_NAME>'
+                    installed.append(data['data']['type'][5:])
+            else:
+                if data['type'] == 'tree':
+                    dependencies = data['data']['trees']
 
-        for dep in dependencies:
-            name, version = dep['name'].rsplit('@', 1)
-            installed.append(name)
+                    for dep in dependencies:
+                        name, version = dep['name'].rsplit('@', 1)
+                        installed.append(name)
 
         if self.name not in installed:
             missing.append(self.name)

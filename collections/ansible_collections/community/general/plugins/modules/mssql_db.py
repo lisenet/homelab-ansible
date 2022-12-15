@@ -1,9 +1,10 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# (c) 2014, Vedit Firat Arig <firatarig@gmail.com>
+# Copyright (c) 2014, Vedit Firat Arig <firatarig@gmail.com>
 # Outline and parts are reused from Mark Theunissen's mysql_db module
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -12,7 +13,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: mssql_db
-short_description: Add or remove MSSQL databases from a remote host.
+short_description: Add or remove MSSQL databases from a remote host
 description:
    - Add or remove MSSQL databases from a remote host.
 options:
@@ -26,10 +27,12 @@ options:
     description:
       - The username used to authenticate with
     type: str
+    default: ''
   login_password:
     description:
       - The password used to authenticate with
     type: str
+    default: ''
   login_host:
     description:
       - Host running the database
@@ -56,7 +59,7 @@ options:
       - Automatically commit the change only if the import succeed. Sometimes it is necessary to use autocommit=true, since some content can't be changed
         within a transaction.
     type: bool
-    default: 'no'
+    default: false
 notes:
    - Requires the pymssql Python package on the remote host. For Ubuntu, this
      is as easy as pip install pymssql (See M(ansible.builtin.pip).)

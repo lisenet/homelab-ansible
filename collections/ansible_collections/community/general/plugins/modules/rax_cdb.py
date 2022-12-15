@@ -1,6 +1,8 @@
 #!/usr/bin/python
-# Copyright: Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# -*- coding: utf-8 -*-
+# Copyright Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -9,7 +11,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: rax_cdb
-short_description: create/delete or resize a Rackspace Cloud Databases instance
+short_description: Create/delete or resize a Rackspace Cloud Databases instance
 description:
   - creates / deletes or resize a Rackspace Cloud Databases instance
     and optionally waits for it to be 'running'. The name option needs to be
@@ -19,7 +21,7 @@ options:
     type: str
     description:
       - Name of the databases server instance
-    required: yes
+    required: true
   flavor:
     type: int
     description:
@@ -41,7 +43,7 @@ options:
     description:
       - version of database (MySQL supports 5.1 and 5.6, MariaDB supports 10, Percona supports 5.6)
       - "The available choices are: C(5.1), C(5.6) and  C(10)."
-    default: 5.6
+    default: '5.6'
     aliases: ['version']
   state:
     type: str
@@ -53,7 +55,7 @@ options:
     description:
       - wait for the instance to be in state 'running' before returning
     type: bool
-    default: 'no'
+    default: false
   wait_timeout:
     type: int
     description:
@@ -68,7 +70,7 @@ extends_documentation_fragment:
 
 EXAMPLES = '''
 - name: Build a Cloud Databases
-  gather_facts: False
+  gather_facts: false
   tasks:
     - name: Server build request
       local_action:
@@ -80,7 +82,7 @@ EXAMPLES = '''
         volume: 2
         cdb_type: MySQL
         cdb_version: 5.6
-        wait: yes
+        wait: true
         state: present
       register: rax_db_server
 '''

@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# Copyright: Tristan Le Guern <tleguern at bouledef.eu>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright Tristan Le Guern <tleguern at bouledef.eu>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -21,8 +22,11 @@ options:
       - Restrict results to a specific group.
     aliases: ['groupid', 'name']
     type: str
-author: Tristan Le Guern (@Aversiste)
-extends_documentation_fragment: community.general.proxmox.documentation
+author: Tristan Le Guern (@tleguern)
+extends_documentation_fragment:
+  - community.general.proxmox.documentation
+  - community.general.attributes
+  - community.general.attributes.info_module
 '''
 
 
@@ -71,9 +75,9 @@ proxmox_groups:
 '''
 
 
-from ansible.module_utils.basic import AnsibleModule, missing_required_lib
+from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.general.plugins.module_utils.proxmox import (
-    proxmox_auth_argument_spec, ProxmoxAnsible, HAS_PROXMOXER, PROXMOXER_IMP_ERR)
+    proxmox_auth_argument_spec, ProxmoxAnsible)
 
 
 class ProxmoxGroupInfoAnsible(ProxmoxAnsible):
@@ -95,7 +99,7 @@ class ProxmoxGroup:
         self.group = dict()
         # Data representation is not the same depending on API calls
         for k, v in group.items():
-            if k == 'users' and type(v) == str:
+            if k == 'users' and isinstance(v, str):
                 self.group['users'] = v.split(',')
             elif k == 'members':
                 self.group['users'] = group['members']
@@ -124,14 +128,11 @@ def main():
         changed=False
     )
 
-    if not HAS_PROXMOXER:
-        module.fail_json(msg=missing_required_lib('proxmoxer'), exception=PROXMOXER_IMP_ERR)
-
     proxmox = ProxmoxGroupInfoAnsible(module)
     group = module.params['group']
 
     if group:
-        groups = [proxmox.get_group(group=group)]
+        groups = [proxmox.get_group(groupid=group)]
     else:
         groups = proxmox.get_groups()
     result['proxmox_groups'] = [group.group for group in groups]

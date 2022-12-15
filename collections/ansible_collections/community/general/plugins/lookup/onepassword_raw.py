@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
-# Copyright: (c) 2018, Scott Buchanan <sbuchanan@ri.pn>
-# Copyright: (c) 2016, Andrew Zenk <azenk@umn.edu> (lastpass.py used as starting point)
-# Copyright: (c) 2018, Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2018, Scott Buchanan <sbuchanan@ri.pn>
+# Copyright (c) 2016, Andrew Zenk <azenk@umn.edu> (lastpass.py used as starting point)
+# Copyright (c) 2018, Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = '''
-    lookup: onepassword_raw
+    name: onepassword_raw
     author:
       - Scott Buchanan (@scottsb)
       - Andrew Zenk (@azenk)
@@ -21,7 +22,7 @@ DOCUMENTATION = '''
     options:
       _terms:
         description: identifier(s) (UUID, name, or domain; case-insensitive) of item(s) to retrieve.
-        required: True
+        required: true
       master_password:
         description: The password used to unlock the specified vault.
         aliases: ['vault_password']
@@ -29,6 +30,11 @@ DOCUMENTATION = '''
         description: Item section containing the field to retrieve (case-insensitive). If absent will return first match from any section.
       subdomain:
         description: The 1Password subdomain to authenticate against.
+      domain:
+        description: Domain of 1Password.
+        version_added: 6.0.0
+        default: '1password.com'
+        type: str
       username:
         description: The username used to sign in.
       secret_key:
@@ -46,7 +52,7 @@ DOCUMENTATION = '''
       - This lookup stores potentially sensitive data from 1Password as Ansible facts.
         Facts are subject to caching if enabled, which means this data could be stored in clear text
         on disk or in a database.
-      - Tested with C(op) version 0.5.3
+      - Tested with C(op) version 2.7.0
 '''
 
 EXAMPLES = """
@@ -75,18 +81,21 @@ from ansible.plugins.lookup import LookupBase
 class LookupModule(LookupBase):
 
     def run(self, terms, variables=None, **kwargs):
-        op = OnePass()
+        self.set_options(var_options=variables, direct=kwargs)
 
-        vault = kwargs.get('vault')
-        op.subdomain = kwargs.get('subdomain')
-        op.username = kwargs.get('username')
-        op.secret_key = kwargs.get('secret_key')
-        op.master_password = kwargs.get('master_password', kwargs.get('vault_password'))
+        vault = self.get_option("vault")
+        subdomain = self.get_option("subdomain")
+        domain = self.get_option("domain", "1password.com")
+        username = self.get_option("username")
+        secret_key = self.get_option("secret_key")
+        master_password = self.get_option("master_password")
 
+        op = OnePass(subdomain, domain, username, secret_key, master_password)
         op.assert_logged_in()
 
         values = []
         for term in terms:
             data = json.loads(op.get_raw(term, vault))
             values.append(data)
+
         return values

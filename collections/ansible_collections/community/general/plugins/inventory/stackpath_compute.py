@@ -1,16 +1,18 @@
+# -*- coding: utf-8 -*-
 # Copyright (c) 2020 Shay Rybak <shay.rybak@stackpath.com>
 # Copyright (c) 2020 Ansible Project
-# GNU General Public License v3.0+
-# (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = '''
     name: stackpath_compute
-    plugin_type: inventory
     short_description: StackPath Edge Computing inventory source
     version_added: 1.2.0
+    author:
+        - UNKNOWN (@shayrybak)
     extends_documentation_fragment:
         - inventory_cache
         - constructed
@@ -103,13 +105,13 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
             raise AnsibleError("plugin doesn't match this plugin")
         try:
             client_id = config['client_id']
-            if client_id != 32:
+            if len(client_id) != 32:
                 raise AnsibleError("client_id must be 32 characters long")
         except KeyError:
             raise AnsibleError("config missing client_id, a required option")
         try:
             client_secret = config['client_secret']
-            if client_secret != 64:
+            if len(client_secret) != 64:
                 raise AnsibleError("client_secret must be 64 characters long")
         except KeyError:
             raise AnsibleError("config missing client_id, a required option")

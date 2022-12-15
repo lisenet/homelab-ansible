@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2019, Evgeniy Krysanov <evgeniy.krysanov@gmail.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2019, Evgeniy Krysanov <evgeniy.krysanov@gmail.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -15,25 +16,18 @@ description:
   - Manages Bitbucket pipeline variables.
 author:
   - Evgeniy Krysanov (@catcombo)
+extends_documentation_fragment:
+  - community.general.bitbucket
 options:
-  client_id:
-    description:
-      - The OAuth consumer key.
-      - If not set the environment variable C(BITBUCKET_CLIENT_ID) will be used.
-    type: str
-  client_secret:
-    description:
-      - The OAuth consumer secret.
-      - If not set the environment variable C(BITBUCKET_CLIENT_SECRET) will be used.
-    type: str
   repository:
     description:
       - The repository name.
     type: str
     required: true
-  username:
+  workspace:
     description:
       - The repository owner.
+      - I(username) used to be an alias of this option. Since community.general 6.0.0 it is an alias of I(user).
     type: str
     required: true
   name:
@@ -49,7 +43,7 @@ options:
     description:
       - Whether to encrypt the variable value.
     type: bool
-    default: no
+    default: false
   state:
     description:
       - Indicates desired state of the variable.
@@ -57,7 +51,6 @@ options:
     required: true
     choices: [ absent, present ]
 notes:
-  - Bitbucket OAuth consumer key and secret can be obtained from Bitbucket profile -> Settings -> Access Management -> OAuth.
   - Check mode is supported.
   - For secured values return parameter C(changed) is always C(True).
 '''
@@ -66,26 +59,26 @@ EXAMPLES = r'''
 - name: Create or update pipeline variables from the list
   community.general.bitbucket_pipeline_variable:
     repository: 'bitbucket-repo'
-    username: bitbucket_username
+    workspace: bitbucket_workspace
     name: '{{ item.name }}'
     value: '{{ item.value }}'
     secured: '{{ item.secured }}'
     state: present
   with_items:
-    - { name: AWS_ACCESS_KEY, value: ABCD1234, secured: False }
-    - { name: AWS_SECRET, value: qwe789poi123vbn0, secured: True }
+    - { name: AWS_ACCESS_KEY, value: ABCD1234, secured: false }
+    - { name: AWS_SECRET, value: qwe789poi123vbn0, secured: true }
 
 - name: Remove pipeline variable
   community.general.bitbucket_pipeline_variable:
     repository: bitbucket-repo
-    username: bitbucket_username
+    workspace: bitbucket_workspace
     name: AWS_ACCESS_KEY
     state: absent
 '''
 
 RETURN = r''' # '''
 
-from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.basic import AnsibleModule, _load_params
 from ansible_collections.community.general.plugins.module_utils.source_control.bitbucket import BitbucketHelper
 
 error_messages = {
@@ -93,8 +86,8 @@ error_messages = {
 }
 
 BITBUCKET_API_ENDPOINTS = {
-    'pipeline-variable-list': '%s/2.0/repositories/{username}/{repo_slug}/pipelines_config/variables/' % BitbucketHelper.BITBUCKET_API_URL,
-    'pipeline-variable-detail': '%s/2.0/repositories/{username}/{repo_slug}/pipelines_config/variables/{variable_uuid}' % BitbucketHelper.BITBUCKET_API_URL,
+    'pipeline-variable-list': '%s/2.0/repositories/{workspace}/{repo_slug}/pipelines_config/variables/' % BitbucketHelper.BITBUCKET_API_URL,
+    'pipeline-variable-detail': '%s/2.0/repositories/{workspace}/{repo_slug}/pipelines_config/variables/{variable_uuid}' % BitbucketHelper.BITBUCKET_API_URL,
 }
 
 
@@ -120,7 +113,7 @@ def get_existing_pipeline_variable(module, bitbucket):
     The `value` key in dict is absent in case of secured variable.
     """
     variables_base_url = BITBUCKET_API_ENDPOINTS['pipeline-variable-list'].format(
-        username=module.params['username'],
+        workspace=module.params['workspace'],
         repo_slug=module.params['repository'],
     )
     # Look through the all response pages in search of variable we need
@@ -133,7 +126,7 @@ def get_existing_pipeline_variable(module, bitbucket):
         )
 
         if info['status'] == 404:
-            module.fail_json(msg='Invalid `repository` or `username`.')
+            module.fail_json(msg='Invalid `repository` or `workspace`.')
 
         if info['status'] != 200:
             module.fail_json(msg='Failed to retrieve the list of pipeline variables: {0}'.format(info))
@@ -149,13 +142,11 @@ def get_existing_pipeline_variable(module, bitbucket):
             var['name'] = var.pop('key')
             return var
 
-    return None
-
 
 def create_pipeline_variable(module, bitbucket):
     info, content = bitbucket.request(
         api_url=BITBUCKET_API_ENDPOINTS['pipeline-variable-list'].format(
-            username=module.params['username'],
+            workspace=module.params['workspace'],
             repo_slug=module.params['repository'],
         ),
         method='POST',
@@ -176,7 +167,7 @@ def create_pipeline_variable(module, bitbucket):
 def update_pipeline_variable(module, bitbucket, variable_uuid):
     info, content = bitbucket.request(
         api_url=BITBUCKET_API_ENDPOINTS['pipeline-variable-detail'].format(
-            username=module.params['username'],
+            workspace=module.params['workspace'],
             repo_slug=module.params['repository'],
             variable_uuid=variable_uuid,
         ),
@@ -197,7 +188,7 @@ def update_pipeline_variable(module, bitbucket, variable_uuid):
 def delete_pipeline_variable(module, bitbucket, variable_uuid):
     info, content = bitbucket.request(
         api_url=BITBUCKET_API_ENDPOINTS['pipeline-variable-detail'].format(
-            username=module.params['username'],
+            workspace=module.params['workspace'],
             repo_slug=module.params['repository'],
             variable_uuid=variable_uuid,
         ),
@@ -211,19 +202,29 @@ def delete_pipeline_variable(module, bitbucket, variable_uuid):
         ))
 
 
+class BitBucketPipelineVariable(AnsibleModule):
+    def __init__(self, *args, **kwargs):
+        params = _load_params() or {}
+        if params.get('secured'):
+            kwargs['argument_spec']['value'].update({'no_log': True})
+        super(BitBucketPipelineVariable, self).__init__(*args, **kwargs)
+
+
 def main():
     argument_spec = BitbucketHelper.bitbucket_argument_spec()
     argument_spec.update(
         repository=dict(type='str', required=True),
-        username=dict(type='str', required=True),
+        workspace=dict(type='str', required=True),
         name=dict(type='str', required=True),
         value=dict(type='str'),
         secured=dict(type='bool', default=False),
         state=dict(type='str', choices=['present', 'absent'], required=True),
     )
-    module = AnsibleModule(
+    module = BitBucketPipelineVariable(
         argument_spec=argument_spec,
         supports_check_mode=True,
+        required_one_of=BitbucketHelper.bitbucket_required_one_of(),
+        required_together=BitbucketHelper.bitbucket_required_together(),
     )
 
     bitbucket = BitbucketHelper(module)

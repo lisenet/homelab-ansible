@@ -1,6 +1,8 @@
 #!/usr/bin/python
-# Copyright: Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# -*- coding: utf-8 -*-
+# Copyright Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -9,7 +11,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: profitbricks_nic
-short_description: Create or Remove a NIC.
+short_description: Create or Remove a NIC
 description:
      - This module allows you to create or restore a volume snapshot. This module has a dependency on profitbricks >= 1.0.0
 options:
@@ -46,7 +48,7 @@ options:
     description:
       - wait for the operation to complete before returning
     required: false
-    default: "yes"
+    default: true
     type: bool
   wait_timeout:
     description:

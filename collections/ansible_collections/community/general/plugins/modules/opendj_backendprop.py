@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-# Copyright: (c) 2016, Werner Dijkerman (ikben@werner-dijkerman.nl)
-# Copyright: (c) 2017, Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2016, Werner Dijkerman (ikben@werner-dijkerman.nl)
+# Copyright (c) 2017, Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -10,7 +11,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: opendj_backendprop
-short_description: Will update the backend configuration of OpenDJ via the dsconfig set-backend-prop command.
+short_description: Will update the backend configuration of OpenDJ via the dsconfig set-backend-prop command
 description:
    - This module will update settings for OpenDJ with the command set-backend-prop.
    - It will check first via de get-backend-prop if configuration needs to be applied.
@@ -22,46 +23,56 @@ options:
             - The path to the bin directory of OpenDJ.
         required: false
         default: /opt/opendj/bin
+        type: path
     hostname:
         description:
             - The hostname of the OpenDJ server.
         required: true
+        type: str
     port:
         description:
             - The Admin port on which the OpenDJ instance is available.
         required: true
+        type: str
     username:
         description:
             - The username to connect to.
         required: false
         default: cn=Directory Manager
+        type: str
     password:
         description:
             - The password for the cn=Directory Manager user.
             - Either password or passwordfile is needed.
         required: false
+        type: str
     passwordfile:
         description:
             - Location to the password file which holds the password for the cn=Directory Manager user.
             - Either password or passwordfile is needed.
         required: false
+        type: path
     backend:
         description:
             - The name of the backend on which the property needs to be updated.
         required: true
+        type: str
     name:
         description:
             - The configuration setting to update.
         required: true
+        type: str
     value:
         description:
             - The value for the configuration item.
         required: true
+        type: str
     state:
         description:
             - If configuration needs to be added/updated
         required: false
         default: "present"
+        type: str
 '''
 
 EXAMPLES = '''

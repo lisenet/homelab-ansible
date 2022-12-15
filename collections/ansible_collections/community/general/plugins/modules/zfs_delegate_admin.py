@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2015, Nate Coraor <nate@coraor.org>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2015, Nate Coraor <nate@coraor.org>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -17,7 +18,7 @@ description:
   - See the C(zfs allow) section of C(zfs(1M)) for detailed explanations of options.
   - This module attempts to adhere to the behavior of the command line tool as much as possible.
 requirements:
-  - "A ZFS/OpenZFS implementation that supports delegation with `zfs allow`, including: Solaris >= 10, illumos (all
+  - "A ZFS/OpenZFS implementation that supports delegation with C(zfs allow), including: Solaris >= 10, illumos (all
     versions), FreeBSD >= 8.0R, ZFS on Linux >= 0.7.0."
 options:
   name:
@@ -32,24 +33,29 @@ options:
       - When set to C(absent), removes permissions from the specified entities, or removes all permissions if no entity params are specified.
     choices: [ absent, present ]
     default: present
+    type: str
   users:
     description:
       - List of users to whom permission(s) should be granted.
     type: list
+    elements: str
   groups:
     description:
       - List of groups to whom permission(s) should be granted.
     type: list
+    elements: str
   everyone:
     description:
       - Apply permissions to everyone.
     type: bool
-    default: no
+    default: false
   permissions:
     description:
       - The list of permission(s) to delegate (required if C(state) is C(present)).
+      - Supported permissions depend on the ZFS version in use. See for example
+        U(https://openzfs.github.io/openzfs-docs/man/8/zfs-allow.8.html) for OpenZFS.
     type: list
-    choices: [ allow, clone, create, destroy, diff, hold, mount, promote, readonly, receive, release, rename, rollback, send, share, snapshot, unallow ]
+    elements: str
   local:
     description:
       - Apply permissions to C(name) locally (C(zfs allow -l)).
@@ -62,7 +68,7 @@ options:
     description:
       - Unallow permissions recursively (ignored when C(state) is C(present)).
     type: bool
-    default: no
+    default: false
 author:
 - Nate Coraor (@natefoo)
 '''
@@ -78,7 +84,7 @@ EXAMPLES = r'''
   community.general.zfs_delegate_admin:
     name: rpool/myvol
     groups: backup
-    everyone: yes
+    everyone: true
     permissions: send
 
 - name: Grant `zfs send,receive` to users `foo` and `bar` with local scope only
@@ -86,12 +92,12 @@ EXAMPLES = r'''
     name: rpool/myfs
     users: foo,bar
     permissions: send,receive
-    local: yes
+    local: true
 
 - name: Revoke all permissions from everyone (permissions specifically assigned to users and groups remain)
   community.general.zfs_delegate_admin:
     name: rpool/myfs
-    everyone: yes
+    everyone: true
     state: absent
 '''
 
@@ -241,13 +247,10 @@ def main():
         argument_spec=dict(
             name=dict(type='str', required=True),
             state=dict(type='str', default='present', choices=['absent', 'present']),
-            users=dict(type='list'),
-            groups=dict(type='list'),
+            users=dict(type='list', elements='str'),
+            groups=dict(type='list', elements='str'),
             everyone=dict(type='bool', default=False),
-            permissions=dict(type='list',
-                             choices=['allow', 'clone', 'create', 'destroy', 'diff', 'hold', 'mount', 'promote',
-                                      'readonly', 'receive', 'release', 'rename', 'rollback', 'send', 'share',
-                                      'snapshot', 'unallow']),
+            permissions=dict(type='list', elements='str'),
             local=dict(type='bool'),
             descendents=dict(type='bool'),
             recursive=dict(type='bool', default=False),

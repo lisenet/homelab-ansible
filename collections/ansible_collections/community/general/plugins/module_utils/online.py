@@ -1,4 +1,7 @@
-# Simplified BSD License (see licenses/simplified_bsd.txt or https://opensource.org/licenses/BSD-2-Clause)
+# -*- coding: utf-8 -*-
+# Copyright (c) Ansible project
+# Simplified BSD License (see LICENSES/BSD-2-Clause.txt or https://opensource.org/licenses/BSD-2-Clause)
+# SPDX-License-Identifier: BSD-2-Clause
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
@@ -100,7 +103,7 @@ class Online(object):
 
     @staticmethod
     def get_user_agent_string(module):
-        return "ansible %s Python %s" % (module.ansible_version, sys.version.split(' ')[0])
+        return "ansible %s Python %s" % (module.ansible_version, sys.version.split(' ', 1)[0])
 
     def get(self, path, data=None, headers=None):
         return self.send('GET', path, data, headers)

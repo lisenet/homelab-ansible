@@ -1,6 +1,8 @@
 #!/usr/bin/python
-# Copyright: Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# -*- coding: utf-8 -*-
+# Copyright Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -9,7 +11,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: rax_mon_alarm
-short_description: Create or delete a Rackspace Cloud Monitoring alarm.
+short_description: Create or delete a Rackspace Cloud Monitoring alarm
 description:
 - Create or delete a Rackspace Cloud Monitoring alarm that associates an
   existing rax_mon_entity, rax_mon_check, and rax_mon_notification_plan with
@@ -75,7 +77,7 @@ extends_documentation_fragment:
 
 EXAMPLES = '''
 - name: Alarm example
-  gather_facts: False
+  gather_facts: false
   hosts: local
   connection: local
   tasks:

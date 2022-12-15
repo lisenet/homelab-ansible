@@ -1,7 +1,9 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 #
 # Copyright (c) 2015 CenturyLink
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -9,7 +11,7 @@ __metaclass__ = type
 
 DOCUMENTATION = '''
 module: clc_blueprint_package
-short_description: deploys a blue print package on a set of servers in CenturyLink Cloud.
+short_description: Deploys a blue print package on a set of servers in CenturyLink Cloud
 description:
   - An Ansible module to deploy blue print package on a set of servers in CenturyLink Cloud.
 options:
@@ -17,31 +19,32 @@ options:
     description:
       - A list of server Ids to deploy the blue print package.
     type: list
-    required: True
+    required: true
+    elements: str
   package_id:
     description:
       - The package id of the blue print.
     type: str
-    required: True
+    required: true
   package_params:
     description:
       - The dictionary of arguments required to deploy the blue print.
     type: dict
     default: {}
-    required: False
+    required: false
   state:
     description:
       - Whether to install or uninstall the package. Currently it supports only "present" for install action.
     type: str
-    required: False
+    required: false
     default: present
     choices: ['present']
   wait:
     description:
       - Whether to wait for the tasks to finish before returning.
     type: str
-    default: True
-    required: False
+    default: 'True'
+    required: false
 requirements:
     - python = 2.7
     - requests >= 2.5.0
@@ -87,7 +90,8 @@ __version__ = '${version}'
 
 import os
 import traceback
-from distutils.version import LooseVersion
+
+from ansible_collections.community.general.plugins.module_utils.version import LooseVersion
 
 REQUESTS_IMP_ERR = None
 try:
@@ -130,8 +134,7 @@ class ClcBlueprintPackage:
             self.module.fail_json(msg=missing_required_lib('clc-sdk'), exception=CLC_IMP_ERR)
         if not REQUESTS_FOUND:
             self.module.fail_json(msg=missing_required_lib('requests'), exception=REQUESTS_IMP_ERR)
-        if requests.__version__ and LooseVersion(
-                requests.__version__) < LooseVersion('2.5.0'):
+        if requests.__version__ and LooseVersion(requests.__version__) < LooseVersion('2.5.0'):
             self.module.fail_json(
                 msg='requests library  version should be >= 2.5.0')
 
@@ -164,7 +167,7 @@ class ClcBlueprintPackage:
         :return: the package dictionary object
         """
         argument_spec = dict(
-            server_ids=dict(type='list', required=True),
+            server_ids=dict(type='list', elements='str', required=True),
             package_id=dict(required=True),
             package_params=dict(type='dict', default={}),
             wait=dict(default=True),   # @FIXME should be bool?

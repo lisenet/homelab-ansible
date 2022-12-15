@@ -1,13 +1,14 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# (c) 2016, William L Thomson Jr
-# (c) 2013, Yap Sok Ann
+# Copyright (c) 2016, William L Thomson Jr
+# Copyright (c) 2013, Yap Sok Ann
 # Written by Yap Sok Ann <sokann@gmail.com>
 # Modified by William L. Thomson Jr. <wlt@o-sinc.com>
 # Based on apt module written by Matthew Williams <matthew@flowroute.com>
 #
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -39,19 +40,25 @@ options:
     description:
       - Update packages to the best version available (--update)
     type: bool
-    default: no
+    default: false
+
+  backtrack:
+    description:
+      - Set backtrack value (C(--backtrack)).
+    type: int
+    version_added: 5.8.0
 
   deep:
     description:
       - Consider the entire dependency tree of packages (--deep)
     type: bool
-    default: no
+    default: false
 
   newuse:
     description:
       - Include installed packages where USE flags have changed (--newuse)
     type: bool
-    default: no
+    default: false
 
   changed_use:
     description:
@@ -59,31 +66,31 @@ options:
       - flags that the user has not enabled are added or removed
       - (--changed-use)
     type: bool
-    default: no
+    default: false
 
   oneshot:
     description:
       - Do not add the packages to the world file (--oneshot)
     type: bool
-    default: no
+    default: false
 
   noreplace:
     description:
       - Do not re-emerge installed packages (--noreplace)
     type: bool
-    default: yes
+    default: true
 
   nodeps:
     description:
       - Only merge packages but not their dependencies (--nodeps)
     type: bool
-    default: no
+    default: false
 
   onlydeps:
     description:
       - Only merge packages' dependencies but not the packages (--onlydeps)
     type: bool
-    default: no
+    default: false
 
   depclean:
     description:
@@ -91,25 +98,25 @@ options:
       - If no package is specified, clean up the world's dependencies
       - Otherwise, --depclean serves as a dependency aware version of --unmerge
     type: bool
-    default: no
+    default: false
 
   quiet:
     description:
       - Run emerge in quiet mode (--quiet)
     type: bool
-    default: no
+    default: false
 
   verbose:
     description:
       - Run emerge in verbose mode (--verbose)
     type: bool
-    default: no
+    default: false
 
   sync:
     description:
       - Sync package repositories first
-      - If yes, perform "emerge --sync"
-      - If web, perform "emerge-webrsync"
+      - If C(yes), perform "emerge --sync"
+      - If C(web), perform "emerge-webrsync"
     choices: [ "web", "yes", "no" ]
     type: str
 
@@ -117,32 +124,32 @@ options:
     description:
       - Merge only packages specified at C(PORTAGE_BINHOST) in C(make.conf).
     type: bool
-    default: no
+    default: false
     version_added: 1.3.0
 
   getbinpkg:
     description:
       - Prefer packages specified at C(PORTAGE_BINHOST) in C(make.conf).
     type: bool
-    default: no
+    default: false
 
   usepkgonly:
     description:
       - Merge only binaries (no compiling).
     type: bool
-    default: no
+    default: false
 
   usepkg:
     description:
       - Tries to use the binary package(s) in the locally available packages directory.
     type: bool
-    default: no
+    default: false
 
   keepgoing:
     description:
       - Continue as much as possible after an error.
     type: bool
-    default: no
+    default: false
 
   jobs:
     description:
@@ -159,12 +166,18 @@ options:
       - --load-average setting values
     type: float
 
+  withbdeps:
+    description:
+      - Specifies that build time dependencies should be installed.
+    type: bool
+    version_added: 5.8.0
+
   quietbuild:
     description:
       - Redirect all build output to logs alone, and do not display it
       - on stdout (--quiet-build)
     type: bool
-    default: no
+    default: false
 
   quietfail:
     description:
@@ -172,9 +185,8 @@ options:
       - Only the die message and the path of the build log will be
       - displayed on stdout.
     type: bool
-    default: no
+    default: false
 
-requirements: [ gentoolkit ]
 author:
     - "William L Thomson Jr (@wltjr)"
     - "Yap Sok Ann (@sayap)"
@@ -195,41 +207,54 @@ EXAMPLES = '''
 - name: Update package foo to the latest version (os specific alternative to latest)
   community.general.portage:
     package: foo
-    update: yes
+    update: true
 
 - name: Install package foo using PORTAGE_BINHOST setup
   community.general.portage:
     package: foo
-    getbinpkg: yes
+    getbinpkg: true
 
 - name: Re-install world from binary packages only and do not allow any compiling
   community.general.portage:
     package: '@world'
-    usepkgonly: yes
+    usepkgonly: true
 
 - name: Sync repositories and update world
   community.general.portage:
     package: '@world'
-    update: yes
-    deep: yes
-    sync: yes
+    update: true
+    deep: true
+    sync: true
 
 - name: Remove unneeded packages
   community.general.portage:
-    depclean: yes
+    depclean: true
 
 - name: Remove package foo if it is not explicitly needed
   community.general.portage:
     package: foo
     state: absent
-    depclean: yes
+    depclean: true
 '''
 
 import os
 import re
+import sys
+import traceback
 
-from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_native
+from ansible.module_utils.basic import AnsibleModule, missing_required_lib
+from ansible.module_utils.common.respawn import has_respawned, respawn_module
+from ansible.module_utils.common.text.converters import to_native
+
+
+try:
+    from portage.dbapi import vartree
+    from portage.exception import InvalidAtom
+    HAS_PORTAGE = True
+    PORTAGE_IMPORT_ERROR = None
+except ImportError:
+    HAS_PORTAGE = False
+    PORTAGE_IMPORT_ERROR = traceback.format_exc()
 
 
 def query_package(module, package, action):
@@ -239,10 +264,12 @@ def query_package(module, package, action):
 
 
 def query_atom(module, atom, action):
-    cmd = '%s list %s' % (module.equery_path, atom)
-
-    rc, out, err = module.run_command(cmd)
-    return rc == 0
+    vdb = vartree.vardbapi()
+    try:
+        exists = vdb.match(atom)
+    except InvalidAtom:
+        return False
+    return bool(exists)
 
 
 def query_set(module, set, action):
@@ -287,9 +314,10 @@ def sync_repositories(module, webrsync=False):
         module.fail_json(msg='could not sync package repositories')
 
 
-# Note: In the 3 functions below, equery is done one-by-one, but emerge is done
-# in one go. If that is not desirable, split the packages into multiple tasks
-# instead of joining them together with comma.
+# Note: In the 3 functions below, package querying is done one-by-one,
+# but emerge is done in one go. If that is not desirable, split the
+# packages into multiple tasks instead of joining them together with
+# comma.
 
 
 def emerge_packages(module, packages):
@@ -335,6 +363,8 @@ def emerge_packages(module, packages):
     emerge_flags = {
         'jobs': '--jobs',
         'loadavg': '--load-average',
+        'backtrack': '--backtrack',
+        'withbdeps': '--with-bdeps',
     }
 
     for flag, arg in emerge_flags.items():
@@ -350,7 +380,10 @@ def emerge_packages(module, packages):
             continue
 
         """Add the --flag=value pair."""
-        args.extend((arg, to_native(flag_val)))
+        if isinstance(p[flag], bool):
+            args.extend((arg, to_native('y' if flag_val else 'n')))
+        else:
+            args.extend((arg, to_native(flag_val)))
 
     cmd, (rc, out, err) = run_emerge(module, packages, *args)
     if rc != 0:
@@ -474,6 +507,7 @@ def main():
                 choices=portage_present_states + portage_absent_states,
             ),
             update=dict(default=False, type='bool'),
+            backtrack=dict(default=None, type='int'),
             deep=dict(default=False, type='bool'),
             newuse=dict(default=False, type='bool'),
             changed_use=dict(default=False, type='bool'),
@@ -492,6 +526,7 @@ def main():
             keepgoing=dict(default=False, type='bool'),
             jobs=dict(default=None, type='int'),
             loadavg=dict(default=None, type='float'),
+            withbdeps=dict(default=None, type='bool'),
             quietbuild=dict(default=False, type='bool'),
             quietfail=dict(default=False, type='bool'),
         ),
@@ -505,8 +540,14 @@ def main():
         supports_check_mode=True,
     )
 
+    if not HAS_PORTAGE:
+        if sys.executable != '/usr/bin/python' and not has_respawned():
+            respawn_module('/usr/bin/python')
+        else:
+            module.fail_json(msg=missing_required_lib('portage'),
+                             exception=PORTAGE_IMPORT_ERROR)
+
     module.emerge_path = module.get_bin_path('emerge', required=True)
-    module.equery_path = module.get_bin_path('equery', required=True)
 
     p = module.params
 

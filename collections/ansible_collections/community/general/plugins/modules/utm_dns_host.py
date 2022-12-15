@@ -1,7 +1,9 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
-# Copyright: (c) 2018, Johannes Brunswicker <johannes.brunswicker@gmail.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2018, Johannes Brunswicker <johannes.brunswicker@gmail.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
@@ -13,7 +15,7 @@ module: utm_dns_host
 author:
     - Johannes Brunswicker (@MatrixCrawler)
 
-short_description: create, update or destroy dns entry in Sophos UTM
+short_description: Create, update or destroy dns entry in Sophos UTM
 
 description:
     - Create, update or destroy a dns entry in SOPHOS UTM.
@@ -40,6 +42,7 @@ options:
         type: str
         description:
           - An optional comment to add to the dns host object
+        default: ''
     hostname:
         type: str
         description:
@@ -48,15 +51,16 @@ options:
         type: str
         description:
           - The reference name of the interface to use. If not provided the default interface will be used
+        default: ''
     resolved:
         description:
           - whether the hostname's ipv4 address is already resolved or not
-        default: False
+        default: false
         type: bool
     resolved6:
         description:
           - whether the hostname's ipv6 address is already resolved or not
-        default: False
+        default: false
         type: bool
     timeout:
         type: int
@@ -128,7 +132,7 @@ result:
 """
 
 from ansible_collections.community.general.plugins.module_utils.utm_utils import UTM, UTMModule
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 def main():

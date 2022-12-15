@@ -41,7 +41,7 @@
 
 # Use the kernel and initrd files from the Bionic netboot.tar.gz archive,
 # as I'm not sure the casper files are compatible with preseed/kickstart.
-- name: RedHat | Download Ubuntu netboot.tar.gz Archive Files
+- name: RedHat | Download Ubuntu 18.04 netboot.tar.gz Archive Files
   get_url:
     url: "{{ item }}"
     dest: "{{ outer_item.netboot_directory }}"
@@ -50,3 +50,13 @@
     - "{{ ubuntu_netboot_linux }}"
     - "{{ ubuntu_netboot_initrd }}"
   when: (outer_item.name == 'ubuntu1804server') or (outer_item.name == 'ubuntu1804desktop')
+
+- name: RedHat | Download Ubuntu 20.04 netboot.tar.gz Archive Files
+  get_url:
+    url: "{{ item }}"
+    dest: "{{ outer_item.netboot_directory }}"
+    mode: 0644
+  loop:
+    - "{{ ubuntu_2004_netboot_linux }}"
+    - "{{ ubuntu_2004_netboot_initrd }}"
+  when: (outer_item.name == 'ubuntu2004server') or (outer_item.name == 'ubuntu2004desktop')

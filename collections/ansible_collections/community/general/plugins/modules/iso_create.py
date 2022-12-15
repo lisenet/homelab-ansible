@@ -1,9 +1,10 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2020, Ansible Project
-# Copyright: (c) 2020, VMware, Inc. All Rights Reserved.
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2020, Ansible Project
+# Copyright (c) 2020, VMware, Inc. All Rights Reserved.
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -30,14 +31,14 @@ options:
        underscores (_). File names are limited to 31 characters, directory nesting is limited to 8 levels, and path
        names are limited to 255 characters.'
      type: list
-     required: yes
+     required: true
      elements: path
    dest_iso:
      description:
      - The absolute path with file name of the new generated ISO file on local machine.
      - Will create intermediate folders when they does not exist.
      type: path
-     required: yes
+     required: true
    interchange_level:
      description:
      - The ISO9660 interchange level to use, it dictates the rules on the names of files.
@@ -72,7 +73,7 @@ options:
      - If set to C(True), then version 2.60 of the UDF spec is used.
      - If not specified or set to C(False), then no UDF support is added.
      type: bool
-     default: False
+     default: false
 '''
 
 EXAMPLES = r'''
@@ -138,7 +139,7 @@ udf:
     description: Configured UDF support.
     returned: on success
     type: bool
-    sample: False
+    sample: false
 '''
 
 import os
@@ -153,7 +154,7 @@ except ImportError:
     HAS_PYCDLIB = False
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 def add_file(module, iso_file=None, src_file=None, file_path=None, rock_ridge=None, use_joliet=None, use_udf=None):
@@ -187,9 +188,9 @@ def add_directory(module, iso_file=None, dir_path=None, rock_ridge=None, use_jol
     if rock_ridge:
         rr_name = os.path.basename(dir_path)
     if use_joliet:
-        joliet_path = iso_dir_path
+        joliet_path = dir_path
     if use_udf:
-        udf_path = iso_dir_path
+        udf_path = dir_path
     try:
         iso_file.add_directory(iso_path=iso_dir_path, rr_name=rr_name, joliet_path=joliet_path, udf_path=udf_path)
     except Exception as err:
@@ -253,7 +254,7 @@ def main():
         udf=use_udf
     )
     if not module.check_mode:
-        iso_file = pycdlib.PyCdlib()
+        iso_file = pycdlib.PyCdlib(always_consistent=True)
         iso_file.new(interchange_level=inter_level, vol_ident=volume_id, rock_ridge=rock_ridge, joliet=use_joliet, udf=use_udf)
 
         for src_file in src_file_list:

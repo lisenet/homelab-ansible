@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2019, Trevor Highfill <trevor.highfill@outlook.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2019, Trevor Highfill <trevor.highfill@outlook.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = r'''
-  callback: diy
+  name: diy
   type: stdout
   short_description: Customize the output
   version_added: 0.2.0
@@ -626,7 +627,7 @@ playbook.yml: >
   ---
   - name: "Default plugin output: play example"
     hosts: localhost
-    gather_facts: no
+    gather_facts: false
     tasks:
       - name:  Default plugin output
         ansible.builtin.debug:
@@ -634,7 +635,7 @@ playbook.yml: >
 
   - name: Override from play vars
     hosts: localhost
-    gather_facts: no
+    gather_facts: false
     vars:
       ansible_connection: local
       green: "\e[0m\e[38;5;82m"
@@ -712,7 +713,7 @@ playbook.yml: >
       - name: Using alias vars (see ansible.cfg)
         ansible.builtin.debug:
           msg:
-        when: False
+        when: false
         vars:
           ansible_callback_diy_playbook_on_task_start_msg: ""
           on_skipped_msg: "DIY output(via task vars): skipped example:\n\e[0m\e[38;5;4m\u25b6\u25b6 {{ ansible_callback_diy.result.task.name }}\n"
@@ -792,7 +793,7 @@ from ansible.utils.color import colorize, hostcolor
 from ansible.template import Templar
 from ansible.vars.manager import VariableManager
 from ansible.plugins.callback.default import CallbackModule as Default
-from ansible.module_utils._text import to_text
+from ansible.module_utils.common.text.converters import to_text
 
 
 class DummyStdout(object):
@@ -1013,7 +1014,7 @@ class CallbackModule(Default):
             for attr in _stats_attributes:
                 _ret[self.DIY_NS]['stats'].update({attr: _get_value(obj=stats, attr=attr)})
 
-        _ret[self.DIY_NS].update({'top_level_var_names': _ret.keys()})
+        _ret[self.DIY_NS].update({'top_level_var_names': list(_ret.keys())})
 
         return _ret
 

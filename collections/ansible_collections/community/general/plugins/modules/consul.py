@@ -1,7 +1,9 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 #
-# (c) 2015, Steve Gargan <steve.gargan@gmail.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2015, Steve Gargan <steve.gargan@gmail.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -9,7 +11,7 @@ __metaclass__ = type
 
 DOCUMENTATION = '''
 module: consul
-short_description: "Add, modify & delete services within a consul cluster."
+short_description: Add, modify & delete services within a consul cluster
 description:
  - Registers services and checks for an agent with a consul cluster.
    A service is some process running on the agent node that should be advertised by
@@ -33,6 +35,7 @@ requirements:
 author: "Steve Gargan (@sgargan)"
 options:
     state:
+        type: str
         description:
           - register or deregister the consul service, defaults to present
         default: present
@@ -67,7 +70,7 @@ options:
         description:
           - whether to verify the TLS certificate of the consul agent
         type: bool
-        default: 'yes'
+        default: true
     notes:
         type: str
         description:
@@ -82,10 +85,11 @@ options:
         description:
           - the address to advertise that the service will be listening on.
             This value will be passed as the I(address) parameter to Consul's
-            U(/v1/agent/service/register) API method, so refer to the Consul API
+            C(/v1/agent/service/register) API method, so refer to the Consul API
             documentation for further details.
     tags:
         type: list
+        elements: str
         description:
           - tags that will be attached to the service registration.
     script:
@@ -237,7 +241,7 @@ from ansible.module_utils.basic import AnsibleModule
 
 
 def register_with_consul(module):
-    state = module.params.get('state')
+    state = module.params['state']
 
     if state == 'present':
         add(module)
@@ -263,10 +267,8 @@ def add(module):
 
 def remove(module):
     ''' removes a service or a check '''
-    service_id = module.params.get('service_id') or module.params.get('service_name')
-    check_id = module.params.get('check_id') or module.params.get('check_name')
-    if not (service_id or check_id):
-        module.fail_json(msg='services and checks are removed by id or name. please supply a service id/name or a check id/name')
+    service_id = module.params['service_id'] or module.params['service_name']
+    check_id = module.params['check_id'] or module.params['check_name']
     if service_id:
         remove_service(module, service_id)
     else:
@@ -330,7 +332,7 @@ def add_service(module, service):
                      service_id=result.id,
                      service_name=result.name,
                      service_port=result.port,
-                     checks=[check.to_dict() for check in service.checks],
+                     checks=[check.to_dict() for check in service.checks()],
                      tags=result.tags)
 
 
@@ -339,66 +341,64 @@ def remove_service(module, service_id):
     consul_api = get_consul_api(module)
     service = get_service_by_id_or_name(consul_api, service_id)
     if service:
-        consul_api.agent.service.deregister(service_id, token=module.params.get('token'))
+        consul_api.agent.service.deregister(service_id, token=module.params['token'])
         module.exit_json(changed=True, id=service_id)
 
     module.exit_json(changed=False, id=service_id)
 
 
-def get_consul_api(module, token=None):
-    consulClient = consul.Consul(host=module.params.get('host'),
-                                 port=module.params.get('port'),
-                                 scheme=module.params.get('scheme'),
-                                 verify=module.params.get('validate_certs'),
-                                 token=module.params.get('token'))
+def get_consul_api(module):
+    consulClient = consul.Consul(host=module.params['host'],
+                                 port=module.params['port'],
+                                 scheme=module.params['scheme'],
+                                 verify=module.params['validate_certs'],
+                                 token=module.params['token'])
     consulClient.agent.service = PatchedConsulAgentService(consulClient)
     return consulClient
 
 
 def get_service_by_id_or_name(consul_api, service_id_or_name):
     ''' iterate the registered services and find one with the given id '''
-    for name, service in consul_api.agent.services().items():
-        if service['ID'] == service_id_or_name or service['Service'] == service_id_or_name:
+    for dummy, service in consul_api.agent.services().items():
+        if service_id_or_name in (service['ID'], service['Service']):
             return ConsulService(loaded=service)
 
 
 def parse_check(module):
-    if len([p for p in (module.params.get('script'), module.params.get('ttl'), module.params.get('tcp'), module.params.get('http')) if p]) > 1:
+    _checks = [module.params[p] for p in ('script', 'ttl', 'tcp', 'http') if module.params[p]]
+
+    if len(_checks) > 1:
         module.fail_json(
             msg='checks are either script, tcp, http or ttl driven, supplying more than one does not make sense')
 
-    if module.params.get('check_id') or module.params.get('script') or module.params.get('ttl') or module.params.get('tcp') or module.params.get('http'):
-
+    if module.params['check_id'] or _checks:
         return ConsulCheck(
-            module.params.get('check_id'),
-            module.params.get('check_name'),
-            module.params.get('check_node'),
-            module.params.get('check_host'),
-            module.params.get('script'),
-            module.params.get('interval'),
-            module.params.get('ttl'),
-            module.params.get('notes'),
-            module.params.get('tcp'),
-            module.params.get('http'),
-            module.params.get('timeout'),
-            module.params.get('service_id'),
+            module.params['check_id'],
+            module.params['check_name'],
+            module.params['check_node'],
+            module.params['check_host'],
+            module.params['script'],
+            module.params['interval'],
+            module.params['ttl'],
+            module.params['notes'],
+            module.params['tcp'],
+            module.params['http'],
+            module.params['timeout'],
+            module.params['service_id'],
         )
 
 
 def parse_service(module):
-    if module.params.get('service_name'):
-        return ConsulService(
-            module.params.get('service_id'),
-            module.params.get('service_name'),
-            module.params.get('service_address'),
-            module.params.get('service_port'),
-            module.params.get('tags'),
-        )
-    elif not module.params.get('service_name'):
-        module.fail_json(msg="service_name is required to configure a service.")
+    return ConsulService(
+        module.params['service_id'],
+        module.params['service_name'],
+        module.params['service_address'],
+        module.params['service_port'],
+        module.params['tags'],
+    )
 
 
-class ConsulService():
+class ConsulService(object):
 
     def __init__(self, service_id=None, name=None, address=None, port=-1,
                  tags=None, loaded=None):
@@ -408,7 +408,7 @@ class ConsulService():
         self.address = address
         self.port = port
         self.tags = tags
-        self.checks = []
+        self._checks = []
         if loaded:
             self.id = loaded['ID']
             self.name = loaded['Service']
@@ -421,8 +421,8 @@ class ConsulService():
         if self.port:
             optional['port'] = self.port
 
-        if len(self.checks) > 0:
-            optional['check'] = self.checks[0].check
+        if len(self._checks) > 0:
+            optional['check'] = self._checks[0].check
 
         consul_api.agent.service.register(
             self.name,
@@ -432,13 +432,13 @@ class ConsulService():
             **optional)
 
     def add_check(self, check):
-        self.checks.append(check)
+        self._checks.append(check)
 
     def checks(self):
-        return self.checks
+        return self._checks
 
     def has_checks(self):
-        return len(self.checks) > 0
+        return len(self._checks) > 0
 
     def __eq__(self, other):
         return (isinstance(other, self.__class__) and
@@ -456,8 +456,8 @@ class ConsulService():
             data['port'] = self.port
         if self.tags and len(self.tags) > 0:
             data['tags'] = self.tags
-        if len(self.checks) > 0:
-            data['check'] = self.checks[0].to_dict()
+        if len(self._checks) > 0:
+            data['check'] = self._checks[0].to_dict()
         return data
 
 
@@ -498,10 +498,10 @@ class ConsulCheck(object):
             if interval is None:
                 raise Exception('tcp check must specify interval')
 
-            regex = r"(?P<host>.*)(?::)(?P<port>(?:[0-9]+))$"
+            regex = r"(?P<host>.*):(?P<port>(?:[0-9]+))$"
             match = re.match(regex, tcp)
 
-            if match is None:
+            if not match:
                 raise Exception('tcp check must be in host:port format')
 
             self.check = consul.Check.tcp(match.group('host').strip('[]'), int(match.group('port')), self.interval)
@@ -509,7 +509,7 @@ class ConsulCheck(object):
     def validate_duration(self, name, duration):
         if duration:
             duration_units = ['ns', 'us', 'ms', 's', 'm', 'h']
-            if not any((duration.endswith(suffix) for suffix in duration_units)):
+            if not any(duration.endswith(suffix) for suffix in duration_units):
                 duration = "{0}s".format(duration)
         return duration
 
@@ -564,27 +564,31 @@ def main():
         argument_spec=dict(
             host=dict(default='localhost'),
             port=dict(default=8500, type='int'),
-            scheme=dict(required=False, default='http'),
-            validate_certs=dict(required=False, default=True, type='bool'),
-            check_id=dict(required=False),
-            check_name=dict(required=False),
-            check_node=dict(required=False),
-            check_host=dict(required=False),
-            notes=dict(required=False),
-            script=dict(required=False),
-            service_id=dict(required=False),
-            service_name=dict(required=False),
-            service_address=dict(required=False, type='str', default=None),
-            service_port=dict(required=False, type='int', default=None),
+            scheme=dict(default='http'),
+            validate_certs=dict(default=True, type='bool'),
+            check_id=dict(),
+            check_name=dict(),
+            check_node=dict(),
+            check_host=dict(),
+            notes=dict(),
+            script=dict(),
+            service_id=dict(),
+            service_name=dict(),
+            service_address=dict(type='str'),
+            service_port=dict(type='int'),
             state=dict(default='present', choices=['present', 'absent']),
-            interval=dict(required=False, type='str'),
-            ttl=dict(required=False, type='str'),
-            tcp=dict(required=False, type='str'),
-            http=dict(required=False, type='str'),
-            timeout=dict(required=False, type='str'),
-            tags=dict(required=False, type='list'),
-            token=dict(required=False, no_log=True)
+            interval=dict(type='str'),
+            ttl=dict(type='str'),
+            tcp=dict(type='str'),
+            http=dict(type='str'),
+            timeout=dict(type='str'),
+            tags=dict(type='list', elements='str'),
+            token=dict(no_log=True)
         ),
+        required_if=[
+            ('state', 'present', ['service_name']),
+            ('state', 'absent', ['service_id', 'service_name', 'check_id', 'check_name'], True),
+        ],
         supports_check_mode=False,
     )
 
@@ -594,7 +598,7 @@ def main():
         register_with_consul(module)
     except ConnectionError as e:
         module.fail_json(msg='Could not connect to consul agent at %s:%s, error was %s' % (
-            module.params.get('host'), module.params.get('port'), str(e)))
+            module.params['host'], module.params['port'], str(e)))
     except Exception as e:
         module.fail_json(msg=str(e))
 

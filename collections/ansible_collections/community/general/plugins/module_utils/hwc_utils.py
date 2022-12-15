@@ -1,6 +1,7 @@
+# -*- coding: utf-8 -*-
 # Copyright (c), Google Inc, 2017
-# Simplified BSD License (see licenses/simplified_bsd.txt or
-# https://opensource.org/licenses/BSD-2-Clause)
+# Simplified BSD License (see LICENSES/BSD-2-Clause.txt or https://opensource.org/licenses/BSD-2-Clause)
+# SPDX-License-Identifier: BSD-2-Clause
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
@@ -21,7 +22,7 @@ except ImportError:
 
 from ansible.module_utils.basic import (AnsibleModule, env_fallback,
                                         missing_required_lib)
-from ansible.module_utils._text import to_text
+from ansible.module_utils.common.text.converters import to_text
 
 
 class HwcModuleException(Exception):
@@ -350,7 +351,7 @@ def wait_to_finish(target, pending, refresh, timeout, min_interval=1, delay=3):
 
             if pending and status not in pending:
                 raise HwcModuleException(
-                    "unexpect status(%s) occured" % status)
+                    "unexpect status(%s) occurred" % status)
 
         if not is_last_time:
             wait *= 2

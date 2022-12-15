@@ -1,6 +1,7 @@
-# (c) 2012-2014, Michael DeHaan <michael.dehaan@gmail.com>
+# Copyright (c) 2012-2014, Michael DeHaan <michael.dehaan@gmail.com>
 #
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
@@ -9,7 +10,7 @@ import os
 
 from ansible.errors import AnsibleParserError
 from ansible.parsing.dataloader import DataLoader
-from ansible.module_utils._text import to_bytes, to_text
+from ansible.module_utils.common.text.converters import to_bytes, to_text
 
 
 class DictDataLoader(DataLoader):
@@ -32,8 +33,8 @@ class DictDataLoader(DataLoader):
 
     # TODO: the real _get_file_contents returns a bytestring, so we actually convert the
     #       unicode/text it's created with to utf-8
-    def _get_file_contents(self, path):
-        path = to_text(path)
+    def _get_file_contents(self, file_name):
+        path = to_text(file_name)
         if path in self._file_mapping:
             return (to_bytes(self._file_mapping[path]), False)
         else:

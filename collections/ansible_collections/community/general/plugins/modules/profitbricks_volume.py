@@ -1,6 +1,8 @@
 #!/usr/bin/python
-# Copyright: Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# -*- coding: utf-8 -*-
+# Copyright Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -9,7 +11,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: profitbricks_volume
-short_description: Create or destroy a volume.
+short_description: Create or destroy a volume
 description:
      - Allows you to create or remove a volume from a ProfitBricks datacenter. This module has a dependency on profitbricks >= 1.0.0
 options:
@@ -47,7 +49,8 @@ options:
     description:
       - Public SSH keys allowing access to the virtual machine.
     type: list
-    required: false
+    elements: str
+    default: []
   disk_type:
     description:
       - The disk type of the volume.
@@ -71,13 +74,14 @@ options:
   auto_increment:
     description:
       - Whether or not to increment a single number in the name for created virtual machines.
-    default: yes
+    default: true
     type: bool
   instance_ids:
     description:
       - list of instance ids, currently only used when state='absent' to remove instances.
     type: list
-    required: false
+    elements: str
+    default: []
   subscription_user:
     description:
       - The ProfitBricks username. Overrides the PB_SUBSCRIPTION_ID environment variable.
@@ -92,7 +96,7 @@ options:
     description:
       - wait for the datacenter to be created before returning
     required: false
-    default: "yes"
+    default: true
     type: bool
   wait_timeout:
     description:
@@ -106,6 +110,10 @@ options:
     type: str
     required: false
     default: 'present'
+  server:
+    description:
+      - Server name to attach the volume to.
+    type: str
 
 requirements: [ "profitbricks" ]
 author: Matt Baldwin (@baldwinSPC) <baldwin@stackpointcloud.com>
@@ -117,7 +125,7 @@ EXAMPLES = '''
     datacenter: Tardis One
     name: vol%02d
     count: 5
-    auto_increment: yes
+    auto_increment: true
     wait_timeout: 500
     state: present
 
@@ -143,7 +151,7 @@ except ImportError:
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six.moves import xrange
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 uuid_match = re.compile(
@@ -317,7 +325,7 @@ def delete_volume(module, profitbricks):
                 break
 
     for n in instance_ids:
-        if(uuid_match.match(n)):
+        if uuid_match.match(n):
             _delete_volume(module, profitbricks, datacenter, n)
             changed = True
         else:
@@ -369,13 +377,13 @@ def main():
             size=dict(type='int', default=10),
             bus=dict(choices=['VIRTIO', 'IDE'], default='VIRTIO'),
             image=dict(),
-            image_password=dict(default=None, no_log=True),
-            ssh_keys=dict(type='list', default=[]),
+            image_password=dict(no_log=True),
+            ssh_keys=dict(type='list', elements='str', default=[], no_log=False),
             disk_type=dict(choices=['HDD', 'SSD'], default='HDD'),
             licence_type=dict(default='UNKNOWN'),
             count=dict(type='int', default=1),
             auto_increment=dict(type='bool', default=True),
-            instance_ids=dict(type='list', default=[]),
+            instance_ids=dict(type='list', elements='str', default=[]),
             subscription_user=dict(),
             subscription_password=dict(no_log=True),
             wait=dict(type='bool', default=True),

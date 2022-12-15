@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2015, Quentin Stafford-Fraser
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2015, Quentin Stafford-Fraser
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 # Create Webfaction website using Ansible and the Webfaction API
 
@@ -33,43 +34,52 @@ options:
         description:
             - The name of the website
         required: true
+        type: str
 
     state:
         description:
             - Whether the website should exist
         choices: ['present', 'absent']
         default: "present"
+        type: str
 
     host:
         description:
             - The webfaction host on which the site should be created.
         required: true
+        type: str
 
     https:
         description:
             - Whether or not to use HTTPS
         type: bool
-        default: 'no'
+        default: false
 
     site_apps:
         description:
             - A mapping of URLs to apps
         default: []
+        type: list
+        elements: list
 
     subdomains:
         description:
             - A list of subdomains associated with this site.
         default: []
+        type: list
+        elements: str
 
     login_name:
         description:
             - The webfaction account to use
         required: true
+        type: str
 
     login_password:
         description:
             - The webfaction password to use
         required: true
+        type: str
 '''
 
 EXAMPLES = '''
@@ -82,7 +92,7 @@ EXAMPLES = '''
         - 'testsite1.my_domain.org'
       site_apps:
         - ['testapp1', '/']
-      https: no
+      https: false
       login_name: "{{webfaction_user}}"
       login_password: "{{webfaction_passwd}}"
 '''
@@ -101,12 +111,12 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             name=dict(required=True),
-            state=dict(required=False, choices=['present', 'absent'], default='present'),
+            state=dict(choices=['present', 'absent'], default='present'),
             # You can specify an IP address or hostname.
             host=dict(required=True),
             https=dict(required=False, type='bool', default=False),
-            subdomains=dict(required=False, type='list', default=[]),
-            site_apps=dict(required=False, type='list', default=[]),
+            subdomains=dict(type='list', elements='str', default=[]),
+            site_apps=dict(type='list', elements='list', default=[]),
             login_name=dict(required=True),
             login_password=dict(required=True, no_log=True),
         ),

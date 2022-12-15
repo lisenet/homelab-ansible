@@ -1,7 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-# Copyright: Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -10,29 +11,34 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: vertica_user
-short_description: Adds or removes Vertica database users and assigns roles.
+short_description: Adds or removes Vertica database users and assigns roles
 description:
   - Adds or removes Vertica database user and, optionally, assigns roles.
   - A user will not be removed until all the dependencies have been dropped.
   - In such a situation, if the module tries to remove the user it
     will fail and only remove roles granted to the user.
 options:
-  name:
+  user:
     description:
       - Name of the user to add or remove.
     required: true
+    type: str
+    aliases: ['name']
   profile:
     description:
       - Sets the user's profile.
+    type: str
   resource_pool:
     description:
       - Sets the user's resource pool.
+    type: str
   password:
     description:
       - The user's password encrypted by the MD5 algorithm.
       - The password must be generated with the format C("md5" + md5[password + username]),
         resulting in a total of 35 characters. An easy way to do this is by querying
         the Vertica database with select 'md5'||md5('<user_password><user_name>').
+    type: str
   expired:
     description:
       - Sets the user's password expiration.
@@ -46,29 +52,36 @@ options:
     description:
       - Comma separated list of roles to assign to the user.
     aliases: ['role']
+    type: str
   state:
     description:
       - Whether to create C(present), drop C(absent) or lock C(locked) a user.
     choices: ['present', 'absent', 'locked']
     default: present
+    type: str
   db:
     description:
       - Name of the Vertica database.
+    type: str
   cluster:
     description:
       - Name of the Vertica cluster.
     default: localhost
+    type: str
   port:
     description:
       - Vertica cluster port to connect to.
-    default: 5433
+    default: '5433'
+    type: str
   login_user:
     description:
       - The username used to authenticate with.
     default: dbadmin
+    type: str
   login_password:
     description:
       - The password used to authenticate with.
+    type: str
 notes:
   - The default authentication assumes that you are either logging in as or sudo'ing
     to the C(dbadmin) account on the host.
@@ -106,7 +119,7 @@ else:
     pyodbc_found = True
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 class NotSupportedError(Exception):
@@ -282,18 +295,18 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             user=dict(required=True, aliases=['name']),
-            profile=dict(default=None),
-            resource_pool=dict(default=None),
-            password=dict(default=None, no_log=True),
-            expired=dict(type='bool', default=None),
-            ldap=dict(type='bool', default=None),
-            roles=dict(default=None, aliases=['role']),
+            profile=dict(),
+            resource_pool=dict(),
+            password=dict(no_log=True),
+            expired=dict(type='bool'),
+            ldap=dict(type='bool'),
+            roles=dict(aliases=['role']),
             state=dict(default='present', choices=['absent', 'present', 'locked']),
-            db=dict(default=None),
+            db=dict(),
             cluster=dict(default='localhost'),
             port=dict(default='5433'),
             login_user=dict(default='dbadmin'),
-            login_password=dict(default=None, no_log=True),
+            login_password=dict(no_log=True),
         ), supports_check_mode=True)
 
     if not pyodbc_found:

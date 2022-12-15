@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2018 Dell EMC Inc.
-# GNU General Public License v3.0+ (see LICENSE or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -14,42 +15,46 @@ short_description: Manages Out-Of-Band controllers using iDRAC OEM Redfish APIs
 description:
   - Builds Redfish URIs locally and sends them to remote OOB controllers to
     perform an action.
-  - For use with Dell iDRAC operations that require Redfish OEM extensions
+  - For use with Dell iDRAC operations that require Redfish OEM extensions.
 options:
   category:
     required: true
     description:
-      - Category to execute on OOB controller
+      - Category to execute on iDRAC.
     type: str
   command:
     required: true
     description:
-      - List of commands to execute on OOB controller
+      - List of commands to execute on iDRAC.
     type: list
+    elements: str
   baseuri:
     required: true
     description:
-      - Base URI of OOB controller
+      - Base URI of iDRAC.
     type: str
   username:
-    required: true
     description:
-      - User for authentication with OOB controller
+      - Username for authenticating to iDRAC.
     type: str
   password:
-    required: true
     description:
-      - Password for authentication with OOB controller
+      - Password for authenticating to iDRAC.
     type: str
+  auth_token:
+    description:
+      - Security token for authenticating to iDRAC.
+    type: str
+    version_added: 2.3.0
   timeout:
     description:
-      - Timeout in seconds for URL requests to OOB controller
+      - Timeout in seconds for HTTP requests to iDRAC.
     default: 10
     type: int
   resource_id:
     required: false
     description:
-      - The ID of the System, Manager or Chassis to modify
+      - ID of the System, Manager or Chassis to modify.
     type: str
     version_added: '0.2.0'
 
@@ -78,7 +83,7 @@ msg:
 import re
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.general.plugins.module_utils.redfish_utils import RedfishUtils
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 class IdracRedfishUtils(RedfishUtils):
@@ -134,13 +139,23 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             category=dict(required=True),
-            command=dict(required=True, type='list'),
+            command=dict(required=True, type='list', elements='str'),
             baseuri=dict(required=True),
-            username=dict(required=True),
-            password=dict(required=True, no_log=True),
+            username=dict(),
+            password=dict(no_log=True),
+            auth_token=dict(no_log=True),
             timeout=dict(type='int', default=10),
             resource_id=dict()
         ),
+        required_together=[
+            ('username', 'password'),
+        ],
+        required_one_of=[
+            ('username', 'auth_token'),
+        ],
+        mutually_exclusive=[
+            ('username', 'auth_token'),
+        ],
         supports_check_mode=False
     )
 
@@ -149,7 +164,8 @@ def main():
 
     # admin credentials used for authentication
     creds = {'user': module.params['username'],
-             'pswd': module.params['password']}
+             'pswd': module.params['password'],
+             'token': module.params['auth_token']}
 
     # timeout
     timeout = module.params['timeout']
@@ -164,7 +180,7 @@ def main():
 
     # Check that Category is valid
     if category not in CATEGORY_COMMANDS_ALL:
-        module.fail_json(msg=to_native("Invalid Category '%s'. Valid Categories = %s" % (category, CATEGORY_COMMANDS_ALL.keys())))
+        module.fail_json(msg=to_native("Invalid Category '%s'. Valid Categories = %s" % (category, list(CATEGORY_COMMANDS_ALL.keys()))))
 
     # Check that all commands are valid
     for cmd in command_list:

@@ -1,5 +1,7 @@
-# (c) 2017 Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# -*- coding: utf-8 -*-
+# Copyright (c) 2017 Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 # Make coding more python3-ish
 from __future__ import (absolute_import, division, print_function)
@@ -7,7 +9,7 @@ __metaclass__ = type
 
 DOCUMENTATION = '''
     author: Unknown (!UNKNOWN)
-    callback: yaml
+    name: yaml
     type: stdout
     short_description: yaml-ized Ansible screen output
     description:
@@ -25,7 +27,7 @@ import re
 import string
 import sys
 
-from ansible.module_utils._text import to_bytes, to_text
+from ansible.module_utils.common.text.converters import to_bytes, to_text
 from ansible.module_utils.six import string_types
 from ansible.parsing.yaml.dumper import AnsibleDumper
 from ansible.plugins.callback import CallbackBase, strip_internal_keys, module_response_deepcopy
@@ -41,28 +43,29 @@ def should_use_block(value):
     return False
 
 
-def my_represent_scalar(self, tag, value, style=None):
-    """Uses block style for multi-line strings"""
-    if style is None:
-        if should_use_block(value):
-            style = '|'
-            # we care more about readable than accuracy, so...
-            # ...no trailing space
-            value = value.rstrip()
-            # ...and non-printable characters
-            value = ''.join(x for x in value if x in string.printable)
-            # ...tabs prevent blocks from expanding
-            value = value.expandtabs()
-            # ...and odd bits of whitespace
-            value = re.sub(r'[\x0b\x0c\r]', '', value)
-            # ...as does trailing space
-            value = re.sub(r' +\n', '\n', value)
-        else:
-            style = self.default_style
-    node = yaml.representer.ScalarNode(tag, value, style=style)
-    if self.alias_key is not None:
-        self.represented_objects[self.alias_key] = node
-    return node
+class MyDumper(AnsibleDumper):
+    def represent_scalar(self, tag, value, style=None):
+        """Uses block style for multi-line strings"""
+        if style is None:
+            if should_use_block(value):
+                style = '|'
+                # we care more about readable than accuracy, so...
+                # ...no trailing space
+                value = value.rstrip()
+                # ...and non-printable characters
+                value = ''.join(x for x in value if x in string.printable or ord(x) >= 0xA0)
+                # ...tabs prevent blocks from expanding
+                value = value.expandtabs()
+                # ...and odd bits of whitespace
+                value = re.sub(r'[\x0b\x0c\r]', '', value)
+                # ...as does trailing space
+                value = re.sub(r' +\n', '\n', value)
+            else:
+                style = self.default_style
+        node = yaml.representer.ScalarNode(tag, value, style=style)
+        if self.alias_key is not None:
+            self.represented_objects[self.alias_key] = node
+        return node
 
 
 class CallbackModule(Default):
@@ -78,7 +81,6 @@ class CallbackModule(Default):
 
     def __init__(self):
         super(CallbackModule, self).__init__()
-        yaml.representer.BaseRepresenter.represent_scalar = my_represent_scalar
 
     def _dump_results(self, result, indent=None, sort_keys=True, keep_invocation=False):
         if result.get('_ansible_no_log', False):
@@ -120,7 +122,7 @@ class CallbackModule(Default):
 
         if abridged_result:
             dumped += '\n'
-            dumped += to_text(yaml.dump(abridged_result, allow_unicode=True, width=1000, Dumper=AnsibleDumper, default_flow_style=False))
+            dumped += to_text(yaml.dump(abridged_result, allow_unicode=True, width=1000, Dumper=MyDumper, default_flow_style=False))
 
         # indent by a couple of spaces
         dumped = '\n  '.join(dumped.split('\n')).rstrip()

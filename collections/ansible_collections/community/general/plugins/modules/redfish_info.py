@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2017-2018 Dell EMC Inc.
-# GNU General Public License v3.0+ (see LICENSE or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -17,38 +18,52 @@ description:
   - Information retrieved is placed in a location specified by the user.
   - This module was called C(redfish_facts) before Ansible 2.9, returning C(ansible_facts).
     Note that the M(community.general.redfish_info) module no longer returns C(ansible_facts)!
+extends_documentation_fragment:
+  - community.general.attributes
+  - community.general.attributes.info_module
 options:
   category:
     required: false
     description:
-      - List of categories to execute on OOB controller
+      - List of categories to execute on OOB controller.
     default: ['Systems']
     type: list
+    elements: str
   command:
     required: false
     description:
-      - List of commands to execute on OOB controller
+      - List of commands to execute on OOB controller.
     type: list
+    elements: str
   baseuri:
     required: true
     description:
-      - Base URI of OOB controller
+      - Base URI of OOB controller.
     type: str
   username:
-    required: true
     description:
-      - User for authentication with OOB controller
+      - Username for authenticating to OOB controller.
     type: str
   password:
-    required: true
     description:
-      - Password for authentication with OOB controller
+      - Password for authenticating to OOB controller.
     type: str
+  auth_token:
+    description:
+      - Security token for authenticating to OOB controller.
+    type: str
+    version_added: 2.3.0
   timeout:
     description:
-      - Timeout in seconds for URL requests to OOB controller
+      - Timeout in seconds for HTTP requests to OOB controller.
     default: 10
     type: int
+  update_handle:
+    required: false
+    description:
+      - Handle to check the status of an update in progress.
+    type: str
+    version_added: '6.1.0'
 
 author: "Jose Delarosa (@jose-delarosa)"
 '''
@@ -62,7 +77,9 @@ EXAMPLES = '''
       username: "{{ username }}"
       password: "{{ password }}"
     register: result
-  - ansible.builtin.debug:
+
+  - name: Print fetched information
+    ansible.builtin.debug:
       msg: "{{ result.redfish_facts.cpu.entries | to_nice_json }}"
 
   - name: Get CPU model
@@ -73,7 +90,9 @@ EXAMPLES = '''
       username: "{{ username }}"
       password: "{{ password }}"
     register: result
-  - ansible.builtin.debug:
+
+  - name: Print fetched information
+    ansible.builtin.debug:
       msg: "{{ result.redfish_facts.cpu.entries.0.Model }}"
 
   - name: Get memory inventory
@@ -103,7 +122,22 @@ EXAMPLES = '''
       username: "{{ username }}"
       password: "{{ password }}"
     register: result
-  - ansible.builtin.debug:
+
+  - name: Print fetched information
+    ansible.builtin.debug:
+      msg: "{{ result.redfish_facts.virtual_media.entries | to_nice_json }}"
+
+  - name: Get Virtual Media information from Systems
+    community.general.redfish_info:
+      category: Systems
+      command: GetVirtualMedia
+      baseuri: "{{ baseuri }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+    register: result
+
+  - name: Print fetched information
+    ansible.builtin.debug:
       msg: "{{ result.redfish_facts.virtual_media.entries | to_nice_json }}"
 
   - name: Get Volume Inventory
@@ -114,7 +148,8 @@ EXAMPLES = '''
       username: "{{ username }}"
       password: "{{ password }}"
     register: result
-  - ansible.builtin.debug:
+  - name: Print fetched information
+    ansible.builtin.debug:
       msg: "{{ result.redfish_facts.volume.entries | to_nice_json }}"
 
   - name: Get Session information
@@ -125,7 +160,9 @@ EXAMPLES = '''
       username: "{{ username }}"
       password: "{{ password }}"
     register: result
-  - ansible.builtin.debug:
+
+  - name: Print fetched information
+    ansible.builtin.debug:
       msg: "{{ result.redfish_facts.session.entries | to_nice_json }}"
 
   - name: Get default inventory information
@@ -134,7 +171,8 @@ EXAMPLES = '''
       username: "{{ username }}"
       password: "{{ password }}"
     register: result
-  - ansible.builtin.debug:
+  - name: Print fetched information
+    ansible.builtin.debug:
       msg: "{{ result.redfish_facts | to_nice_json }}"
 
   - name: Get several inventories
@@ -215,6 +253,15 @@ EXAMPLES = '''
       username: "{{ username }}"
       password: "{{ password }}"
 
+  - name: Get the status of an update operation
+    community.general.redfish_info:
+      category: Update
+      command: GetUpdateStatus
+      baseuri: "{{ baseuri }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+      update_handle: /redfish/v1/TaskService/TaskMonitors/735
+
   - name: Get Manager Services
     community.general.redfish_info:
       category: Manager
@@ -254,6 +301,22 @@ EXAMPLES = '''
       baseuri: "{{ baseuri }}"
       username: "{{ username }}"
       password: "{{ password }}"
+
+  - name: Get manager Redfish Host Interface inventory
+    community.general.redfish_info:
+      category: Manager
+      command: GetHostInterfaces
+      baseuri: "{{ baseuri }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+
+  - name: Get Manager Inventory
+    community.general.redfish_info:
+      category: Manager
+      command: GetManagerInventory
+      baseuri: "{{ baseuri }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
 '''
 
 RETURN = '''
@@ -271,14 +334,15 @@ CATEGORY_COMMANDS_ALL = {
     "Systems": ["GetSystemInventory", "GetPsuInventory", "GetCpuInventory",
                 "GetMemoryInventory", "GetNicInventory", "GetHealthReport",
                 "GetStorageControllerInventory", "GetDiskInventory", "GetVolumeInventory",
-                "GetBiosAttributes", "GetBootOrder", "GetBootOverride"],
+                "GetBiosAttributes", "GetBootOrder", "GetBootOverride", "GetVirtualMedia"],
     "Chassis": ["GetFanInventory", "GetPsuInventory", "GetChassisPower",
                 "GetChassisThermals", "GetChassisInventory", "GetHealthReport"],
     "Accounts": ["ListUsers"],
     "Sessions": ["GetSessions"],
-    "Update": ["GetFirmwareInventory", "GetFirmwareUpdateCapabilities", "GetSoftwareInventory"],
+    "Update": ["GetFirmwareInventory", "GetFirmwareUpdateCapabilities", "GetSoftwareInventory",
+               "GetUpdateStatus"],
     "Manager": ["GetManagerNicInventory", "GetVirtualMedia", "GetLogs", "GetNetworkProtocols",
-                "GetHealthReport"],
+                "GetHealthReport", "GetHostInterfaces", "GetManagerInventory"],
 }
 
 CATEGORY_COMMANDS_DEFAULT = {
@@ -296,27 +360,37 @@ def main():
     category_list = []
     module = AnsibleModule(
         argument_spec=dict(
-            category=dict(type='list', default=['Systems']),
-            command=dict(type='list'),
+            category=dict(type='list', elements='str', default=['Systems']),
+            command=dict(type='list', elements='str'),
             baseuri=dict(required=True),
-            username=dict(required=True),
-            password=dict(required=True, no_log=True),
-            timeout=dict(type='int', default=10)
+            username=dict(),
+            password=dict(no_log=True),
+            auth_token=dict(no_log=True),
+            timeout=dict(type='int', default=10),
+            update_handle=dict(),
         ),
-        supports_check_mode=False
+        required_together=[
+            ('username', 'password'),
+        ],
+        required_one_of=[
+            ('username', 'auth_token'),
+        ],
+        mutually_exclusive=[
+            ('username', 'auth_token'),
+        ],
+        supports_check_mode=True,
     )
-    is_old_facts = module._name in ('redfish_facts', 'community.general.redfish_facts')
-    if is_old_facts:
-        module.deprecate("The 'redfish_facts' module has been renamed to 'redfish_info', "
-                         "and the renamed one no longer returns ansible_facts",
-                         version='3.0.0', collection_name='community.general')  # was Ansible 2.13
 
     # admin credentials used for authentication
     creds = {'user': module.params['username'],
-             'pswd': module.params['password']}
+             'pswd': module.params['password'],
+             'token': module.params['auth_token']}
 
     # timeout
     timeout = module.params['timeout']
+
+    # update handle
+    update_handle = module.params['update_handle']
 
     # Build root URI
     root_uri = "https://" + module.params['baseuri']
@@ -382,6 +456,8 @@ def main():
                     result["boot_override"] = rf_utils.get_multi_boot_override()
                 elif command == "GetHealthReport":
                     result["health_report"] = rf_utils.get_multi_system_health_report()
+                elif command == "GetVirtualMedia":
+                    result["virtual_media"] = rf_utils.get_multi_virtualmedia(category)
 
         elif category == "Chassis":
             # execute only if we find Chassis resource
@@ -426,6 +502,8 @@ def main():
                     result["software"] = rf_utils.get_software_inventory()
                 elif command == "GetFirmwareUpdateCapabilities":
                     result["firmware_update_capabilities"] = rf_utils.get_firmware_update_capabilities()
+                elif command == "GetUpdateStatus":
+                    result["update_status"] = rf_utils.get_update_status(update_handle)
 
         elif category == "Sessions":
             # execute only if we find SessionService resources
@@ -447,19 +525,20 @@ def main():
                 if command == "GetManagerNicInventory":
                     result["manager_nics"] = rf_utils.get_multi_nic_inventory(category)
                 elif command == "GetVirtualMedia":
-                    result["virtual_media"] = rf_utils.get_multi_virtualmedia()
+                    result["virtual_media"] = rf_utils.get_multi_virtualmedia(category)
                 elif command == "GetLogs":
                     result["log"] = rf_utils.get_logs()
                 elif command == "GetNetworkProtocols":
                     result["network_protocols"] = rf_utils.get_network_protocols()
                 elif command == "GetHealthReport":
                     result["health_report"] = rf_utils.get_multi_manager_health_report()
+                elif command == "GetHostInterfaces":
+                    result["host_interfaces"] = rf_utils.get_hostinterfaces()
+                elif command == "GetManagerInventory":
+                    result["manager"] = rf_utils.get_multi_manager_inventory()
 
     # Return data back
-    if is_old_facts:
-        module.exit_json(ansible_facts=dict(redfish_facts=result))
-    else:
-        module.exit_json(redfish_facts=result)
+    module.exit_json(redfish_facts=result)
 
 
 if __name__ == '__main__':

@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# (c) 2015, Benjamin Copeland (@bhcopeland) <ben@copeland.me.uk>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2015, Benjamin Copeland (@bhcopeland) <ben@copeland.me.uk>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -59,11 +60,13 @@ options:
         default: "https://api.status.io"
     components:
         type: list
+        elements: str
         description:
             - The given name of your component (server name)
         aliases: ['component']
     containers:
         type: list
+        elements: str
         description:
             - The given name of your container (data center)
         aliases: ['container']
@@ -71,32 +74,32 @@ options:
         description:
             - If it affects all components and containers
         type: bool
-        default: 'no'
+        default: false
     automation:
         description:
             - Automatically start and end the maintenance window
         type: bool
-        default: 'no'
+        default: false
     maintenance_notify_now:
         description:
             - Notify subscribers now
         type: bool
-        default: 'no'
+        default: false
     maintenance_notify_72_hr:
         description:
             - Notify subscribers 72 hours before maintenance start time
         type: bool
-        default: 'no'
+        default: false
     maintenance_notify_24_hr:
         description:
             - Notify subscribers 24 hours before maintenance start time
         type: bool
-        default: 'no'
+        default: false
     maintenance_notify_1_hr:
         description:
             - Notify subscribers 1 hour before maintenance start time
         type: bool
-        default: 'no'
+        default: false
     maintenance_id:
         type: str
         description:
@@ -128,8 +131,8 @@ EXAMPLES = '''
     api_id: api_id
     api_key: api_key
     statuspage: statuspage_id
-    maintenance_notify_1_hr: True
-    automation: True
+    maintenance_notify_1_hr: true
+    automation: true
 
 - name: Create a maintenance window for 60 minutes on server1 and server2
   community.general.statusio_maintenance:
@@ -142,8 +145,8 @@ EXAMPLES = '''
     api_id: api_id
     api_key: api_key
     statuspage: statuspage_id
-    maintenance_notify_1_hr: True
-    automation: True
+    maintenance_notify_1_hr: true
+    automation: true
   delegate_to: localhost
 
 - name: Create a future maintenance window for 24 hours to all hosts inside the Primary Data Center
@@ -175,7 +178,7 @@ import datetime
 import json
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 from ansible.module_utils.urls import open_url
 
 
@@ -339,9 +342,9 @@ def main():
             state=dict(required=False, default='present',
                        choices=['present', 'absent']),
             url=dict(default='https://api.status.io', required=False),
-            components=dict(type='list', required=False, default=None,
+            components=dict(type='list', elements='str', required=False, default=None,
                             aliases=['component']),
-            containers=dict(type='list', required=False, default=None,
+            containers=dict(type='list', elements='str', required=False, default=None,
                             aliases=['container']),
             all_infrastructure_affected=dict(type='bool', default=False,
                                              required=False),
@@ -423,7 +426,7 @@ def main():
         if module.check_mode:
             module.exit_json(changed=True)
         else:
-            (rc, _, error) = create_maintenance(
+            (rc, dummy, error) = create_maintenance(
                 auth_headers, url, statuspage, host_ids,
                 all_infrastructure_affected, automation,
                 title, desc, returned_date, maintenance_notify_now,
@@ -449,7 +452,7 @@ def main():
         if module.check_mode:
             module.exit_json(changed=True)
         else:
-            (rc, _, error) = delete_maintenance(
+            (rc, dummy, error) = delete_maintenance(
                 auth_headers, url, statuspage, maintenance_id)
             if rc == 0:
                 module.exit_json(

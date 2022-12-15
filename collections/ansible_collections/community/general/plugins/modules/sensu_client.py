@@ -1,7 +1,9 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
-# (c) 2017, Red Hat Inc.
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2017, Red Hat Inc.
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -33,6 +35,7 @@ options:
       - If not specified it defaults to non-loopback IPv4 address as determined by Ruby Socket.ip_address_list (provided by Sensu).
   subscriptions:
     type: list
+    elements: str
     description:
       - An array of client subscriptions, a list of roles and/or responsibilities assigned to the system (e.g. webserver).
       - These subscriptions determine which monitoring checks are executed by the client, as check requests are sent to subscriptions.
@@ -41,9 +44,10 @@ options:
     description:
       - If safe mode is enabled for the client. Safe mode requires local check definitions in order to accept a check request and execute the check.
     type: bool
-    default: 'no'
+    default: false
   redact:
     type: list
+    elements: str
     description:
       - Client definition attributes to redact (values) when logging and sending client keepalives.
   socket:
@@ -54,7 +58,7 @@ options:
     description:
       - If Sensu should monitor keepalives for this client.
     type: bool
-    default: 'yes'
+    default: true
   keepalive:
     type: dict
     description:
@@ -160,22 +164,22 @@ def main():
     module = AnsibleModule(
         supports_check_mode=True,
         argument_spec=dict(
-            state=dict(type='str', required=False, choices=['present', 'absent'], default='present'),
-            name=dict(type='str', required=False),
-            address=dict(type='str', required=False),
-            subscriptions=dict(type='list', required=False),
-            safe_mode=dict(type='bool', required=False, default=False),
-            redact=dict(type='list', required=False),
-            socket=dict(type='dict', required=False),
-            keepalives=dict(type='bool', required=False, default=True),
-            keepalive=dict(type='dict', required=False),
-            registration=dict(type='dict', required=False),
-            deregister=dict(type='bool', required=False),
-            deregistration=dict(type='dict', required=False),
-            ec2=dict(type='dict', required=False),
-            chef=dict(type='dict', required=False),
-            puppet=dict(type='dict', required=False),
-            servicenow=dict(type='dict', required=False)
+            state=dict(type='str', choices=['present', 'absent'], default='present'),
+            name=dict(type='str', ),
+            address=dict(type='str', ),
+            subscriptions=dict(type='list', elements="str"),
+            safe_mode=dict(type='bool', default=False),
+            redact=dict(type='list', elements="str"),
+            socket=dict(type='dict'),
+            keepalives=dict(type='bool', default=True),
+            keepalive=dict(type='dict'),
+            registration=dict(type='dict'),
+            deregister=dict(type='bool'),
+            deregistration=dict(type='dict'),
+            ec2=dict(type='dict'),
+            chef=dict(type='dict'),
+            puppet=dict(type='dict'),
+            servicenow=dict(type='dict')
         ),
         required_if=[
             ['state', 'present', ['subscriptions']]

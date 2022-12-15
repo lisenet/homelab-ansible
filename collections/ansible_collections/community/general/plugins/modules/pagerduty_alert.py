@@ -1,7 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-# Copyright: Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -197,15 +198,15 @@ def main():
         argument_spec=dict(
             name=dict(required=False),
             service_id=dict(required=True),
-            service_key=dict(required=False),
-            integration_key=dict(required=False),
-            api_key=dict(required=True),
+            service_key=dict(required=False, no_log=True),
+            integration_key=dict(required=False, no_log=True),
+            api_key=dict(required=True, no_log=True),
             state=dict(required=True,
                        choices=['triggered', 'acknowledged', 'resolved']),
             client=dict(required=False, default=None),
             client_url=dict(required=False, default=None),
             desc=dict(required=False, default='Created via Ansible'),
-            incident_key=dict(required=False, default=None)
+            incident_key=dict(required=False, default=None, no_log=False)
         ),
         supports_check_mode=True
     )

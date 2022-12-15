@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-# (c) 2017, Joseph Benden <joe@benden.us>
+# Copyright (c) 2017, Joseph Benden <joe@benden.us>
 #
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -10,53 +11,77 @@ __metaclass__ = type
 DOCUMENTATION = '''
 module: xfconf
 author:
-    - "Joseph Benden (@jbenden)"
-    - "Alexei Znamensky (@russoz)"
+  - "Joseph Benden (@jbenden)"
+  - "Alexei Znamensky (@russoz)"
 short_description: Edit XFCE4 Configurations
 description:
-  - This module allows for the manipulation of Xfce 4 Configuration via
-    xfconf-query.  Please see the xfconf-query(1) man pages for more details.
+  - This module allows for the manipulation of Xfce 4 Configuration with the help of
+    xfconf-query. Please see the xfconf-query(1) man page for more details.
+seealso:
+  - name: xfconf-query(1) man page
+    description: Manual page of the C(xfconf-query) tool at the XFCE documentation site.
+    link: 'https://docs.xfce.org/xfce/xfconf/xfconf-query'
+
+  - name: xfconf - Configuration Storage System
+    description: XFCE documentation for the Xfconf configuration system.
+    link: 'https://docs.xfce.org/xfce/xfconf/start'
+
 options:
   channel:
     description:
-    - A Xfconf preference channel is a top-level tree key, inside of the
-      Xfconf repository that corresponds to the location for which all
-      application properties/keys are stored. See man xfconf-query(1)
-    required: yes
+      - A Xfconf preference channel is a top-level tree key, inside of the
+        Xfconf repository that corresponds to the location for which all
+        application properties/keys are stored. See man xfconf-query(1).
+    required: true
     type: str
   property:
     description:
-    - A Xfce preference key is an element in the Xfconf repository
-      that corresponds to an application preference. See man xfconf-query(1)
-    required: yes
+      - A Xfce preference key is an element in the Xfconf repository
+        that corresponds to an application preference. See man xfconf-query(1).
+    required: true
     type: str
   value:
     description:
-    - Preference properties typically have simple values such as strings,
-      integers, or lists of strings and integers. This is ignored if the state
-      is "get". For array mode, use a list of values. See man xfconf-query(1)
+      - Preference properties typically have simple values such as strings,
+        integers, or lists of strings and integers. See man xfconf-query(1).
     type: list
     elements: raw
   value_type:
     description:
-    - The type of value being set. This is ignored if the state is "get".
-      For array mode, use a list of types.
+      - The type of value being set.
+      - When providing more than one I(value_type), the length of the list must
+        be equal to the length of I(value).
+      - If only one I(value_type) is provided, but I(value) contains more than
+        on element, that I(value_type) will be applied to all elements of I(value).
+      - If the I(property) being set is an array and it can possibly have ony one
+        element in the array, then I(force_array=true) must be used to ensure
+        that C(xfconf-query) will interpret the value as an array rather than a
+        scalar.
+      - Support for C(uchar), C(char), C(uint64), and C(int64) has been added in community.general 4.8.0.
     type: list
     elements: str
-    choices: [ int, uint, bool, float, double, string ]
+    choices: [ string, int, double, bool, uint, uchar, char, uint64, int64, float ]
   state:
     type: str
     description:
-    - The action to take upon the property/value.
-    choices: [ get, present, absent ]
+      - The action to take upon the property/value.
+      - The state C(get) has been removed in community.general 5.0.0. Please use the module M(community.general.xfconf_info) instead.
+    choices: [ present, absent ]
     default: "present"
   force_array:
     description:
-    - Force array even if only one element
+      - Force array even if only one element.
     type: bool
-    default: 'no'
+    default: false
     aliases: ['array']
     version_added: 1.0.0
+  disable_facts:
+    description:
+      - The value C(false) is no longer allowed since community.general 4.0.0.
+      - This option is deprecated, and will be removed in community.general 8.0.0.
+    type: bool
+    default: true
+    version_added: 2.1.0
 '''
 
 EXAMPLES = """
@@ -80,7 +105,7 @@ EXAMPLES = """
     property: /general/workspace_names
     value_type: string
     value: ['Main']
-    force_array: yes
+    force_array: true
 """
 
 RETURN = '''
@@ -96,103 +121,99 @@ RETURN = '''
     sample: "/Xft/DPI"
   value_type:
     description:
-    - The type of the value that was changed (C(none) for C(get) and C(reset)
-      state). Either a single string value or a list of strings for array
-      types.
+      - The type of the value that was changed (C(none) for C(reset)
+        state). Either a single string value or a list of strings for array
+        types.
+      - This is a string or a list of strings.
     returned: success
-    type: string or list of strings
+    type: any
     sample: '"int" or ["str", "str", "str"]'
   value:
     description:
-    - The value of the preference key after executing the module. Either a
-      single string value or a list of strings for array types.
+      - The value of the preference key after executing the module. Either a
+        single string value or a list of strings for array types.
+      - This is a string or a list of strings.
     returned: success
-    type: string or list of strings
+    type: any
     sample: '"192" or ["orange", "yellow", "violet"]'
   previous_value:
     description:
-    - The value of the preference key before executing the module (C(none) for
-      C(get) state). Either a single string value or a list of strings for array
-      types.
+      - The value of the preference key before executing the module.
+        Either a single string value or a list of strings for array types.
+      - This is a string or a list of strings.
     returned: success
-    type: string or list of strings
+    type: any
     sample: '"96" or ["red", "blue", "green"]'
+  cmd:
+    description:
+      - A list with the resulting C(xfconf-query) command executed by the module.
+    returned: success
+    type: list
+    elements: str
+    version_added: 5.4.0
+    sample:
+      - /usr/bin/xfconf-query
+      - --channel
+      - xfce4-panel
+      - --property
+      - /plugins/plugin-19/timezone
+      - --create
+      - --type
+      - string
+      - --set
+      - Pacific/Auckland
 '''
 
-from ansible_collections.community.general.plugins.module_utils.module_helper import (
-    ModuleHelper, CmdMixin, StateMixin, ArgFormat
-)
+from ansible_collections.community.general.plugins.module_utils.module_helper import StateModuleHelper
+from ansible_collections.community.general.plugins.module_utils.xfconf import xfconf_runner
 
 
-def fix_bool(value):
-    vl = value.lower()
-    return vl if vl in ("true", "false") else value
-
-
-@ArgFormat.stars_deco(1)
-def values_fmt(values, value_types):
-    result = []
-    for value, value_type in zip(values, value_types):
-        if value_type == 'bool':
-            value = fix_bool(value)
-        result.append('--type')
-        result.append('{0}'.format(value_type))
-        result.append('--set')
-        result.append('{0}'.format(value))
-    return result
-
-
-class XFConfException(Exception):
-    pass
-
-
-class XFConfProperty(CmdMixin, StateMixin, ModuleHelper):
+class XFConfProperty(StateModuleHelper):
+    change_params = 'value',
+    diff_params = 'value',
+    output_params = ('property', 'channel', 'value')
+    facts_params = ('property', 'channel', 'value')
     module = dict(
         argument_spec=dict(
-            state=dict(default="present",
-                       choices=("present", "get", "absent"),
-                       type='str'),
-            channel=dict(required=True, type='str'),
-            property=dict(required=True, type='str'),
-            value_type=dict(required=False, type='list',
-                            elements='str', choices=('int', 'uint', 'bool', 'float', 'double', 'string')),
-            value=dict(required=False, type='list', elements='raw'),
-            force_array=dict(default=False, type='bool', aliases=['array']),
+            state=dict(type='str', choices=("present", "absent"), default="present"),
+            channel=dict(type='str', required=True),
+            property=dict(type='str', required=True),
+            value_type=dict(type='list', elements='str',
+                            choices=('string', 'int', 'double', 'bool', 'uint', 'uchar', 'char', 'uint64', 'int64', 'float')),
+            value=dict(type='list', elements='raw'),
+            force_array=dict(type='bool', default=False, aliases=['array']),
+            disable_facts=dict(
+                type='bool', default=True,
+                removed_in_version='8.0.0',
+                removed_from_collection='community.general'
+            ),
         ),
         required_if=[('state', 'present', ['value', 'value_type'])],
         required_together=[('value', 'value_type')],
         supports_check_mode=True,
     )
 
-    facts_name = "xfconf"
     default_state = 'present'
-    command = 'xfconf-query'
-    command_args_formats = dict(
-        channel=dict(fmt=('--channel', '{0}'),),
-        property=dict(fmt=('--property', '{0}'),),
-        is_array=dict(fmt="--force-array", style=ArgFormat.BOOLEAN),
-        reset=dict(fmt="--reset", style=ArgFormat.BOOLEAN),
-        create=dict(fmt="--create", style=ArgFormat.BOOLEAN),
-        values_and_types=dict(fmt=values_fmt)
-    )
 
     def update_xfconf_output(self, **kwargs):
-        self.update_output(**kwargs)
-        self.update_facts(**kwargs)
+        self.update_vars(meta={"output": True, "fact": True}, **kwargs)
 
     def __init_module__(self):
-        self.does_not = 'Property "{0}" does not exist on channel "{1}".'.format(self.module.params['property'],
-                                                                                 self.module.params['channel'])
-        self.vars.previous_value = self._get()
-        self.update_xfconf_output(property=self.module.params['property'],
-                                  channel=self.module.params['channel'],
-                                  previous_value=None)
+        self.runner = xfconf_runner(self.module)
+        self.does_not = 'Property "{0}" does not exist on channel "{1}".'.format(self.vars.property,
+                                                                                 self.vars.channel)
+        self.vars.set('previous_value', self._get(), fact=True)
+        self.vars.set('type', self.vars.value_type, fact=True)
+        self.vars.meta('value').set(initial_value=self.vars.previous_value)
+
+        if self.vars.disable_facts is False:
+            self.do_raise('Returning results as facts has been removed. Stop using disable_facts=false.')
 
     def process_command_output(self, rc, out, err):
         if err.rstrip() == self.does_not:
             return None
         if rc or len(err):
-            raise XFConfException('xfconf-query failed with error (rc={0}): {1}'.format(rc, err))
+            self.do_raise('xfconf-query failed with error (rc={0}): {1}'.format(rc, err))
 
         result = out.rstrip()
         if "Value is an array with" in result:
@@ -202,33 +223,25 @@ class XFConfProperty(CmdMixin, StateMixin, ModuleHelper):
 
         return result
 
-    @property
-    def changed(self):
-        if self.vars.previous_value is None:
-            return self.vars.value is not None
-        elif self.vars.value is None:
-            return self.vars.previous_value is not None
-        else:
-            return set(self.vars.previous_value) != set(self.vars.value)
-
     def _get(self):
-        return self.run_command(params=('channel', 'property'))
-
-    def state_get(self):
-        self.vars.value = self.vars.previous_value
-        self.update_xfconf_output(value=self.vars.value)
+        with self.runner('channel property', output_process=self.process_command_output) as ctx:
+            return ctx.run()
 
     def state_absent(self):
+        with self.runner('channel property reset', check_mode_skip=True) as ctx:
+            ctx.run(reset=True)
+            self.vars.stdout = ctx.results_out
+            self.vars.stderr = ctx.results_err
+            self.vars.cmd = ctx.cmd
+            if self.verbosity >= 4:
+                self.vars.run_info = ctx.run_info
         self.vars.value = None
-        self.run_command(params=('channel', 'property', 'reset'), extra_params={"reset": True})
-        self.update_xfconf_output(previous_value=self.vars.previous_value,
-                                  value=None)
 
     def state_present(self):
         # stringify all values - in the CLI they will all be happy strings anyway
         # and by doing this here the rest of the code can be agnostic to it
-        self.vars.value = [str(v) for v in self.module.params['value']]
-        value_type = self.module.params['value_type']
+        self.vars.value = [str(v) for v in self.vars.value]
+        value_type = self.vars.value_type
 
         values_len = len(self.vars.value)
         types_len = len(value_type)
@@ -238,41 +251,31 @@ class XFConfProperty(CmdMixin, StateMixin, ModuleHelper):
             value_type = value_type * values_len
         elif types_len != values_len:
             # or complain if lists' lengths are different
-            raise XFConfException('Number of elements in "value" and "value_type" must be the same')
-
-        # fix boolean values
-        self.vars.value = [fix_bool(v[0]) if v[1] == 'bool' else v[0] for v in zip(self.vars.value, value_type)]
+            self.do_raise('Number of elements in "value" and "value_type" must be the same')
 
         # calculates if it is an array
         self.vars.is_array = \
-            bool(self.module.params['force_array']) or \
+            bool(self.vars.force_array) or \
             isinstance(self.vars.previous_value, list) or \
             values_len > 1
 
-        params = ['channel', 'property', 'create']
-        if self.vars.is_array:
-            params.append('is_array')
-        params.append('values_and_types')
-
-        extra_params = dict(values_and_types=(self.vars.value, value_type))
-        extra_params['create'] = True
-        extra_params['is_array'] = self.vars.is_array
-
-        if not self.module.check_mode:
-            self.run_command(params=params, extra_params=extra_params)
+        with self.runner('channel property create force_array values_and_types', check_mode_skip=True) as ctx:
+            ctx.run(create=True, force_array=self.vars.is_array, values_and_types=(self.vars.value, value_type))
+            self.vars.stdout = ctx.results_out
+            self.vars.stderr = ctx.results_err
+            self.vars.cmd = ctx.cmd
+            if self.verbosity >= 4:
+                self.vars.run_info = ctx.run_info
 
         if not self.vars.is_array:
             self.vars.value = self.vars.value[0]
-            value_type = value_type[0]
-
-        self.update_xfconf_output(previous_value=self.vars.previous_value,
-                                  value=self.vars.value,
-                                  type=value_type)
+            self.vars.type = value_type[0]
+        else:
+            self.vars.type = value_type
 
 
 def main():
-    xfconf = XFConfProperty()
-    xfconf.run()
+    XFConfProperty.execute()
 
 
 if __name__ == '__main__':

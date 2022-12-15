@@ -1,10 +1,11 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# (c) 2013, Patrick Pelletier <pp.pelletier@gmail.com>
+# Copyright (c) 2013, Patrick Pelletier <pp.pelletier@gmail.com>
 # Based on pacman (Afterburn) and pkgin (Shaun Zinck) modules
 #
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -20,19 +21,20 @@ description:
 options:
     name:
         description:
-            - name of package to install/remove
+            - Name of package(s) to install/remove.
         aliases: [pkg]
         required: true
-        type: str
+        type: list
+        elements: str
     state:
         description:
-            - state of the package
+            - State of the package.
         choices: [ 'present', 'absent', 'installed', 'removed' ]
         default: present
         type: str
     force:
         description:
-            - opkg --force parameter used
+            - The C(opkg --force) parameter used.
         choices:
             - ""
             - "depends"
@@ -45,12 +47,12 @@ options:
             - "remove"
             - "checksum"
             - "removal-of-dependent-packages"
+        default: ""
         type: str
     update_cache:
         description:
-            - update the package db first
-        aliases: ['update-cache']
-        default: "no"
+            - Update the package DB first.
+        default: false
         type: bool
 requirements:
     - opkg
@@ -66,7 +68,7 @@ EXAMPLES = '''
   community.general.opkg:
     name: foo
     state: present
-    update_cache: yes
+    update_cache: true
 
 - name: Remove foo
   community.general.opkg:
@@ -75,7 +77,9 @@ EXAMPLES = '''
 
 - name: Remove foo and bar
   community.general.opkg:
-    name: foo,bar
+    name:
+      - foo
+      - bar
     state: absent
 
 - name: Install foo using overwrite option forcibly
@@ -169,11 +173,11 @@ def install_packages(module, opkg_path, packages):
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            name=dict(aliases=["pkg"], required=True),
+            name=dict(aliases=["pkg"], required=True, type="list", elements="str"),
             state=dict(default="present", choices=["present", "installed", "absent", "removed"]),
             force=dict(default="", choices=["", "depends", "maintainer", "reinstall", "overwrite", "downgrade", "space", "postinstall", "remove",
                                             "checksum", "removal-of-dependent-packages"]),
-            update_cache=dict(default="no", aliases=["update-cache"], type='bool')
+            update_cache=dict(default=False, type='bool'),
         )
     )
 
@@ -184,7 +188,7 @@ def main():
     if p["update_cache"]:
         update_package_db(module, opkg_path)
 
-    pkgs = p["name"].split(",")
+    pkgs = p["name"]
 
     if p["state"] in ["present", "installed"]:
         install_packages(module, opkg_path, pkgs)

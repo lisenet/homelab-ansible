@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# (c) 2013, Nimbis Services, Inc.
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2013, Nimbis Services, Inc.
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -10,7 +11,7 @@ __metaclass__ = type
 
 DOCUMENTATION = '''
 module: htpasswd
-short_description: manage user files for basic authentication
+short_description: Manage user files for basic authentication
 description:
   - Add and remove username/password entries in a password file using htpasswd.
   - This is used by web servers such as Apache and Nginx for basic authentication.
@@ -53,10 +54,10 @@ options:
   create:
     required: false
     type: bool
-    default: "yes"
+    default: true
     description:
-      - Used with C(state=present). If specified, the file will be created
-        if it does not already exist. If set to "no", will fail if the
+      - Used with I(state=present). If specified, the file will be created
+        if it does not already exist. If set to C(false), will fail if the
         file does not exist
 notes:
   - "This module depends on the I(passlib) Python library, which needs to be installed on all target systems."
@@ -95,9 +96,10 @@ EXAMPLES = """
 import os
 import tempfile
 import traceback
-from distutils.version import LooseVersion
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
+
+from ansible_collections.community.general.plugins.module_utils.version import LooseVersion
 
 PASSLIB_IMP_ERR = None
 try:

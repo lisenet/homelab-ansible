@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -52,23 +53,19 @@ import os
 import traceback
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 def core(module):
     revision = module.params['revision']
-    args = []
+    atomic_bin = module.get_bin_path('atomic', required=True)
 
     module.run_command_environ_update = dict(LANG='C', LC_ALL='C', LC_MESSAGES='C')
 
     if revision == 'latest':
-        args = ['atomic', 'host', 'upgrade']
+        args = [atomic_bin, 'host', 'upgrade']
     else:
-        args = ['atomic', 'host', 'deploy', revision]
-
-    out = {}
-    err = {}
-    rc = 0
+        args = [atomic_bin, 'host', 'deploy', revision]
 
     rc, out, err = module.run_command(args, check_rc=False)
 

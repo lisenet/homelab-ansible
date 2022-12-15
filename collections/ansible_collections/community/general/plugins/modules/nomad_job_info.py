@@ -1,8 +1,9 @@
 #!/usr/bin/python
-# coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
-# (c) 2020, FERREIRA Christophe <christophe.ferreira@cnaf.fr>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2020, FERREIRA Christophe <christophe.ferreira@cnaf.fr>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -20,6 +21,8 @@ requirements:
   - python-nomad
 extends_documentation_fragment:
   - community.general.nomad
+  - community.general.attributes
+  - community.general.attributes.info_module
 options:
     name:
       description:
@@ -36,13 +39,13 @@ seealso:
 
 EXAMPLES = '''
 - name: Get info for job awx
-  community.general.nomad_job:
+  community.general.nomad_job_info:
     host: localhost
     name: awx
   register: result
 
 - name: List Nomad jobs
-  community.general.nomad_job:
+  community.general.nomad_job_info:
     host: localhost
   register: result
 
@@ -265,12 +268,8 @@ result:
 
 '''
 
-
-import os
-import json
-
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 import_nomad = None
 try:
@@ -287,11 +286,11 @@ def run():
             use_ssl=dict(type='bool', default=True),
             timeout=dict(type='int', default=5),
             validate_certs=dict(type='bool', default=True),
-            client_cert=dict(type='path', default=None),
-            client_key=dict(type='path', default=None),
-            namespace=dict(type='str', default=None),
-            name=dict(type='str', default=None),
-            token=dict(type='str', default=None, no_log=True)
+            client_cert=dict(type='path'),
+            client_key=dict(type='path'),
+            namespace=dict(type='str'),
+            name=dict(type='str'),
+            token=dict(type='str', no_log=True)
         ),
         supports_check_mode=True
     )
@@ -312,12 +311,11 @@ def run():
     )
 
     changed = False
-    nomad_jobs = list()
+    result = list()
     try:
         job_list = nomad_client.jobs.get_jobs()
         for job in job_list:
-            nomad_jobs.append(nomad_client.job.get_job(job.get('ID')))
-            result = nomad_jobs
+            result.append(nomad_client.job.get_job(job.get('ID')))
     except Exception as e:
         module.fail_json(msg=to_native(e))
 

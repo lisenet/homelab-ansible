@@ -1,11 +1,13 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 #
 # Scaleway Load-balancer management module
 #
 # Copyright (C) 2018 Online SAS.
 # https://www.scaleway.com
 #
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 
@@ -15,7 +17,7 @@ DOCUMENTATION = '''
 ---
 module: scaleway_lb
 short_description: Scaleway load-balancer management module
-author: Remy Leone (@sieben)
+author: Remy Leone (@remyleone)
 description:
     - "This module manages load-balancers on Scaleway."
 extends_documentation_fragment:
@@ -59,9 +61,12 @@ options:
     choices:
       - nl-ams
       - fr-par
+      - pl-waw
 
   tags:
     type: list
+    elements: str
+    default: []
     description:
     - List of tags to apply to the load-balancer
 
@@ -69,7 +74,7 @@ options:
     description:
     - Wait for the load-balancer to reach its desired state before returning.
     type: bool
-    default: 'no'
+    default: false
 
   wait_timeout:
     type: int
@@ -337,7 +342,7 @@ def main():
         description=dict(required=True),
         region=dict(required=True, choices=SCALEWAY_REGIONS),
         state=dict(choices=list(state_strategy.keys()), default='present'),
-        tags=dict(type="list", default=[]),
+        tags=dict(type="list", elements="str", default=[]),
         organization_id=dict(required=True),
         wait=dict(type="bool", default=False),
         wait_timeout=dict(type="int", default=300),

@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2016, Timothy Vandenbrande <timothy.vandenbrande@gmail.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2016, Timothy Vandenbrande <timothy.vandenbrande@gmail.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -44,7 +45,7 @@ options:
         description:
             - A boolean switch to make a secure or insecure connection to the server.
         type: bool
-        default: no
+        default: false
     name:
         description:
             - The name of the VM.
@@ -53,6 +54,7 @@ options:
         description:
             - The RHEV/oVirt cluster in which you want you VM to start.
         type: str
+        default: ''
     datacenter:
         description:
             - The RHEV/oVirt datacenter in which you want you VM to start.
@@ -107,7 +109,7 @@ options:
         description:
             - To make your VM High Available.
         type: bool
-        default: yes
+        default: true
     disks:
         description:
             - This option uses complex arguments and is a list of disks with the options name, size and domain.
@@ -129,7 +131,7 @@ options:
         description:
             - This option sets the delete protection checkbox.
         type: bool
-        default: yes
+        default: true
     cd_drive:
         description:
             - The CD you wish to have mounted on the VM when I(state = 'CD').
@@ -148,7 +150,7 @@ vm:
     description: Returns all of the VMs variables and execution.
     returned: always
     type: dict
-    sample: '{
+    sample: {
         "boot_order": [
             "hd",
             "network"
@@ -206,7 +208,7 @@ vm:
         "vmcpu": "4",
         "vmhost": "host416",
         "vmmem": "16"
-    }'
+    }
 '''
 
 EXAMPLES = r'''
@@ -308,7 +310,7 @@ EXAMPLES = r'''
       network: rhevm
       ip: 172.31.222.200
       netmask: 255.255.255.0
-      management: yes
+      management: true
     - name: bond0.36
       network: vlan36
       ip: 10.2.36.200
@@ -547,7 +549,7 @@ class RHEVConn(object):
 
     def set_Memory_Policy(self, name, memory_policy):
         VM = self.get_VM(name)
-        VM.memory_policy.guaranteed = int(int(memory_policy) * 1024 * 1024 * 1024)
+        VM.memory_policy.guaranteed = int(memory_policy) * 1024 * 1024 * 1024
         try:
             VM.update()
             setMsg("The memory policy has been updated.")
@@ -1229,24 +1231,6 @@ class RHEV(object):
         self.__get_conn()
         return self.conn.set_VM_Host(vmname, vmhost)
 
-        # pylint: disable=unreachable
-        VM = self.conn.get_VM(vmname)
-        HOST = self.conn.get_Host(vmhost)
-
-        if VM.placement_policy.host is None:
-            self.conn.set_VM_Host(vmname, vmhost)
-        elif str(VM.placement_policy.host.id) != str(HOST.id):
-            self.conn.set_VM_Host(vmname, vmhost)
-        else:
-            setMsg("VM's startup host was already set to " + vmhost)
-        checkFail()
-
-        if str(VM.status.state) == "up":
-            self.conn.migrate_VM(vmname, vmhost)
-        checkFail()
-
-        return True
-
     def setHost(self, hostname, cluster, ifaces):
         self.__get_conn()
         return self.conn.set_Host(hostname, cluster, ifaces)
@@ -1270,7 +1254,6 @@ def setChanged():
 
 
 def setMsg(message):
-    global failed
     msg.append(message)
 
 
@@ -1278,7 +1261,7 @@ def core(module):
 
     r = RHEV(module)
 
-    state = module.params.get('state', 'present')
+    state = module.params.get('state')
 
     if state == 'ping':
         r.test()

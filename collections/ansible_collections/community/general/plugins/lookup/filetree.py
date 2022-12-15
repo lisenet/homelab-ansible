@@ -1,11 +1,13 @@
-# (c) 2016 Dag Wieers <dag@wieers.com>
-# (c) 2017 Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# -*- coding: utf-8 -*-
+# Copyright (c) 2016 Dag Wieers <dag@wieers.com>
+# Copyright (c) 2017 Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = r'''
-lookup: filetree
+name: filetree
 author: Dag Wieers (@dagwieers) <dag@wieers.com>
 short_description: recursively match all files in a directory tree
 description:
@@ -16,7 +18,7 @@ description:
 options:
   _terms:
     description: path(s) of files to read
-    required: True
+    required: true
 '''
 
 EXAMPLES = r"""
@@ -31,7 +33,9 @@ EXAMPLES = r"""
 - name: Template files (explicitly skip directories in order to use the 'src' attribute)
   ansible.builtin.template:
     src: '{{ item.src }}'
-    dest: /web/{{ item.path }}
+    # Your template files should be stored with a .j2 file extension,
+    # but should not be deployed with it. splitext|first removes it.
+    dest: /web/{{ item.path | splitext | first }}
     mode: '{{ item.mode }}'
   with_community.general.filetree: web/
   when: item.state == 'file'
@@ -41,7 +45,8 @@ EXAMPLES = r"""
     src: '{{ item.src }}'
     dest: /web/{{ item.path }}
     state: link
-    force: yes
+    follow: false  # avoid corrupting target files if the link already exists
+    force: true
     mode: '{{ item.mode }}'
   with_community.general.filetree: web/
   when: item.state == 'link'
@@ -121,7 +126,7 @@ except ImportError:
     pass
 
 from ansible.plugins.lookup import LookupBase
-from ansible.module_utils._text import to_native, to_text
+from ansible.module_utils.common.text.converters import to_native, to_text
 from ansible.utils.display import Display
 
 display = Display()
@@ -196,6 +201,8 @@ def file_props(root, path):
 class LookupModule(LookupBase):
 
     def run(self, terms, variables=None, **kwargs):
+        self.set_options(var_options=variables, direct=kwargs)
+
         basedir = self.get_basedir(variables)
 
         ret = []

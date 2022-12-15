@@ -1,28 +1,12 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+# Copyright (c) 2018, Milan Ilic <milani@nordeus.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 # Make coding more python3-ish
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
-
-"""
-(c) 2018, Milan Ilic <milani@nordeus.com>
-
-This file is part of Ansible
-
-Ansible is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-Ansible is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a clone of the GNU General Public License
-along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
-"""
 
 DOCUMENTATION = '''
 ---
@@ -33,6 +17,9 @@ description:
   - This module was called C(one_image_facts) before Ansible 2.9. The usage did not change.
 requirements:
   - pyone
+extends_documentation_fragment:
+  - community.general.attributes
+  - community.general.attributes.info_module
 options:
   api_url:
     description:
@@ -56,6 +43,7 @@ options:
       - A list of images ids whose facts you want to gather.
     aliases: ['id']
     type: list
+    elements: str
   name:
     description:
       - A C(name) of the image whose facts will be gathered.
@@ -239,7 +227,7 @@ def get_connection_info(module):
     if not password:
         password = os.environ.get('ONE_PASSWORD')
 
-    if not(url and username and password):
+    if not (url and username and password):
         module.fail_json(msg="One or more connection parameters (api_url, api_username, api_password) were not specified")
     from collections import namedtuple
 
@@ -253,16 +241,13 @@ def main():
         "api_url": {"required": False, "type": "str"},
         "api_username": {"required": False, "type": "str"},
         "api_password": {"required": False, "type": "str", "no_log": True},
-        "ids": {"required": False, "aliases": ['id'], "type": "list"},
+        "ids": {"required": False, "aliases": ['id'], "type": "list", "elements": "str"},
         "name": {"required": False, "type": "str"},
     }
 
     module = AnsibleModule(argument_spec=fields,
                            mutually_exclusive=[['ids', 'name']],
                            supports_check_mode=True)
-    if module._name in ('one_image_facts', 'community.general.one_image_facts'):
-        module.deprecate("The 'one_image_facts' module has been renamed to 'one_image_info'",
-                         version='3.0.0', collection_name='community.general')  # was Ansible 2.13
 
     if not HAS_PYONE:
         module.fail_json(msg='This module requires pyone to work!')
@@ -273,9 +258,6 @@ def main():
     name = params.get('name')
     client = pyone.OneServer(auth.url, session=auth.username + ':' + auth.password)
 
-    result = {'images': []}
-    images = []
-
     if ids:
         images = get_images_by_ids(module, client, ids)
     elif name:
@@ -283,8 +265,9 @@ def main():
     else:
         images = get_all_images(client).IMAGE
 
-    for image in images:
-        result['images'].append(get_image_info(image))
+    result = {
+        'images': [get_image_info(image) for image in images],
+    }
 
     module.exit_json(**result)
 

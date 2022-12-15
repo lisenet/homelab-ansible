@@ -1,7 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-# Copyright: Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -10,15 +11,15 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: vertica_configuration
-short_description: Updates Vertica configuration parameters.
+short_description: Updates Vertica configuration parameters
 description:
     - Updates Vertica configuration parameters.
 options:
-  name:
+  parameter:
     description:
         - Name of the parameter to update.
     required: true
-    aliases: [parameter]
+    aliases: [name]
     type: str
   value:
     description:
@@ -76,7 +77,7 @@ else:
     pyodbc_found = True
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 class NotSupportedError(Exception):

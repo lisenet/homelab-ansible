@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-# (c) 2017, Daniel Korn <korndaniel1@gmail.com>
-# (c) 2017, Yaacov Zamir <yzamir@redhat.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2017, Daniel Korn <korndaniel1@gmail.com>
+# Copyright (c) 2017, Yaacov Zamir <yzamir@redhat.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -10,7 +11,7 @@ __metaclass__ = type
 
 DOCUMENTATION = '''
 module: manageiq_provider
-short_description: Management of provider in ManageIQ.
+short_description: Management of provider in ManageIQ
 extends_documentation_fragment:
 - community.general.manageiq
 
@@ -58,7 +59,7 @@ options:
     aliases: [ keystone_v3_domain_id ]
   tenant_mapping_enabled:
     type: bool
-    default: 'no'
+    default: false
     description: Whether to enable mapping of existing tenants. defaults to False.
   api_version:
     type: str
@@ -87,7 +88,8 @@ options:
       validate_certs:
         description: Whether SSL certificates should be verified for HTTPS requests (deprecated). defaults to True.
         type: bool
-        default: 'yes'
+        default: true
+        aliases: [ verify_ssl ]
       security_protocol:
         type: str
         description: How SSL certificates should be used for HTTPS requests. defaults to None.
@@ -118,7 +120,8 @@ options:
       validate_certs:
         description: Whether SSL certificates should be verified for HTTPS requests (deprecated). defaults to True.
         type: bool
-        default: 'yes'
+        default: true
+        aliases: [ verify_ssl ]
       security_protocol:
         type: str
         choices: ['ssl-with-validation','ssl-with-validation-custom-ca','ssl-without-validation','non-ssl']
@@ -153,6 +156,7 @@ options:
         type: bool
         description: Whether SSL certificates should be verified for HTTPS requests (deprecated). defaults to True.
         default: true
+        aliases: [ verify_ssl ]
       security_protocol:
         type: str
         choices: ['ssl-with-validation','ssl-with-validation-custom-ca','ssl-without-validation', 'non-ssl']
@@ -178,7 +182,7 @@ options:
         description:
           - Whether certificates should be verified for connections.
         type: bool
-        default: yes
+        default: true
         aliases: [ verify_ssl ]
 '''
 
@@ -569,7 +573,7 @@ def endpoint_list_spec():
         provider=dict(type='dict', options=endpoint_argument_spec()),
         metrics=dict(type='dict', options=endpoint_argument_spec()),
         alerts=dict(type='dict', options=endpoint_argument_spec()),
-        ssh_keypair=dict(type='dict', options=endpoint_argument_spec()),
+        ssh_keypair=dict(type='dict', options=endpoint_argument_spec(), no_log=False),
     )
 
 
@@ -829,7 +833,7 @@ def main():
         azure_tenant_id=dict(aliases=['keystone_v3_domain_id']),
         tenant_mapping_enabled=dict(default=False, type='bool'),
         api_version=dict(choices=['v2', 'v3']),
-        type=dict(choices=supported_providers().keys()),
+        type=dict(choices=list(supported_providers().keys())),
     )
     # add the manageiq connection arguments to the arguments
     argument_spec.update(manageiq_argument_spec())

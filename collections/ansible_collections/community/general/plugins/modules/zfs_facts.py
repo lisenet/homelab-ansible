@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# (c) 2016, Adam Števko <adam.stevko@gmail.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2016, Adam Števko <adam.stevko@gmail.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -11,42 +12,51 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: zfs_facts
-short_description: Gather facts about ZFS datasets.
+short_description: Gather facts about ZFS datasets
 description:
   - Gather facts from ZFS dataset properties.
 author: Adam Števko (@xen0l)
+extends_documentation_fragment:
+  - community.general.attributes
+  - community.general.attributes.facts
+  - community.general.attributes.facts_module
 options:
     name:
         description:
             - ZFS dataset name.
-        required: yes
+        required: true
         aliases: [ "ds", "dataset" ]
+        type: str
     recurse:
         description:
             - Specifies if properties for any children should be recursively
               displayed.
         type: bool
-        default: 'no'
+        default: false
     parsable:
         description:
             - Specifies if property values should be displayed in machine
               friendly format.
         type: bool
-        default: 'no'
+        default: false
     properties:
         description:
             - Specifies which dataset properties should be queried in comma-separated format.
               For more information about dataset properties, check zfs(1M) man page.
         default: all
+        type: str
     type:
         description:
             - Specifies which datasets types to display. Multiple values have to be
               provided in comma-separated form.
         choices: [ 'all', 'filesystem', 'volume', 'snapshot', 'bookmark' ]
         default: all
+        type: str
     depth:
         description:
             - Specifies recursion depth.
+        type: int
+        default: 0
 '''
 
 EXAMPLES = '''
@@ -57,7 +67,7 @@ EXAMPLES = '''
 - name: Report space usage on ZFS filesystems under data/home
   community.general.zfs_facts:
     name: data/home
-    recurse: yes
+    recurse: true
     type: filesystem
 
 - ansible.builtin.debug:
@@ -75,12 +85,12 @@ parsable:
     description: if parsable output should be provided in machine friendly format.
     returned: if 'parsable' is set to True
     type: bool
-    sample: True
+    sample: true
 recurse:
     description: if we should recurse over ZFS dataset
     returned: if 'recurse' is set to True
     type: bool
-    sample: True
+    sample: true
 zfs_datasets:
     description: ZFS dataset facts
     returned: always
@@ -171,10 +181,7 @@ class ZFSFacts(object):
         self.facts = []
 
     def dataset_exists(self):
-        cmd = [self.module.get_bin_path('zfs')]
-
-        cmd.append('list')
-        cmd.append(self.name)
+        cmd = [self.module.get_bin_path('zfs'), 'list', self.name]
 
         (rc, out, err) = self.module.run_command(cmd)
 
@@ -184,10 +191,7 @@ class ZFSFacts(object):
             return False
 
     def get_facts(self):
-        cmd = [self.module.get_bin_path('zfs')]
-
-        cmd.append('get')
-        cmd.append('-H')
+        cmd = [self.module.get_bin_path('zfs'), 'get', '-H']
         if self.parsable:
             cmd.append('-p')
         if self.recurse:
@@ -198,10 +202,7 @@ class ZFSFacts(object):
         if self.type:
             cmd.append('-t')
             cmd.append(self.type)
-        cmd.append('-o')
-        cmd.append('name,property,value')
-        cmd.append(self.properties)
-        cmd.append(self.name)
+        cmd.extend(['-o', 'name,property,value', self.properties, self.name])
 
         (rc, out, err) = self.module.run_command(cmd)
 

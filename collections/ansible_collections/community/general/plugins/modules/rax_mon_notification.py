@@ -1,6 +1,8 @@
 #!/usr/bin/python
-# Copyright: Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# -*- coding: utf-8 -*-
+# Copyright Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -9,7 +11,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: rax_mon_notification
-short_description: Create or delete a Rackspace Cloud Monitoring notification.
+short_description: Create or delete a Rackspace Cloud Monitoring notification
 description:
 - Create or delete a Rackspace Cloud Monitoring notification that specifies a
   channel that can be used to communicate alarms, such as email, webhooks, or
@@ -50,7 +52,7 @@ extends_documentation_fragment:
 
 EXAMPLES = '''
 - name: Monitoring notification example
-  gather_facts: False
+  gather_facts: false
   hosts: local
   connection: local
   tasks:

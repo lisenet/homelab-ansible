@@ -1,8 +1,10 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
-# James Laska (jlaska@redhat.com)
+# Copyright (c) James Laska (jlaska@redhat.com)
 #
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -32,20 +34,30 @@ options:
         type: str
     username:
         description:
-            - access.redhat.com or Sat6  username
+            - access.redhat.com or Red Hat Satellite or Katello username
         type: str
     password:
         description:
-            - access.redhat.com or Sat6 password
+            - access.redhat.com or Red Hat Satellite or Katello password
         type: str
     server_hostname:
         description:
-            - Specify an alternative Red Hat Subscription Management or Sat6 server
+            - Specify an alternative Red Hat Subscription Management or Red Hat Satellite or Katello server
         type: str
     server_insecure:
         description:
             - Enable or disable https server certificate verification when connecting to C(server_hostname)
         type: str
+    server_prefix:
+        description:
+            - Specify the prefix when registering to the Red Hat Subscription Management or Red Hat Satellite or Katello server.
+        type: str
+        version_added: 3.3.0
+    server_port:
+        description:
+            - Specify the port when registering to the Red Hat Subscription Management or Red Hat Satellite or Katello server.
+        type: str
+        version_added: 3.3.0
     rhsm_baseurl:
         description:
             - Specify CDN baseurl
@@ -56,11 +68,11 @@ options:
         type: str
     server_proxy_hostname:
         description:
-            - Specify a HTTP proxy hostname
+            - Specify an HTTP proxy hostname.
         type: str
     server_proxy_port:
         description:
-            - Specify a HTTP proxy port
+            - Specify an HTTP proxy port.
         type: str
     server_proxy_user:
         description:
@@ -86,7 +98,7 @@ options:
         type: str
     environment:
         description:
-            - Register with a specific environment in the destination org. Used with Red Hat Satellite 6.x or Katello
+            - Register with a specific environment in the destination org. Used with Red Hat Satellite or Katello
         type: str
     pool:
         description:
@@ -105,6 +117,7 @@ options:
               entitlements from a pool (the pool must support this). Mutually exclusive with I(pool).
         default: []
         type: list
+        elements: raw
     consumer_type:
         description:
             - The type of unit to register, defaults to system
@@ -125,7 +138,7 @@ options:
         description:
             -  Register the system even if it is already registered
         type: bool
-        default: no
+        default: false
     release:
         description:
             - Set a release version
@@ -139,7 +152,6 @@ options:
               When some attribute is not listed in the new list of attributes, the existing
               attribute will be removed from C(syspurpose.json) file. Unknown attributes are ignored.
         type: dict
-        default: {}
         suboptions:
             usage:
                 description: Syspurpose attribute usage
@@ -153,13 +165,14 @@ options:
             addons:
                 description: Syspurpose attribute addons
                 type: list
+                elements: str
             sync:
                 description:
                     - When this option is true, then syspurpose attributes are synchronized with
                       RHSM server immediately. When this option is false, then syspurpose attributes
                       will be synchronized with RHSM server by rhsmcertd daemon.
                 type: bool
-                default: no
+                default: false
 '''
 
 EXAMPLES = '''
@@ -216,7 +229,7 @@ EXAMPLES = '''
     org_id: 222333444
     pool: '^Red Hat Enterprise Server$'
 
-- name: Register as user credentials into given environment (against Red Hat Satellite 6.x), and auto-subscribe.
+- name: Register as user credentials into given environment (against Red Hat Satellite or Katello), and auto-subscribe.
   community.general.redhat_subscription:
     state: present
     username: joe_user
@@ -251,7 +264,7 @@ RETURN = '''
 subscribed_pool_ids:
     description: List of pool IDs to which system is now subscribed
     returned: success
-    type: complex
+    type: dict
     sample: {
         "8a85f9815ab905d3015ab928c7005de4": "1"
     }
@@ -265,7 +278,7 @@ import tempfile
 import json
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 from ansible.module_utils.six.moves import configparser
 
 
@@ -381,10 +394,11 @@ class Rhsm(RegistrationBase):
 
     def register(self, username, password, auto_attach, activationkey, org_id,
                  consumer_type, consumer_name, consumer_id, force_register, environment,
-                 rhsm_baseurl, server_insecure, server_hostname, server_proxy_hostname,
-                 server_proxy_port, server_proxy_user, server_proxy_password, release):
+                 release):
         '''
-            Register the current system to the provided RHSM or Sat6 server
+            Register the current system to the provided RHSM or Red Hat Satellite
+            or Katello server
+
             Raises:
               * Exception - if error occurs while running command
         '''
@@ -394,44 +408,31 @@ class Rhsm(RegistrationBase):
         if force_register:
             args.extend(['--force'])
 
-        if rhsm_baseurl:
-            args.extend(['--baseurl', rhsm_baseurl])
-
-        if server_insecure:
-            args.extend(['--insecure'])
-
-        if server_hostname:
-            args.extend(['--serverurl', server_hostname])
-
         if org_id:
             args.extend(['--org', org_id])
 
-        if server_proxy_hostname and server_proxy_port:
-            args.extend(['--proxy', server_proxy_hostname + ':' + server_proxy_port])
+        if auto_attach:
+            args.append('--auto-attach')
 
-        if server_proxy_user:
-            args.extend(['--proxyuser', server_proxy_user])
+        if consumer_type:
+            args.extend(['--type', consumer_type])
 
-        if server_proxy_password:
-            args.extend(['--proxypassword', server_proxy_password])
+        if consumer_name:
+            args.extend(['--name', consumer_name])
+
+        if consumer_id:
+            args.extend(['--consumerid', consumer_id])
+
+        if environment:
+            args.extend(['--environment', environment])
 
         if activationkey:
             args.extend(['--activationkey', activationkey])
         else:
-            if auto_attach:
-                args.append('--auto-attach')
             if username:
                 args.extend(['--username', username])
             if password:
                 args.extend(['--password', password])
-            if consumer_type:
-                args.extend(['--type', consumer_type])
-            if consumer_name:
-                args.extend(['--name', consumer_name])
-            if consumer_id:
-                args.extend(['--consumerid', consumer_id])
-            if environment:
-                args.extend(['--environment', environment])
 
         if release:
             args.extend(['--release', release])
@@ -455,7 +456,7 @@ class Rhsm(RegistrationBase):
             items = ["--all"]
 
         if items:
-            args = [SUBMAN_CMD, 'unsubscribe'] + items
+            args = [SUBMAN_CMD, 'remove'] + items
             rc, stderr, stdout = self.module.run_command(args, check_rc=True)
         return serials
 
@@ -579,22 +580,29 @@ class Rhsm(RegistrationBase):
         consumed_pools = RhsmPools(self.module, consumed=True)
 
         existing_pools = {}
+        serials_to_remove = []
         for p in consumed_pools:
-            existing_pools[p.get_pool_id()] = p.QuantityUsed
+            pool_id = p.get_pool_id()
+            quantity_used = p.get_quantity_used()
+            existing_pools[pool_id] = quantity_used
 
-        serials_to_remove = [p.Serial for p in consumed_pools if pool_ids.get(p.get_pool_id(), 0) != p.QuantityUsed]
+            quantity = pool_ids.get(pool_id, 0)
+            if quantity is not None and quantity != quantity_used:
+                serials_to_remove.append(p.Serial)
+
         serials = self.unsubscribe(serials=serials_to_remove)
 
         missing_pools = {}
         for pool_id, quantity in sorted(pool_ids.items()):
-            if existing_pools.get(pool_id, 0) != quantity:
+            quantity_used = existing_pools.get(pool_id, 0)
+            if quantity is None and quantity_used == 0 or quantity not in (None, 0, quantity_used):
                 missing_pools[pool_id] = quantity
 
         self.subscribe_by_pool_ids(missing_pools)
 
         if missing_pools or serials:
             changed = True
-        return {'changed': changed, 'subscribed_pool_ids': missing_pools.keys(),
+        return {'changed': changed, 'subscribed_pool_ids': list(missing_pools.keys()),
                 'unsubscribed_serials': serials}
 
     def sync_syspurpose(self):
@@ -620,6 +628,9 @@ class RhsmPool(object):
 
     def get_pool_id(self):
         return getattr(self, 'PoolId', getattr(self, 'PoolID'))
+
+    def get_quantity_used(self):
+        return int(getattr(self, 'QuantityUsed'))
 
     def subscribe(self):
         args = "subscription-manager attach --pool %s" % self.get_pool_id()
@@ -780,6 +791,8 @@ def main():
             'password': {'no_log': True},
             'server_hostname': {},
             'server_insecure': {},
+            'server_prefix': {},
+            'server_port': {},
             'rhsm_baseurl': {},
             'rhsm_repo_ca_cert': {},
             'auto_attach': {'aliases': ['autosubscribe'], 'type': 'bool'},
@@ -787,7 +800,7 @@ def main():
             'org_id': {},
             'environment': {},
             'pool': {'default': '^$'},
-            'pool_ids': {'default': [], 'type': 'list'},
+            'pool_ids': {'default': [], 'type': 'list', 'elements': 'raw'},
             'consumer_type': {},
             'consumer_name': {},
             'consumer_id': {},
@@ -803,7 +816,7 @@ def main():
                     'role': {},
                     'usage': {},
                     'service_level_agreement': {},
-                    'addons': {'type': 'list'},
+                    'addons': {'type': 'list', 'elements': 'str'},
                     'sync': {'type': 'bool', 'default': False}
                 }
             }
@@ -814,7 +827,7 @@ def main():
         mutually_exclusive=[['activationkey', 'username'],
                             ['activationkey', 'consumer_id'],
                             ['activationkey', 'environment'],
-                            ['activationkey', 'autosubscribe'],
+                            ['activationkey', 'auto_attach'],
                             ['pool', 'pool_ids']],
         required_if=[['state', 'present', ['username', 'activationkey'], True]],
     )
@@ -825,6 +838,8 @@ def main():
     password = module.params['password']
     server_hostname = module.params['server_hostname']
     server_insecure = module.params['server_insecure']
+    server_prefix = module.params['server_prefix']
+    server_port = module.params['server_port']
     rhsm_baseurl = module.params['rhsm_baseurl']
     rhsm_repo_ca_cert = module.params['rhsm_repo_ca_cert']
     auto_attach = module.params['auto_attach']
@@ -895,8 +910,7 @@ def main():
                 rhsm.configure(**module.params)
                 rhsm.register(username, password, auto_attach, activationkey, org_id,
                               consumer_type, consumer_name, consumer_id, force_register,
-                              environment, rhsm_baseurl, server_insecure, server_hostname,
-                              server_proxy_hostname, server_proxy_port, server_proxy_user, server_proxy_password, release)
+                              environment, release)
                 if syspurpose and 'sync' in syspurpose and syspurpose['sync'] is True:
                     rhsm.sync_syspurpose()
                 if pool_ids:

@@ -1,3 +1,8 @@
+---
+# Copyright (c) Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 - name: install supervisor
   package:
     name: supervisor
@@ -5,6 +10,6 @@
 
 - name: disable supervisord system service
   service:
-    name: '{{ supervisor_service_name }}'
+    name: '{{ supervisor_service_name }}'
     state: stopped
     enabled: no

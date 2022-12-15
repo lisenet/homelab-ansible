@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright: (c) 2019, Sandeep Kasargod <sandeep@vexata.com>
-# Simplified BSD License (see licenses/simplified_bsd.txt or https://opensource.org/licenses/BSD-2-Clause)
+# Copyright (c) 2019, Sandeep Kasargod <sandeep@vexata.com>
+# Simplified BSD License (see LICENSES/BSD-2-Clause.txt or https://opensource.org/licenses/BSD-2-Clause)
+# SPDX-License-Identifier: BSD-2-Clause
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
@@ -13,7 +14,7 @@ try:
 except ImportError:
     HAS_VEXATAPI = False
 
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 from ansible.module_utils.basic import env_fallback
 
 VXOS_VERSION = None

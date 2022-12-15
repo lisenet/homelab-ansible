@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
 #
-# (c) 2016 Allen Sanabria, <asanabria@linuxdynasty.org>
-#
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2016 Allen Sanabria, <asanabria@linuxdynasty.org>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
@@ -130,7 +131,7 @@ class CloudRetry(object):
                     try:
                         return f(*args, **kwargs)
                     except Exception as e:
-                        if isinstance(e, cls.base_class):
+                        if isinstance(e, cls.base_class):  # pylint: disable=isinstance-second-argument-not-valid-type
                             response_code = cls.status_code_from_exception(e)
                             if cls.found(response_code, catch_extra_error_codes):
                                 msg = "{0}: Retrying in {1} seconds...".format(str(e), delay)

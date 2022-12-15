@@ -1,14 +1,15 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# (c) 2014, Kim Nørgaard
+# Copyright (c) 2014, Kim Nørgaard
 # Written by Kim Nørgaard <jasen@jasen.dk>
 # Based on pkgng module written by bleader <bleader@ratonland.org>
 # that was based on pkgin module written by Shaun Zinck <shaun.zinck at gmail.com>
 # that was based on pacman module written by Afterburn <https://github.com/afterburn>
 # that was based on apt module written by Matthew Williams <matthew@flowroute.com>
 #
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -44,7 +45,6 @@ options:
         required: false
         default: false
         type: bool
-        aliases: [update-cache]
 
 author: Kim Nørgaard (@KimNorgaard)
 requirements: [ "Slackware >= 12.2" ]
@@ -177,8 +177,7 @@ def main():
         argument_spec=dict(
             state=dict(default="present", choices=['installed', 'removed', 'absent', 'present', 'latest']),
             name=dict(aliases=["pkg"], required=True, type='list', elements='str'),
-            update_cache=dict(default=False, aliases=["update-cache"],
-                              type='bool'),
+            update_cache=dict(default=False, type='bool'),
         ),
         supports_check_mode=True)
 

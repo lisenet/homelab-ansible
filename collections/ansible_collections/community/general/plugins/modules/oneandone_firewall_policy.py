@@ -1,18 +1,8 @@
 #!/usr/bin/python
-# This file is part of Ansible
-#
-# Ansible is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Ansible is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
+# -*- coding: utf-8 -*-
+# Copyright (c) Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -20,7 +10,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: oneandone_firewall_policy
-short_description: Configure 1&1 firewall policy.
+short_description: Configure 1&1 firewall policy
 description:
      - Create, remove, reconfigure, update firewall policies.
        This module has a dependency on 1and1 >= 1.0
@@ -57,28 +47,38 @@ options:
         Each rule must contain protocol parameter, in addition to three optional parameters
         (port_from, port_to, and source)
     type: list
+    elements: dict
+    default: []
   add_server_ips:
     description:
       - A list of server identifiers (id or name) to be assigned to a firewall policy.
         Used in combination with update state.
     type: list
+    elements: str
     required: false
+    default: []
   remove_server_ips:
     description:
       - A list of server IP ids to be unassigned from a firewall policy. Used in combination with update state.
     type: list
+    elements: str
     required: false
+    default: []
   add_rules:
     description:
       - A list of rules that will be added to an existing firewall policy.
         It is syntax is the same as the one used for rules parameter. Used in combination with update state.
     type: list
+    elements: dict
     required: false
+    default: []
   remove_rules:
     description:
       - A list of rule ids that will be removed from an existing firewall policy. Used in combination with update state.
     type: list
+    elements: str
     required: false
+    default: []
   description:
     description:
       - Firewall policy description. maxLength=256
@@ -88,7 +88,7 @@ options:
     description:
       - wait for the instance to be in state 'running' before returning
     required: false
-    default: "yes"
+    default: true
     type: bool
   wait_timeout:
     description:
@@ -500,7 +500,7 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             auth_token=dict(
-                type='str',
+                type='str', no_log=True,
                 default=os.environ.get('ONEANDONE_AUTH_TOKEN')),
             api_url=dict(
                 type='str',
@@ -508,11 +508,11 @@ def main():
             name=dict(type='str'),
             firewall_policy=dict(type='str'),
             description=dict(type='str'),
-            rules=dict(type='list', default=[]),
-            add_server_ips=dict(type='list', default=[]),
-            remove_server_ips=dict(type='list', default=[]),
-            add_rules=dict(type='list', default=[]),
-            remove_rules=dict(type='list', default=[]),
+            rules=dict(type='list', elements="dict", default=[]),
+            add_server_ips=dict(type='list', elements="str", default=[]),
+            remove_server_ips=dict(type='list', elements="str", default=[]),
+            add_rules=dict(type='list', elements="dict", default=[]),
+            remove_rules=dict(type='list', elements="str", default=[]),
             wait=dict(type='bool', default=True),
             wait_timeout=dict(type='int', default=600),
             wait_interval=dict(type='int', default=5),

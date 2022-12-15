@@ -1,7 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-# Copyright: Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -46,16 +47,16 @@ options:
   msg:
     type: str
     description:
-      - The contents of the annotation message, in plain text.  Limited to 256 characters. Required for annotation.
+      - The contents of the annotation message, in plain text. Limited to 256 characters. Required for annotation.
   annotated_by:
     type: str
     description:
-      - The person or robot who the annotation should be attributed to.
+      - The person or robot who the annotation should be attributed to.
     default: "Ansible"
   level:
     type: str
     description:
-      - one of INFO/WARN/ERROR, defaults to INFO if not supplied.  May affect display.
+      - one of INFO/WARN/ERROR, defaults to INFO if not supplied. May affect display.
     choices: ['INFO', 'WARN', 'ERROR']
     default: 'INFO'
   instance_id:
@@ -96,7 +97,7 @@ import json
 import traceback
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 from ansible.module_utils.urls import fetch_url
 
 
@@ -152,7 +153,7 @@ def main():
 
     module = AnsibleModule(
         argument_spec=dict(  # @TODO add types
-            key=dict(required=True),
+            key=dict(required=True, no_log=True),
             event=dict(required=True, choices=['deploy', 'annotation']),
             msg=dict(),
             revision_id=dict(),

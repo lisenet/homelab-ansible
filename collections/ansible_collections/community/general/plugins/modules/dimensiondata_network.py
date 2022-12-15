@@ -7,7 +7,8 @@
 #   - Bert Diwa      <Lamberto.Diwa@dimensiondata.com>
 #   - Adam Friedman  <tintoy@tintoy.io>
 #
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -113,7 +114,7 @@ import traceback
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.general.plugins.module_utils.dimensiondata import HAS_LIBCLOUD, DimensionDataModule
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 if HAS_LIBCLOUD:
     from libcloud.compute.base import NodeLocation
@@ -260,7 +261,7 @@ class DimensionDataNetworkModule(DimensionDataModule):
                 )
 
             self.module.fail_json(
-                "Unexpected failure deleting network with id %s", network.id
+                "Unexpected failure deleting network with id %s" % network.id
             )
 
         except DimensionDataAPIException as e:

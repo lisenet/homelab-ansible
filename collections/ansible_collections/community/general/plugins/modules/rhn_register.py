@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) James Laska
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) James Laska
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -49,6 +50,12 @@ options:
         description:
             - Supply an profilename for use with registration.
         type: str
+    force:
+        description:
+            - Force registration, even if system is already registered.
+        type: bool
+        default: false
+        version_added: 2.0.0
     ca_cert:
         description:
             - Supply a custom ssl CA certificate file for use with registration.
@@ -66,14 +73,14 @@ options:
         default: []
     enable_eus:
         description:
-            - If C(no), extended update support will be requested.
+            - If C(false), extended update support will be requested.
         type: bool
-        default: no
+        default: false
     nopackages:
         description:
-            - If C(yes), the registered node will not upload its installed packages information to Satellite server.
+            - If C(true), the registered node will not upload its installed packages information to Satellite server.
         type: bool
-        default: no
+        default: false
 '''
 
 EXAMPLES = r'''
@@ -93,7 +100,7 @@ EXAMPLES = r'''
   community.general.rhn_register:
     state: present
     activationkey: 1-222333444
-    enable_eus: yes
+    enable_eus: true
 
 - name: Register with activationkey and set a profilename which may differ from the hostname
   community.general.rhn_register:
@@ -114,6 +121,14 @@ EXAMPLES = r'''
     username: joe_user
     password: somepass
     channels: rhel-x86_64-server-6-foo-1,rhel-x86_64-server-6-bar-1
+
+- name: Force-register as user with password to ensure registration is current on server
+  community.general.rhn_register:
+    state: present
+    username: joe_user
+    password: somepass
+    server_url: https://xmlrpc.my.satellite/XMLRPC
+    force: true
 '''
 
 RETURN = r'''
@@ -346,6 +361,7 @@ def main():
             ca_cert=dict(type='path', aliases=['sslcacert']),
             systemorgid=dict(type='str'),
             enable_eus=dict(type='bool', default=False),
+            force=dict(type='bool', default=False),
             nopackages=dict(type='bool', default=False),
             channels=dict(type='list', elements='str', default=[]),
         ),
@@ -365,6 +381,7 @@ def main():
     password = module.params['password']
 
     state = module.params['state']
+    force = module.params['force']
     activationkey = module.params['activationkey']
     profilename = module.params['profilename']
     sslcacert = module.params['ca_cert']
@@ -395,7 +412,7 @@ def main():
             module.fail_json(msg="Missing arguments, If registering without an activationkey, must supply username or password")
 
         # Register system
-        if rhn.is_registered:
+        if rhn.is_registered and not force:
             module.exit_json(changed=False, msg="System already registered.")
 
         try:

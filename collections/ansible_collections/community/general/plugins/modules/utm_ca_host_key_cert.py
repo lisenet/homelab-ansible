@@ -1,7 +1,9 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
-# Copyright: (c) 2018, Stephan Schwarz <stearz@gmx.de>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2018, Stephan Schwarz <stearz@gmx.de>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 
@@ -14,7 +16,7 @@ module: utm_ca_host_key_cert
 author:
     - Stephan Schwarz (@stearz)
 
-short_description: create, update or destroy ca host_key_cert entry in Sophos UTM
+short_description: Create, update or destroy ca host_key_cert entry in Sophos UTM
 
 description:
     - Create, update or destroy a ca host_key_cert entry in SOPHOS UTM.
@@ -49,7 +51,7 @@ options:
     encrypted:
         description:
           - Optionally enable encryption.
-        default: False
+        default: false
         type: bool
     key:
         description:
@@ -132,7 +134,7 @@ result:
 """
 
 from ansible_collections.community.general.plugins.module_utils.utm_utils import UTM, UTMModule
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 def main():

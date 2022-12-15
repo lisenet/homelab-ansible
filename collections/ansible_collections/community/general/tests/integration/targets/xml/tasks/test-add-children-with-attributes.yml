@@ -1,4 +1,8 @@
 ---
+# Copyright (c) Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
+
   - name: Setup test fixture
     copy:
       src: fixtures/ansible-xml-beers.xml
@@ -15,6 +19,9 @@
           type: light
     register: add_children_with_attributes
 
+  - name: Add trailing newline
+    shell: echo "" >> /tmp/ansible-xml-beers.xml
+
   - name: Compare to expected result
     copy:
       src: results/test-add-children-with-attributes.xml
@@ -29,7 +36,7 @@
   - name: Test expected result
     assert:
       that:
-      - add_children_with_attributes.changed == true
-      - comparison.changed == false  # identical
+      - add_children_with_attributes is changed
+      - comparison is not changed  # identical
     when: lxml_predictable_attribute_order
     #command: diff -u {{ role_path }}/results/test-add-children-with-attributes.xml /tmp/ansible-xml-beers.xml

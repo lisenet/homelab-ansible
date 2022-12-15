@@ -1,7 +1,9 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
-# Copyright: (c) 2018, Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2018, Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -9,7 +11,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: heroku_collaborator
-short_description: "Add or delete app collaborators on Heroku"
+short_description: Add or delete app collaborators on Heroku
 description:
   - Manages collaborators for Heroku apps.
   - If set to C(present) and heroku user is already collaborator, then do nothing.
@@ -26,6 +28,7 @@ options:
       - Heroku API key
   apps:
     type: list
+    elements: str
     description:
       - List of Heroku App names
     required: true
@@ -33,7 +36,7 @@ options:
     description:
       - Suppress email invitation when creating collaborator
     type: bool
-    default: "no"
+    default: false
   user:
     type: str
     description:
@@ -109,7 +112,7 @@ def main():
     argument_spec = HerokuHelper.heroku_argument_spec()
     argument_spec.update(
         user=dict(required=True, type='str'),
-        apps=dict(required=True, type='list'),
+        apps=dict(required=True, type='list', elements='str'),
         suppress_invitation=dict(default=False, type='bool'),
         state=dict(default='present', type='str', choices=['present', 'absent']),
     )

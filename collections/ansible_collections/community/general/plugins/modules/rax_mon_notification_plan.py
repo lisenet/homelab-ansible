@@ -1,6 +1,8 @@
 #!/usr/bin/python
-# Copyright: Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# -*- coding: utf-8 -*-
+# Copyright Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -32,16 +34,19 @@ options:
     required: true
   critical_state:
     type: list
+    elements: str
     description:
     - Notification list to use when the alarm state is CRITICAL. Must be an
       array of valid rax_mon_notification ids.
   warning_state:
     type: list
+    elements: str
     description:
     - Notification list to use when the alarm state is WARNING. Must be an array
       of valid rax_mon_notification ids.
   ok_state:
     type: list
+    elements: str
     description:
     - Notification list to use when the alarm state is OK. Must be an array of
       valid rax_mon_notification ids.
@@ -53,7 +58,7 @@ extends_documentation_fragment:
 
 EXAMPLES = '''
 - name: Example notification plan
-  gather_facts: False
+  gather_facts: false
   hosts: local
   connection: local
   tasks:
@@ -150,9 +155,9 @@ def main():
         dict(
             state=dict(default='present', choices=['present', 'absent']),
             label=dict(required=True),
-            critical_state=dict(type='list'),
-            warning_state=dict(type='list'),
-            ok_state=dict(type='list')
+            critical_state=dict(type='list', elements='str'),
+            warning_state=dict(type='list', elements='str'),
+            ok_state=dict(type='list', elements='str'),
         )
     )
 

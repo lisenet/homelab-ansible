@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 #
 # PubNub Real-time Cloud-Hosted Push API and Push Notification Client
 # Frameworks
@@ -6,7 +7,8 @@
 # http://www.pubnub.com/
 # http://www.pubnub.com/terms
 #
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -15,7 +17,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: pubnub_blocks
-short_description: PubNub blocks management module.
+short_description: PubNub blocks management module
 description:
   - "This module allows Ansible to interface with the PubNub BLOCKS
   infrastructure by providing the following operations: create / remove,
@@ -35,6 +37,7 @@ options:
       same play)."
     required: false
     type: str
+    default: ''
   password:
     description:
       - Password which match to account to which specified C(email) belong.
@@ -42,6 +45,7 @@ options:
       same play)."
     required: false
     type: str
+    default: ''
   cache:
     description: >
        In case if single play use blocks management module few times it is
@@ -56,7 +60,7 @@ options:
       manage blocks."
       - "User's account will be used if value not set or empty."
     type: str
-    required: false
+    default: ''
   application:
     description:
       - "Name of target PubNub application for which blocks configuration on
@@ -111,6 +115,7 @@ options:
     required: false
     default: []
     type: list
+    elements: dict
   changes:
     description:
       - "List of fields which should be changed by block itself (doesn't
@@ -246,7 +251,7 @@ except ImportError:
     exceptions = None
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_text
+from ansible.module_utils.common.text.converters import to_text
 
 
 def pubnub_user(module):
@@ -548,11 +553,11 @@ def main():
         password=dict(default='', required=False, type='str', no_log=True),
         account=dict(default='', required=False, type='str'),
         application=dict(required=True, type='str'),
-        keyset=dict(required=True, type='str'),
+        keyset=dict(required=True, type='str', no_log=False),
         state=dict(default='present', type='str',
                    choices=['started', 'stopped', 'present', 'absent']),
         name=dict(required=True, type='str'), description=dict(type='str'),
-        event_handlers=dict(default=list(), type='list'),
+        event_handlers=dict(default=list(), type='list', elements='dict'),
         changes=dict(default=dict(), type='dict'),
         cache=dict(default=dict(), type='dict'),
         validate_certs=dict(default=True, type='bool'))

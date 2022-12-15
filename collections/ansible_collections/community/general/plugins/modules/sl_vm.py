@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2017, Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2017, Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -10,7 +11,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: sl_vm
-short_description: create or cancel a virtual instance in SoftLayer
+short_description: Create or cancel a virtual instance in SoftLayer
 description:
   - Creates or cancels SoftLayer instances.
   - When created, optionally waits for it to be 'running'.
@@ -79,22 +80,22 @@ options:
     description:
       - Flag to determine if the instance should be hourly billed.
     type: bool
-    default: 'yes'
+    default: true
   private:
     description:
       - Flag to determine if the instance should be private only.
     type: bool
-    default: 'no'
+    default: false
   dedicated:
     description:
       - Flag to determine if the instance should be deployed in dedicated space.
     type: bool
-    default: 'no'
+    default: false
   local_disk:
     description:
       - Flag to determine if local disk should be used for the new instance.
     type: bool
-    default: 'yes'
+    default: true
   cpus:
     description:
       - Count of cpus to be assigned to new virtual instance.
@@ -115,6 +116,7 @@ options:
       - List of disk sizes to be assigned to new virtual instance.
     default: [ 25 ]
     type: list
+    elements: int
   os_code:
     description:
       - OS Code to be used for new virtual instance.
@@ -140,6 +142,8 @@ options:
     description:
       - List of ssh keys by their Id to be assigned to a virtual instance.
     type: list
+    elements: str
+    default: []
   post_uri:
     description:
       - URL of a post provisioning script to be loaded and executed on virtual instance.
@@ -155,7 +159,7 @@ options:
     description:
       - Flag used to wait for active status before returning.
     type: bool
-    default: 'yes'
+    default: true
   wait_time:
     description:
       - Time in seconds before wait returns.
@@ -171,7 +175,7 @@ author:
 EXAMPLES = '''
 - name: Build instance
   hosts: localhost
-  gather_facts: no
+  gather_facts: false
   tasks:
   - name: Build instance request
     community.general.sl_vm:
@@ -179,19 +183,19 @@ EXAMPLES = '''
       domain: anydomain.com
       datacenter: dal09
       tags: ansible-module-test
-      hourly: yes
-      private: no
-      dedicated: no
-      local_disk: yes
+      hourly: true
+      private: false
+      dedicated: false
+      local_disk: true
       cpus: 1
       memory: 1024
       disks: [25]
       os_code: UBUNTU_LATEST
-      wait: no
+      wait: false
 
 - name: Build additional instances
   hosts: localhost
-  gather_facts: no
+  gather_facts: false
   tasks:
   - name: Build instances request
     community.general.sl_vm:
@@ -215,11 +219,11 @@ EXAMPLES = '''
         datacenter: dal09
         tags:
           - ansible-module-test
-          - ansible-module-test-slaves
-        hourly: yes
-        private: no
-        dedicated: no
-        local_disk: yes
+          - ansible-module-test-replicas
+        hourly: true
+        private: false
+        dedicated: false
+        local_disk: true
         cpus: 1
         memory: 1024
         disks:
@@ -227,17 +231,17 @@ EXAMPLES = '''
           - 100
         os_code: UBUNTU_LATEST
         ssh_keys: []
-        wait: True
+        wait: true
       - hostname: instance-3
         domain: anydomain.com
         datacenter: dal09
         tags:
           - ansible-module-test
-          - ansible-module-test-slaves
-        hourly: yes
-        private: no
-        dedicated: no
-        local_disk: yes
+          - ansible-module-test-replicas
+        hourly: true
+        private: false
+        dedicated: false
+        local_disk: true
         cpus: 1
         memory: 1024
         disks:
@@ -245,11 +249,11 @@ EXAMPLES = '''
           - 100
         os_code: UBUNTU_LATEST
         ssh_keys: []
-        wait: yes
+        wait: true
 
 - name: Cancel instances
   hosts: localhost
-  gather_facts: no
+  gather_facts: false
   tasks:
   - name: Cancel by tag
     community.general.sl_vm:
@@ -396,13 +400,13 @@ def main():
             cpus=dict(type='int', choices=CPU_SIZES),
             memory=dict(type='int', choices=MEMORY_SIZES),
             flavor=dict(type='str'),
-            disks=dict(type='list', default=[25]),
+            disks=dict(type='list', elements='int', default=[25]),
             os_code=dict(type='str'),
             image_id=dict(type='str'),
             nic_speed=dict(type='int', choices=NIC_SPEEDS),
             public_vlan=dict(type='str'),
             private_vlan=dict(type='str'),
-            ssh_keys=dict(type='list', default=[]),
+            ssh_keys=dict(type='list', elements='str', default=[], no_log=False),
             post_uri=dict(type='str'),
             state=dict(type='str', default='present', choices=STATES),
             wait=dict(type='bool', default=True),

@@ -1,12 +1,14 @@
-# (c) 2015, Logentries.com, Jimmy Tang <jimmy.tang@logentries.com>
-# (c) 2017 Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# -*- coding: utf-8 -*-
+# Copyright (c) 2015, Logentries.com, Jimmy Tang <jimmy.tang@logentries.com>
+# Copyright (c) 2017 Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = '''
     author: Unknown (!UNKNOWN)
-    callback: logentries
+    name: logentries
     type: notification
     short_description: Sends events to Logentries
     description:
@@ -46,7 +48,7 @@ DOCUMENTATION = '''
         description: The logentries "TCP token"
         env:
           - name: LOGENTRIES_ANSIBLE_TOKEN
-        required: True
+        required: true
         ini:
           - section: callback_logentries
             key: token
@@ -55,7 +57,7 @@ DOCUMENTATION = '''
           - Toggle to decide whether to use TLS to encrypt the communications with the API server
         env:
           - name: LOGENTRIES_USE_TLS
-        default: False
+        default: false
         type: boolean
         ini:
           - section: callback_logentries
@@ -63,7 +65,7 @@ DOCUMENTATION = '''
       flatten:
         description: flatten complex data structures into a single dictionary with complex keys
         type: boolean
-        default: False
+        default: false
         env:
           - name: LOGENTRIES_FLATTEN
         ini:
@@ -111,7 +113,7 @@ try:
 except ImportError:
     HAS_FLATDICT = False
 
-from ansible.module_utils._text import to_bytes, to_text
+from ansible.module_utils.common.text.converters import to_bytes, to_text
 from ansible.plugins.callback import CallbackBase
 
 # Todo:

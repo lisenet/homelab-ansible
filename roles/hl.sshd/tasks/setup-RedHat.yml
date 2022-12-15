@@ -9,6 +9,13 @@
       state: present
     loop: "{{ packages }}"
 
+  - name: RedHat | Disable system-wide crypto policy usage for SSH
+    lineinfile:
+      path: /etc/sysconfig/sshd
+      regexp: "^# CRYPTO_POLICY="
+      line: CRYPTO_POLICY=
+    when: ansible_distribution_major_version == "8"
+
   - name: RedHat | Copy {{ sshd_config_file }} Configuration File
     template:
       src: "{{ sshd_config_file }}.j2"

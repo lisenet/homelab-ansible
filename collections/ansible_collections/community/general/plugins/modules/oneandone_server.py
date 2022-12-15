@@ -1,18 +1,8 @@
 #!/usr/bin/python
-# This file is part of Ansible
-#
-# Ansible is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Ansible is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
+# -*- coding: utf-8 -*-
+# Copyright (c) Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -20,7 +10,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: oneandone_server
-short_description: Create, destroy, start, stop, and reboot a 1&1 Host server.
+short_description: Create, destroy, start, stop, and reboot a 1&1 Host server
 description:
      - Create, destroy, update, start, stop, and reboot a 1&1 Host server.
        When the server is created it can optionally wait for it to be 'running' before returning.
@@ -87,6 +77,7 @@ options:
       - A list of hard disks with nested "size" and "is_main" properties.
         It must be provided with vcore, cores_per_processor, and ram parameters.
     type: list
+    elements: dict
   private_network:
     description:
       - The private network name or ID.
@@ -129,7 +120,7 @@ options:
         for each individual server to be deleted before moving on with
         other tasks.)
     type: bool
-    default: 'yes'
+    default: true
   wait_timeout:
     description:
       - how long before wait gives up, in seconds
@@ -146,7 +137,7 @@ options:
         hostnames by appending a count after them or substituting the count
         where there is a %02d or %03d in the hostname string.
     type: bool
-    default: 'yes'
+    default: true
 
 requirements:
   - "1and1"
@@ -182,7 +173,7 @@ EXAMPLES = '''
     datacenter: ES
     appliance: C5A349786169F140BCBC335675014C08
     count: 3
-    wait: yes
+    wait: true
     wait_timeout: 600
     wait_interval: 10
     ssh_key: SSH_PUBLIC_KEY
@@ -210,7 +201,8 @@ RETURN = '''
 servers:
     description: Information about each server that was processed
     type: list
-    sample: '[{"hostname": "my-server", "id": "server-id"}]'
+    sample:
+      - {"hostname": "my-server", "id": "server-id"}
     returned: always
 '''
 
@@ -627,9 +619,9 @@ def main():
             vcore=dict(type='int'),
             cores_per_processor=dict(type='int'),
             ram=dict(type='float'),
-            hdds=dict(type='list'),
+            hdds=dict(type='list', elements='dict'),
             count=dict(type='int', default=1),
-            ssh_key=dict(type='raw'),
+            ssh_key=dict(type='raw', no_log=False),
             auto_increment=dict(type='bool', default=True),
             server=dict(type='str'),
             datacenter=dict(

@@ -1,6 +1,8 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 # Copyright 2015 WP Engine, Inc. All rights reserved.
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -17,30 +19,52 @@ options:
         description:
             - A list of ZooKeeper servers (format '[server]:[port]').
         required: true
+        type: str
     name:
         description:
             - The path of the znode.
         required: true
+        type: str
     value:
         description:
             - The value assigned to the znode.
+        type: str
     op:
         description:
             - An operation to perform. Mutually exclusive with state.
         choices: [ get, wait, list ]
+        type: str
     state:
         description:
             - The state to enforce. Mutually exclusive with op.
         choices: [ present, absent ]
+        type: str
     timeout:
         description:
             - The amount of time to wait for a node to appear.
         default: 300
+        type: int
     recursive:
         description:
             - Recursively delete node and all its children.
         type: bool
-        default: 'no'
+        default: false
+    auth_scheme:
+        description:
+            - 'Authentication scheme.'
+        choices: [ digest, sasl ]
+        type: str
+        default: "digest"
+        required: false
+        version_added: 5.8.0
+    auth_credential:
+        description:
+            - The authentication credential value. Depends on I(auth_scheme).
+            - The format for I(auth_scheme=digest) is C(user:password),
+              and the format for I(auth_scheme=sasl) is C(user:password).
+        type: str
+        required: false
+        version_added: 5.8.0
 requirements:
     - kazoo >= 2.1
     - python >= 2.6
@@ -59,6 +83,13 @@ EXAMPLES = """
   community.general.znode:
     hosts: 'localhost:2181'
     name: /mypath
+    op: get
+
+- name: Getting the value and stat structure for a znode using digest authentication
+  community.general.znode:
+    hosts: 'localhost:2181'
+    auth_credential: 'user1:s3cr3t'
+    name: /secretmypath
     op: get
 
 - name: Listing a particular znode's children
@@ -102,7 +133,7 @@ except ImportError:
     KAZOO_INSTALLED = False
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible.module_utils._text import to_bytes
+from ansible.module_utils.common.text.converters import to_bytes
 
 
 def main():
@@ -110,11 +141,13 @@ def main():
         argument_spec=dict(
             hosts=dict(required=True, type='str'),
             name=dict(required=True, type='str'),
-            value=dict(required=False, default=None, type='str'),
-            op=dict(required=False, default=None, choices=['get', 'wait', 'list']),
+            value=dict(type='str'),
+            op=dict(choices=['get', 'wait', 'list']),
             state=dict(choices=['present', 'absent']),
-            timeout=dict(required=False, default=300, type='int'),
-            recursive=dict(required=False, default=False, type='bool')
+            timeout=dict(default=300, type='int'),
+            recursive=dict(default=False, type='bool'),
+            auth_scheme=dict(default='digest', choices=['digest', 'sasl']),
+            auth_credential=dict(type='str', no_log=True),
         ),
         supports_check_mode=False
     )
@@ -193,6 +226,8 @@ class KazooCommandProxy():
 
     def start(self):
         self.zk.start()
+        if self.module.params['auth_credential']:
+            self.zk.add_auth(self.module.params['auth_scheme'], self.module.params['auth_credential'])
 
     def wait(self):
         return self._wait(self.module.params['name'], self.module.params['timeout'])

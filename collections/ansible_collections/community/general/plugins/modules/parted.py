@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2016, Fabrizio Colonna <colofabrix@tin.it>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2016, Fabrizio Colonna <colofabrix@tin.it>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -27,7 +28,7 @@ options:
   device:
     description: The block device (disk) where to operate.
     type: str
-    required: True
+    required: true
   align:
     description: Set alignment for newly created partitions. Use 'undefined' for parted default aligment.
     type: str
@@ -100,7 +101,7 @@ options:
   fs_type:
     description:
      - If specified and the partition does not exist, will set filesystem type to given partition.
-     - Parameter optional, but see notes below about negative negative C(part_start) values.
+     - Parameter optional, but see notes below about negative C(part_start) values.
     type: str
     version_added: '0.2.0'
   resize:
@@ -217,10 +218,11 @@ EXAMPLES = r'''
 
 - name: Extend an existing partition to fill all available space
   community.general.parted:
-    decice: /dev/sdb
+    device: /dev/sdb
     number: "{{ sdb_info.partitions | length }}"
     part_end: "100%"
     resize: true
+    state: present
 '''
 
 
@@ -240,7 +242,7 @@ def parse_unit(size_str, unit=''):
     """
     Parses a string containing a size or boundary information
     """
-    matches = re.search(r'^(-?[\d.]+)([\w%]+)?$', size_str)
+    matches = re.search(r'^(-?[\d.]+) *([\w%]+)?$', size_str)
     if matches is None:
         # "<cylinder>,<head>,<sector>" format
         matches = re.search(r'^(\d+),(\d+),(\d+)$', size_str)
@@ -361,7 +363,7 @@ def format_disk_size(size_bytes, unit):
     This function has been adapted from https://github.com/Distrotech/parted/blo
     b/279d9d869ff472c52b9ec2e180d568f0c99e30b0/libparted/unit.c
     """
-    global units_si, units_iec
+    global units_si, units_iec  # pylint: disable=global-variable-not-assigned
 
     unit = unit.lower()
 
@@ -457,7 +459,7 @@ def get_device_info(device, unit):
     Fetches information about a disk and its partitions and it returns a
     dictionary.
     """
-    global module, parted_exec
+    global module, parted_exec  # pylint: disable=global-variable-not-assigned
 
     # If parted complains about missing labels, it means there are no partitions.
     # In this case only, use a custom function to fetch information and emulate
@@ -484,10 +486,10 @@ def check_parted_label(device):
     to 3.1 don't return data when there is no label. For more information see:
     http://upstream.rosalinux.ru/changelogs/libparted/3.1/changelog.html
     """
-    global parted_exec
+    global parted_exec  # pylint: disable=global-variable-not-assigned
 
     # Check the version
-    parted_major, parted_minor, _ = parted_version()
+    parted_major, parted_minor, dummy = parted_version()
     if (parted_major == 3 and parted_minor >= 1) or parted_major > 3:
         return False
 
@@ -499,25 +501,22 @@ def check_parted_label(device):
     return False
 
 
-def parted_version():
+def parse_parted_version(out):
     """
-    Returns the major and minor version of parted installed on the system.
+    Returns version tuple from the output of "parted --version" command
     """
-    global module, parted_exec
-
-    rc, out, err = module.run_command("%s --version" % parted_exec)
-    if rc != 0:
-        module.fail_json(
-            msg="Failed to get parted version.", rc=rc, out=out, err=err
-        )
-
     lines = [x for x in out.split('\n') if x.strip() != '']
     if len(lines) == 0:
-        module.fail_json(msg="Failed to get parted version.", rc=0, out=out)
+        return None, None, None
 
-    matches = re.search(r'^parted.+(\d+)\.(\d+)(?:\.(\d+))?$', lines[0])
+    # Sample parted versions (see as well test unit):
+    # parted (GNU parted) 3.3
+    # parted (GNU parted) 3.4.5
+    # parted (GNU parted) 3.3.14-dfc61
+    matches = re.search(r'^parted.+\s(\d+)\.(\d+)(?:\.(\d+))?', lines[0].strip())
+
     if matches is None:
-        module.fail_json(msg="Failed to get parted version.", rc=0, out=out)
+        return None, None, None
 
     # Convert version to numbers
     major = int(matches.group(1))
@@ -529,11 +528,30 @@ def parted_version():
     return major, minor, rev
 
 
+def parted_version():
+    """
+    Returns the major and minor version of parted installed on the system.
+    """
+    global module, parted_exec  # pylint: disable=global-variable-not-assigned
+
+    rc, out, err = module.run_command("%s --version" % parted_exec)
+    if rc != 0:
+        module.fail_json(
+            msg="Failed to get parted version.", rc=rc, out=out, err=err
+        )
+
+    (major, minor, rev) = parse_parted_version(out)
+    if major is None:
+        module.fail_json(msg="Failed to get parted version.", rc=0, out=out)
+
+    return major, minor, rev
+
+
 def parted(script, device, align):
     """
     Runs a parted script.
     """
-    global module, parted_exec
+    global module, parted_exec  # pylint: disable=global-variable-not-assigned
 
     align_option = '-a %s' % align
     if align == 'undefined':
@@ -584,7 +602,7 @@ def check_size_format(size_str):
 
 
 def main():
-    global module, units_si, units_iec, parted_exec
+    global module, units_si, units_iec, parted_exec  # pylint: disable=global-variable-not-assigned
 
     changed = False
     output_script = ""

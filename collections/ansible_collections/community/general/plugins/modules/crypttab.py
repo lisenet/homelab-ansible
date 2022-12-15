@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2014, Steve <yo@groks.org>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2014, Steve <yo@groks.org>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -20,7 +21,7 @@ options:
         optionally prefixed with C(/dev/mapper/), as it appears in the filesystem. I(/dev/mapper/)
         will be stripped from I(name).
     type: str
-    required: yes
+    required: true
   state:
     description:
       - Use I(present) to add a line to C(/etc/crypttab) or update its definition
@@ -30,7 +31,7 @@ options:
         different values will be updated.
       - Use I(opts_absent) to remove options from the existing set.
     type: str
-    required: yes
+    required: true
     choices: [ absent, opts_absent, opts_present, present ]
   backing_device:
     description:
@@ -76,7 +77,7 @@ import os
 import traceback
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_bytes, to_native
+from ansible.module_utils.common.text.converters import to_bytes, to_native
 
 
 def main():

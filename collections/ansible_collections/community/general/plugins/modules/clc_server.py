@@ -1,7 +1,9 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 #
 # Copyright (c) 2015 CenturyLink
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -9,7 +11,7 @@ __metaclass__ = type
 
 DOCUMENTATION = '''
 module: clc_server
-short_description: Create, Delete, Start and Stop servers in CenturyLink Cloud.
+short_description: Create, Delete, Start and Stop servers in CenturyLink Cloud
 description:
   - An Ansible module to Create, Delete, Start and Stop servers in CenturyLink Cloud.
 options:
@@ -17,12 +19,13 @@ options:
     description:
       - The list of additional disks for the server
     type: list
+    elements: dict
     default: []
   add_public_ip:
     description:
       - Whether to add a public ip to the server
     type: bool
-    default: 'no'
+    default: false
   alias:
     description:
       - The account alias to provision the servers under.
@@ -66,6 +69,7 @@ options:
       - The list of custom fields to set on the server.
     type: list
     default: []
+    elements: dict
   description:
     description:
       - The description to set for the server.
@@ -92,8 +96,8 @@ options:
     description:
       - Whether to create the server as 'Managed' or not.
     type: bool
-    default: 'no'
-    required: False
+    default: false
+    required: false
   memory:
     description:
       - Memory in GB.
@@ -111,6 +115,7 @@ options:
     description:
       - The list of blue print packages to run on the server after its created.
     type: list
+    elements: dict
     default: []
   password:
     description:
@@ -130,6 +135,7 @@ options:
     description:
       - A list of ports to allow on the firewall to the servers public ip, if add_public_ip is set to True.
     type: list
+    elements: dict
     default: []
   secondary_dns:
     description:
@@ -141,6 +147,7 @@ options:
         A list of server Ids to insure are started, stopped, or absent.
     type: list
     default: []
+    elements: str
   source_server_password:
     description:
       - The password for the source server if a clone is specified.
@@ -187,7 +194,7 @@ options:
     description:
       - Whether to wait for the provisioning tasks to finish before returning.
     type: bool
-    default: 'yes'
+    default: true
 requirements:
     - python = 2.7
     - requests >= 2.5.0
@@ -427,7 +434,8 @@ import json
 import os
 import time
 import traceback
-from distutils.version import LooseVersion
+
+from ansible_collections.community.general.plugins.module_utils.version import LooseVersion
 
 REQUESTS_IMP_ERR = None
 try:
@@ -472,8 +480,7 @@ class ClcServer:
             self.module.fail_json(msg=missing_required_lib('clc-sdk'), exception=CLC_IMP_ERR)
         if not REQUESTS_FOUND:
             self.module.fail_json(msg=missing_required_lib('requests'), exception=REQUESTS_IMP_ERR)
-        if requests.__version__ and LooseVersion(
-                requests.__version__) < LooseVersion('2.5.0'):
+        if requests.__version__ and LooseVersion(requests.__version__) < LooseVersion('2.5.0'):
             self.module.fail_json(
                 msg='requests library  version should be >= 2.5.0')
 
@@ -561,32 +568,32 @@ class ClcServer:
             template=dict(),
             group=dict(default='Default Group'),
             network_id=dict(),
-            location=dict(default=None),
+            location=dict(),
             cpu=dict(default=1, type='int'),
             memory=dict(default=1, type='int'),
-            alias=dict(default=None),
-            password=dict(default=None, no_log=True),
-            ip_address=dict(default=None),
+            alias=dict(),
+            password=dict(no_log=True),
+            ip_address=dict(),
             storage_type=dict(
                 default='standard',
                 choices=[
                     'standard',
                     'hyperscale']),
             type=dict(default='standard', choices=['standard', 'hyperscale', 'bareMetal']),
-            primary_dns=dict(default=None),
-            secondary_dns=dict(default=None),
-            additional_disks=dict(type='list', default=[]),
-            custom_fields=dict(type='list', default=[]),
-            ttl=dict(default=None),
+            primary_dns=dict(),
+            secondary_dns=dict(),
+            additional_disks=dict(type='list', default=[], elements='dict'),
+            custom_fields=dict(type='list', default=[], elements='dict'),
+            ttl=dict(),
             managed_os=dict(type='bool', default=False),
-            description=dict(default=None),
-            source_server_password=dict(default=None, no_log=True),
-            cpu_autoscale_policy_id=dict(default=None),
-            anti_affinity_policy_id=dict(default=None),
-            anti_affinity_policy_name=dict(default=None),
-            alert_policy_id=dict(default=None),
-            alert_policy_name=dict(default=None),
-            packages=dict(type='list', default=[]),
+            description=dict(),
+            source_server_password=dict(no_log=True),
+            cpu_autoscale_policy_id=dict(),
+            anti_affinity_policy_id=dict(),
+            anti_affinity_policy_name=dict(),
+            alert_policy_id=dict(),
+            alert_policy_name=dict(),
+            packages=dict(type='list', default=[], elements='dict'),
             state=dict(
                 default='present',
                 choices=[
@@ -595,9 +602,9 @@ class ClcServer:
                     'started',
                     'stopped']),
             count=dict(type='int', default=1),
-            exact_count=dict(type='int', default=None),
+            exact_count=dict(type='int', ),
             count_group=dict(),
-            server_ids=dict(type='list', default=[]),
+            server_ids=dict(type='list', default=[], elements='str'),
             add_public_ip=dict(type='bool', default=False),
             public_ip_protocol=dict(
                 default='TCP',
@@ -605,15 +612,14 @@ class ClcServer:
                     'TCP',
                     'UDP',
                     'ICMP']),
-            public_ip_ports=dict(type='list', default=[]),
-            configuration_id=dict(default=None),
-            os_type=dict(default=None,
-                         choices=[
-                             'redHat6_64Bit',
-                             'centOS6_64Bit',
-                             'windows2012R2Standard_64Bit',
-                             'ubuntu14_64Bit'
-                         ]),
+            public_ip_ports=dict(type='list', default=[], elements='dict'),
+            configuration_id=dict(),
+            os_type=dict(choices=[
+                'redHat6_64Bit',
+                'centOS6_64Bit',
+                'windows2012R2Standard_64Bit',
+                'ubuntu14_64Bit'
+            ]),
             wait=dict(type='bool', default=True))
 
         mutually_exclusive = [

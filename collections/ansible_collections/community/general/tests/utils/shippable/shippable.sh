@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Copyright (c) Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 set -o pipefail -eux
 
@@ -50,7 +53,7 @@ function retry
         echo "@* -> ${result}"
     done
     echo "Command '@*' failed 3 times!"
-    exit -1
+    exit 255
 }
 
 command -v pip
@@ -73,21 +76,30 @@ else
     export ANSIBLE_COLLECTIONS_PATHS="${PWD}/../../../"
 fi
 
-# START: HACK install dependencies
-retry ansible-galaxy -vvv collection install ansible.netcommon
-retry ansible-galaxy -vvv collection install community.kubernetes
-retry ansible-galaxy -vvv collection install google.cloud
+if [ "${test}" == "sanity/extra" ]; then
+    retry pip install junit-xml --disable-pip-version-check
+fi
 
+# START: HACK install dependencies
 if [ "${script}" != "sanity" ] || [ "${test}" == "sanity/extra" ]; then
     # Nothing further should be added to this list.
     # This is to prevent modules or plugins in this collection having a runtime dependency on other collections.
-    retry ansible-galaxy -vvv collection install community.internal_test_tools
+    retry git clone --depth=1 --single-branch https://github.com/ansible-collections/community.internal_test_tools.git "${ANSIBLE_COLLECTIONS_PATHS}/ansible_collections/community/internal_test_tools"
+    # NOTE: we're installing with git to work around Galaxy being a huge PITA (https://github.com/ansible/galaxy/issues/2429)
+    # retry ansible-galaxy -vvv collection install community.internal_test_tools
 fi
 
-if [ "${script}" != "sanity" ] && [ "${script}" != "units" ]; then
+if [ "${script}" != "sanity" ] && [ "${script}" != "units" ] && [ "${test}" != "sanity/extra" ]; then
+    CRYPTO_BRANCH=main
+    if [ "${script}" == "linux" ] && [[ "${test}" =~ "ubuntu1604/" ]]; then
+        CRYPTO_BRANCH=stable-1
+    fi
     # To prevent Python dependencies on other collections only install other collections for integration tests
-    retry ansible-galaxy -vvv collection install ansible.posix
-    retry ansible-galaxy -vvv collection install community.crypto
+    retry git clone --depth=1 --single-branch https://github.com/ansible-collections/ansible.posix.git "${ANSIBLE_COLLECTIONS_PATHS}/ansible_collections/ansible/posix"
+    retry git clone --depth=1 --branch "${CRYPTO_BRANCH}" --single-branch https://github.com/ansible-collections/community.crypto.git "${ANSIBLE_COLLECTIONS_PATHS}/ansible_collections/community/crypto"
+    # NOTE: we're installing with git to work around Galaxy being a huge PITA (https://github.com/ansible/galaxy/issues/2429)
+    # retry ansible-galaxy -vvv collection install ansible.posix
+    # retry ansible-galaxy -vvv collection install community.crypto
 fi
 
 # END: HACK
@@ -180,7 +192,7 @@ function cleanup
                     flags="${flags//=/,}"
                     flags="${flags//[^a-zA-Z0-9_,]/_}"
 
-                    bash <(curl -s https://codecov.io/bash) \
+                    bash <(curl -s https://ansible-ci-files.s3.us-east-1.amazonaws.com/codecov/codecov.sh) \
                         -f "${file}" \
                         -F "${flags}" \
                         -n "${test}" \
@@ -220,4 +232,4 @@ fi
 ansible-test env --dump --show --timeout "${timeout}" --color -v
 
 if [ "${SHIPPABLE_BUILD_ID:-}" ]; then "tests/utils/shippable/check_matrix.py"; fi
-"tests/utils/shippable/${script}.sh" "${test}"
+"tests/utils/shippable/${script}.sh" "${test}" "${ansible_version}"

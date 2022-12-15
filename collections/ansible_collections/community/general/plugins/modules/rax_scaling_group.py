@@ -1,6 +1,8 @@
 #!/usr/bin/python
-# Copyright: Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# -*- coding: utf-8 -*-
+# Copyright Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -17,7 +19,7 @@ options:
     description:
       - Attach read-only configuration drive to server as label config-2
     type: bool
-    default: 'no'
+    default: false
   cooldown:
     type: int
     description:
@@ -35,6 +37,7 @@ options:
       - manual
   files:
     type: dict
+    default: {}
     description:
       - 'Files to insert into the instance. Hash of C(remotepath: localpath)'
   flavor:
@@ -53,6 +56,7 @@ options:
       - key pair to use on the instance
   loadbalancers:
     type: list
+    elements: dict
     description:
       - List of load balancer C(id) and C(port) hashes
   max_entities:
@@ -63,6 +67,7 @@ options:
     required: true
   meta:
     type: dict
+    default: {}
     description:
       - A hash of metadata to associate with the instance
   min_entities:
@@ -78,6 +83,7 @@ options:
     required: true
   networks:
     type: list
+    elements: str
     description:
       - The network to attach to the instances. If specified, you must include
         ALL networks including the public and private interfaces. Can be C(id)
@@ -108,7 +114,7 @@ options:
       - wait for the scaling group to finish provisioning the minimum amount of
         servers
     type: bool
-    default: 'no'
+    default: false
   wait_timeout:
     type: int
     description:
@@ -155,8 +161,11 @@ except ImportError:
     HAS_PYRAX = False
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.general.plugins.module_utils.rax import (rax_argument_spec, rax_find_image, rax_find_network,
-                                                                            rax_required_together, rax_to_dict, setup_rax_module)
+from ansible_collections.community.general.plugins.module_utils.rax import (
+    rax_argument_spec, rax_find_image, rax_find_network,
+    rax_required_together, rax_to_dict, setup_rax_module,
+    rax_scaling_group_personality_file,
+)
 from ansible.module_utils.six import string_types
 
 
@@ -217,19 +226,7 @@ def rax_asg(module, cooldown=300, disk_config=None, files=None, flavor=None,
                     del nic['net-id']
 
         # Handle the file contents
-        personality = []
-        if files:
-            for rpath in files.keys():
-                lpath = os.path.expanduser(files[rpath])
-                try:
-                    f = open(lpath, 'r')
-                    personality.append({
-                        'path': rpath,
-                        'contents': f.read()
-                    })
-                    f.close()
-                except Exception as e:
-                    module.fail_json(msg='Failed to load %s' % lpath)
+        personality = rax_scaling_group_personality_file(module, files)
 
         lbs = []
         if loadbalancers:
@@ -376,12 +373,12 @@ def main():
             flavor=dict(required=True),
             image=dict(required=True),
             key_name=dict(),
-            loadbalancers=dict(type='list'),
+            loadbalancers=dict(type='list', elements='dict'),
             meta=dict(type='dict', default={}),
             min_entities=dict(type='int', required=True),
             max_entities=dict(type='int', required=True),
             name=dict(required=True),
-            networks=dict(type='list', default=['public', 'private']),
+            networks=dict(type='list', elements='str', default=['public', 'private']),
             server_name=dict(required=True),
             state=dict(default='present', choices=['present', 'absent']),
             user_data=dict(no_log=True),

@@ -1,0 +1,20 @@
+---
+- name: Create Users
+  hosts: openvas
+  remote_user: root
+  gather_facts: yes
+  roles:
+    - hl.users
+
+- name: Configure OpenVAS Host
+  hosts: openvas
+  become: true
+  gather_facts: yes
+  roles:
+    - hl.sshd
+    - hl.resolvconf
+    - hl.timezone
+    - hl.hardening
+    - hl.common
+    - hl.openvas
+...

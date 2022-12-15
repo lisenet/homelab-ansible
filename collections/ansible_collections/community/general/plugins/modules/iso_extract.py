@@ -1,11 +1,12 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2013, Jeroen Hoekx <jeroen.hoekx@dsquare.be>
-# Copyright: (c) 2016, Matt Robinson <git@nerdoftheherd.com>
-# Copyright: (c) 2017, Dag Wieers <dag@wieers.com>
-# Copyright: (c) 2017, Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2013, Jeroen Hoekx <jeroen.hoekx@dsquare.be>
+# Copyright (c) 2016, Matt Robinson <git@nerdoftheherd.com>
+# Copyright (c) 2017, Dag Wieers <dag@wieers.com>
+# Copyright (c) 2017, Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -27,43 +28,41 @@ description:
   mounts the ISO image to a temporary location, and copies files to a given
   destination, if needed.
 requirements:
-- Either 7z (from I(7zip) or I(p7zip) package)
+- Either 7z (from C(7zip) or C(p7zip) package)
 - Or mount capabilities (root-access, or CAP_SYS_ADMIN capability on Linux)
 options:
   image:
     description:
     - The ISO image to extract files from.
     type: path
-    required: yes
+    required: true
     aliases: [ path, src ]
   dest:
     description:
     - The destination directory to extract files to.
     type: path
-    required: yes
+    required: true
   files:
     description:
     - A list of files to extract from the image.
     - Extracting directories does not work.
     type: list
     elements: str
-    required: yes
+    required: true
   force:
     description:
-    - If C(yes), which will replace the remote file when contents are different than the source.
-    - If C(no), the file will only be extracted and copied if the destination does not already exist.
-    - Alias C(thirsty) has been deprecated and will be removed in community.general 3.0.0.
+    - If C(true), which will replace the remote file when contents are different than the source.
+    - If C(false), the file will only be extracted and copied if the destination does not already exist.
     type: bool
-    default: yes
-    aliases: [ thirsty ]
+    default: true
   executable:
     description:
     - The path to the C(7z) executable to use for extracting files from the ISO.
+    - If not provided, it will assume the value C(7z).
     type: path
-    default: '7z'
 notes:
 - Only the file checksum (content) is taken into account when extracting files
-  from the ISO image. If C(force=no), only checks the presence of the file.
+  from the ISO image. If I(force=false), only checks the presence of the file.
 - In Ansible 2.3 this module was using C(mount) and C(umount) commands only,
   requiring root access. This is no longer needed with the introduction of 7zip
   for extraction.
@@ -87,11 +86,6 @@ import os.path
 import shutil
 import tempfile
 
-try:  # python 3.3+
-    from shlex import quote
-except ImportError:  # older python
-    from pipes import quote
-
 from ansible.module_utils.basic import AnsibleModule
 
 
@@ -101,7 +95,7 @@ def main():
             image=dict(type='path', required=True, aliases=['path', 'src']),
             dest=dict(type='path', required=True),
             files=dict(type='list', elements='str', required=True),
-            force=dict(type='bool', default=True, aliases=['thirsty']),
+            force=dict(type='bool', default=True),
             executable=dict(type='path'),  # No default on purpose
         ),
         supports_check_mode=True,
@@ -111,10 +105,6 @@ def main():
     files = module.params['files']
     force = module.params['force']
     executable = module.params['executable']
-
-    if module.params.get('thirsty'):
-        module.deprecate('The alias "thirsty" has been deprecated and will be removed, use "force" instead',
-                         version='3.0.0', collection_name='community.general')  # was Ansible 2.13
 
     result = dict(
         changed=False,
@@ -160,9 +150,9 @@ def main():
 
     # Use 7zip when we have a binary, otherwise try to mount
     if binary:
-        cmd = '%s x "%s" -o"%s" %s' % (binary, image, tmp_dir, ' '.join([quote(f) for f in extract_files]))
+        cmd = [binary, 'x', image, '-o%s' % tmp_dir] + extract_files
     else:
-        cmd = 'mount -o loop,ro "%s" "%s"' % (image, tmp_dir)
+        cmd = [module.get_bin_path('mount'), '-o', 'loop,ro', image, tmp_dir]
 
     rc, out, err = module.run_command(cmd)
     if rc != 0:
@@ -207,7 +197,7 @@ def main():
                 result['changed'] = True
     finally:
         if not binary:
-            module.run_command('umount "%s"' % tmp_dir)
+            module.run_command([module.get_bin_path('umount'), tmp_dir])
 
         shutil.rmtree(tmp_dir)
 

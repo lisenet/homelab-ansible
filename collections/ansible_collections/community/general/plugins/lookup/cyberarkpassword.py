@@ -1,12 +1,14 @@
-# (c) 2017, Edward Nunez <edward.nunez@cyberark.com>
-# (c) 2017 Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# -*- coding: utf-8 -*-
+# Copyright (c) 2017, Edward Nunez <edward.nunez@cyberark.com>
+# Copyright (c) 2017 Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = '''
     author: Unknown (!UNKNOWN)
-    lookup: cyberarkpassword
+    name: cyberarkpassword
     short_description: get secrets from CyberArk AIM
     requirements:
       - CyberArk AIM tool installed
@@ -20,10 +22,10 @@ DOCUMENTATION = '''
         default: '/opt/CARKaim/sdk/clipasswordsdk'
       appid:
         description: Defines the unique ID of the application that is issuing the password request.
-        required: True
+        required: true
       query:
         description: Describes the filter criteria for the password retrieval.
-        required: True
+        required: true
       output:
         description:
           - Specifies the desired output fields separated by commas.
@@ -56,14 +58,19 @@ EXAMPLES = """
 """
 
 RETURN = """
-  password:
-    description:
-      - The actual value stored
-  passprops:
-    description: properties assigned to the entry
-    type: dictionary
-  passwordchangeinprocess:
-    description: did the password change?
+_result:
+  description: A list containing one dictionary.
+  type: list
+  elements: dictionary
+  contains:
+    password:
+      description:
+        - The actual value stored
+    passprops:
+      description: properties assigned to the entry
+      type: dictionary
+    passwordchangeinprocess:
+      description: did the password change?
 """
 
 import os
@@ -74,7 +81,7 @@ from subprocess import Popen
 from ansible.errors import AnsibleError
 from ansible.plugins.lookup import LookupBase
 from ansible.parsing.splitter import parse_kv
-from ansible.module_utils._text import to_bytes, to_text, to_native
+from ansible.module_utils.common.text.converters import to_bytes, to_text, to_native
 from ansible.utils.display import Display
 
 display = Display()
@@ -167,7 +174,6 @@ class LookupModule(LookupBase):
     """
 
     def run(self, terms, variables=None, **kwargs):
-
         display.vvvv("%s" % terms)
         if isinstance(terms, list):
             return_values = []

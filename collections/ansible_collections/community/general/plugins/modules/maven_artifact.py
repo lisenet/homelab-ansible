@@ -6,7 +6,8 @@
 # Built using https://github.com/hamnis/useful-scripts/blob/master/python/download-maven-artifact
 # as a reference and starting point.
 #
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
@@ -50,6 +51,7 @@ options:
         type: str
         description:
             - The maven classifier coordinate
+        default: ''
     extension:
         type: str
         description:
@@ -82,7 +84,7 @@ options:
             responds to an initial request with a 401 status. Since some basic auth services do not properly
             send a 401, logins will fail. This option forces the sending of the Basic authentication header
             upon initial request.
-        default: 'no'
+        default: false
         type: bool
         version_added: '0.2.0'
     dest:
@@ -104,9 +106,9 @@ options:
         default: 10
     validate_certs:
         description:
-            - If C(no), SSL certificates will not be validated. This should only be set to C(no) when no other option exists.
+            - If C(false), SSL certificates will not be validated. This should only be set to C(false) when no other option exists.
         type: bool
-        default: 'yes'
+        default: true
     client_cert:
         description:
             - PEM formatted certificate chain file to be used for SSL client authentication.
@@ -121,18 +123,18 @@ options:
         version_added: '1.3.0'
     keep_name:
         description:
-            - If C(yes), the downloaded artifact's name is preserved, i.e the version number remains part of it.
+            - If C(true), the downloaded artifact's name is preserved, i.e the version number remains part of it.
             - This option only has effect when C(dest) is a directory and C(version) is set to C(latest) or C(version_by_spec)
               is defined.
         type: bool
-        default: 'no'
+        default: false
     verify_checksum:
         type: str
         description:
-            - If C(never), the md5 checksum will never be downloaded and verified.
-            - If C(download), the md5 checksum will be downloaded and verified only after artifact download. This is the default.
-            - If C(change), the md5 checksum will be downloaded and verified if the destination already exist,
-              to verify if they are identical. This was the behaviour before 2.6. Since it downloads the md5 before (maybe)
+            - If C(never), the MD5/SHA1 checksum will never be downloaded and verified.
+            - If C(download), the MD5/SHA1 checksum will be downloaded and verified only after artifact download. This is the default.
+            - If C(change), the MD5/SHA1 checksum will be downloaded and verified if the destination already exist,
+              to verify if they are identical. This was the behaviour before 2.6. Since it downloads the checksum before (maybe)
               downloading the artifact, and since some repository software, when acting as a proxy/cache, return a 404 error
               if the artifact has not been cached yet, it may fail unexpectedly.
               If you still need it, you should consider using C(always) instead - if you deal with a checksum, it is better to
@@ -141,6 +143,28 @@ options:
         required: false
         default: 'download'
         choices: ['never', 'download', 'change', 'always']
+    checksum_alg:
+        type: str
+        description:
+            - If C(md5), checksums will use the MD5 algorithm. This is the default.
+            - If C(sha1), checksums will use the SHA1 algorithm. This can be used on systems configured to use
+              FIPS-compliant algorithms, since MD5 will be blocked on such systems.
+        default: 'md5'
+        choices: ['md5', 'sha1']
+        version_added: 3.2.0
+    unredirected_headers:
+        type: list
+        elements: str
+        version_added: 5.2.0
+        description:
+            - A list of headers that should not be included in the redirection. This headers are sent to the fetch_url C(fetch_url) function.
+            - On ansible-core version 2.12 or later, the default of this option is C([Authorization, Cookie]).
+            - Useful if the redirection URL does not need to have sensitive headers in the request.
+            - Requires ansible-core version 2.12 or later.
+    directory_mode:
+        type: str
+        description:
+            - Filesystem permission mode applied recursively to I(dest) when it is a directory.
 extends_documentation_fragment:
     - files
 '''
@@ -191,7 +215,7 @@ EXAMPLES = '''
     artifact_id: spring-core
     group_id: org.springframework
     dest: /tmp/
-    keep_name: yes
+    keep_name: true
 
 - name: Download the latest version of the JUnit framework artifact from Maven local
   community.general.maven_artifact:
@@ -217,6 +241,7 @@ import tempfile
 import traceback
 import re
 
+from ansible_collections.community.general.plugins.module_utils.version import LooseVersion
 from ansible.module_utils.ansible_release import __version__ as ansible_version
 from re import match
 
@@ -248,7 +273,7 @@ except ImportError:
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 from ansible.module_utils.six.moves.urllib.parse import urlparse
 from ansible.module_utils.urls import fetch_url
-from ansible.module_utils._text import to_bytes, to_native, to_text
+from ansible.module_utils.common.text.converters import to_bytes, to_native, to_text
 
 
 def split_pre_existing_dir(dirname):
@@ -342,7 +367,7 @@ class Artifact(object):
         if len(parts) >= 3:
             g = parts[0]
             a = parts[1]
-            v = parts[len(parts) - 1]
+            v = parts[-1]
             t = None
             c = None
             if len(parts) == 4:
@@ -496,14 +521,25 @@ class MavenDownloader:
         self.module.params['url_password'] = self.module.params.get('password', '')
         self.module.params['http_agent'] = self.user_agent
 
-        response, info = fetch_url(self.module, url_to_use, timeout=req_timeout, headers=self.headers)
+        kwargs = {}
+        if self.module.params['unredirected_headers']:
+            kwargs['unredirected_headers'] = self.module.params['unredirected_headers']
+
+        response, info = fetch_url(
+            self.module,
+            url_to_use,
+            timeout=req_timeout,
+            headers=self.headers,
+            **kwargs
+        )
+
         if info['status'] == 200:
             return response
         if force:
             raise ValueError(failmsg + " because of " + info['msg'] + "for URL " + url_to_use)
         return None
 
-    def download(self, tmpdir, artifact, verify_download, filename=None):
+    def download(self, tmpdir, artifact, verify_download, filename=None, checksum_alg='md5'):
         if (not artifact.version and not artifact.version_by_spec) or artifact.version == "latest":
             artifact = Artifact(artifact.group_id, artifact.artifact_id, self.find_latest_version_available(artifact), None,
                                 artifact.classifier, artifact.extension)
@@ -524,11 +560,11 @@ class MavenDownloader:
                     shutil.copyfileobj(response, f)
 
             if verify_download:
-                invalid_md5 = self.is_invalid_md5(tempname, url)
-                if invalid_md5:
+                invalid_checksum = self.is_invalid_checksum(tempname, url, checksum_alg)
+                if invalid_checksum:
                     # if verify_change was set, the previous file would be deleted
                     os.remove(tempname)
-                    return invalid_md5
+                    return invalid_checksum
         except Exception as e:
             os.remove(tempname)
             raise e
@@ -537,40 +573,45 @@ class MavenDownloader:
         shutil.move(tempname, artifact.get_filename(filename))
         return None
 
-    def is_invalid_md5(self, file, remote_url):
+    def is_invalid_checksum(self, file, remote_url, checksum_alg='md5'):
         if os.path.exists(file):
-            local_md5 = self._local_md5(file)
+            local_checksum = self._local_checksum(checksum_alg, file)
             if self.local:
                 parsed_url = urlparse(remote_url)
-                remote_md5 = self._local_md5(parsed_url.path)
+                remote_checksum = self._local_checksum(checksum_alg, parsed_url.path)
             else:
                 try:
-                    remote_md5 = to_text(self._getContent(remote_url + '.md5', "Failed to retrieve MD5", False), errors='strict')
+                    remote_checksum = to_text(self._getContent(remote_url + '.' + checksum_alg, "Failed to retrieve checksum", False), errors='strict')
                 except UnicodeError as e:
-                    return "Cannot retrieve a valid md5 from %s: %s" % (remote_url, to_native(e))
-                if(not remote_md5):
-                    return "Cannot find md5 from " + remote_url
+                    return "Cannot retrieve a valid %s checksum from %s: %s" % (checksum_alg, remote_url, to_native(e))
+                if not remote_checksum:
+                    return "Cannot find %s checksum from %s" % (checksum_alg, remote_url)
             try:
-                # Check if remote md5 only contains md5 or md5 + filename
-                _remote_md5 = remote_md5.split(None)[0]
-                remote_md5 = _remote_md5
-                # remote_md5 is empty so we continue and keep original md5 string
-                # This should not happen since we check for remote_md5 before
+                # Check if remote checksum only contains md5/sha1 or md5/sha1 + filename
+                _remote_checksum = remote_checksum.split(None, 1)[0]
+                remote_checksum = _remote_checksum
+                # remote_checksum is empty so we continue and keep original checksum string
+                # This should not happen since we check for remote_checksum before
             except IndexError:
                 pass
-            if local_md5.lower() == remote_md5.lower():
+            if local_checksum.lower() == remote_checksum.lower():
                 return None
             else:
-                return "Checksum does not match: we computed " + local_md5 + " but the repository states " + remote_md5
+                return "Checksum does not match: we computed " + local_checksum + " but the repository states " + remote_checksum
 
         return "Path does not exist: " + file
 
-    def _local_md5(self, file):
-        md5 = hashlib.md5()
+    def _local_checksum(self, checksum_alg, file):
+        if checksum_alg.lower() == 'md5':
+            hash = hashlib.md5()
+        elif checksum_alg.lower() == 'sha1':
+            hash = hashlib.sha1()
+        else:
+            raise ValueError("Unknown checksum_alg %s" % checksum_alg)
         with io.open(file, 'rb') as f:
             for chunk in iter(lambda: f.read(8192), b''):
-                md5.update(chunk)
-        return md5.hexdigest()
+                hash.update(chunk)
+        return hash.hexdigest()
 
 
 def main():
@@ -595,12 +636,20 @@ def main():
             client_key=dict(type="path", required=False),
             keep_name=dict(required=False, default=False, type='bool'),
             verify_checksum=dict(required=False, default='download', choices=['never', 'download', 'change', 'always']),
-            directory_mode=dict(type='str'),  # Used since https://github.com/ansible/ansible/pull/24965, not sure
-                                              # if this should really be here.
+            checksum_alg=dict(required=False, default='md5', choices=['md5', 'sha1']),
+            unredirected_headers=dict(type='list', elements='str', required=False),
+            directory_mode=dict(type='str'),
         ),
         add_file_common_args=True,
         mutually_exclusive=([('version', 'version_by_spec')])
     )
+
+    if LooseVersion(ansible_version) < LooseVersion("2.12") and module.params['unredirected_headers']:
+        module.fail_json(msg="Unredirected Headers parameter provided, but your ansible-core version does not support it. Minimum version is 2.12")
+
+    if LooseVersion(ansible_version) >= LooseVersion("2.12") and module.params['unredirected_headers'] is None:
+        # if the user did not supply unredirected params, we use the default, ONLY on ansible core 2.12 and above
+        module.params['unredirected_headers'] = ['Authorization', 'Cookie']
 
     if not HAS_LXML_ETREE:
         module.fail_json(msg=missing_required_lib('lxml'), exception=LXML_ETREE_IMP_ERR)
@@ -636,6 +685,7 @@ def main():
     verify_checksum = module.params["verify_checksum"]
     verify_download = verify_checksum in ['download', 'always']
     verify_change = verify_checksum in ['change', 'always']
+    checksum_alg = module.params["checksum_alg"]
 
     downloader = MavenDownloader(module, repository_url, local, headers)
 
@@ -680,12 +730,12 @@ def main():
 
         b_dest = to_bytes(dest, errors='surrogate_or_strict')
 
-    if os.path.lexists(b_dest) and ((not verify_change) or not downloader.is_invalid_md5(dest, downloader.find_uri_for_artifact(artifact))):
+    if os.path.lexists(b_dest) and ((not verify_change) or not downloader.is_invalid_checksum(dest, downloader.find_uri_for_artifact(artifact), checksum_alg)):
         prev_state = "present"
 
     if prev_state == "absent":
         try:
-            download_error = downloader.download(module.tmpdir, artifact, verify_download, b_dest)
+            download_error = downloader.download(module.tmpdir, artifact, verify_download, b_dest, checksum_alg)
             if download_error is None:
                 changed = True
             else:
@@ -693,13 +743,7 @@ def main():
         except ValueError as e:
             module.fail_json(msg=e.args[0])
 
-    try:
-        file_args = module.load_file_common_arguments(module.params, path=dest)
-    except TypeError:
-        # The path argument is only supported in Ansible-base 2.10+. Fall back to
-        # pre-2.10 behavior for older Ansible versions.
-        module.params['path'] = dest
-        file_args = module.load_file_common_arguments(module.params)
+    file_args = module.load_file_common_arguments(module.params, path=dest)
     changed = module.set_fs_attributes_if_different(file_args, changed)
     if changed:
         module.exit_json(state=state, dest=dest, group_id=group_id, artifact_id=artifact_id, version=version, classifier=classifier,

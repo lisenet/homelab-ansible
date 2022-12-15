@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# (c) 2013, 2014, Jan-Piet Mens <jpmens () gmail.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2013, 2014, Jan-Piet Mens <jpmens () gmail.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -62,7 +63,7 @@ options:
         applications that subsequently subscribe to the topic can received the last
         retained message immediately.
     type: bool
-    default: 'no'
+    default: false
   ca_cert:
     type: path
     description:
@@ -111,7 +112,7 @@ EXAMPLES = '''
     topic: 'service/ansible/{{ ansible_hostname }}'
     payload: 'Hello at {{ ansible_date_time.iso8601 }}'
     qos: 0
-    retain: False
+    retain: false
     client_id: ans001
   delegate_to: localhost
 '''
@@ -124,7 +125,8 @@ import os
 import ssl
 import traceback
 import platform
-from distutils.version import LooseVersion
+
+from ansible_collections.community.general.plugins.module_utils.version import LooseVersion
 
 HAS_PAHOMQTT = True
 PAHOMQTT_IMP_ERR = None
@@ -136,7 +138,7 @@ except ImportError:
     HAS_PAHOMQTT = False
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 # ===========================================
@@ -207,7 +209,7 @@ def main():
         if tls_version:
             tls_version = tls_map.get(tls_version, ssl.PROTOCOL_SSLv23)
         else:
-            if LooseVersion(platform.python_version()) <= "3.5.2":
+            if LooseVersion(platform.python_version()) <= LooseVersion("3.5.2"):
                 # Specifying `None` on later versions of python seems sufficient to
                 # instruct python to autonegotiate the SSL/TLS connection. On versions
                 # 3.5.2 and lower though we need to specify the version.

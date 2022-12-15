@@ -1,4 +1,8 @@
 ---
+# Copyright (c) Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
+
   - name: Setup test fixture
     copy:
       src: fixtures/ansible-xml-beers-unicode.xml
@@ -15,7 +19,7 @@
   - name: Test expected result
     assert:
       that:
-      - get_element_attribute.changed == false
+      - get_element_attribute is not changed
       - get_element_attribute.matches[0]['rating'] is defined and get_element_attribute.matches[0]['rating']['subjective'] == 'да'
 
   - name: Get element text
@@ -28,5 +32,5 @@
   - name: Test expected result
     assert:
       that:
-      - get_element_text.changed == false
+      - get_element_text is not changed
       - get_element_text.matches[0]['rating'] == 'десять'

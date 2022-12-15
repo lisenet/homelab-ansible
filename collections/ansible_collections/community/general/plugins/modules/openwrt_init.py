@@ -1,7 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-# (c) 2016, Andrew Gaffney <andrew@agaffney.org>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2016, Andrew Gaffney <andrew@agaffney.org>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 
@@ -11,7 +12,7 @@ DOCUMENTATION = '''
 module: openwrt_init
 author:
     - "Andrew Gaffney (@agaffney)"
-short_description:  Manage services on OpenWrt.
+short_description: Manage services on OpenWrt
 description:
     - Controls OpenWrt services on remote hosts.
 options:
@@ -63,16 +64,14 @@ EXAMPLES = '''
 - name: Enable service httpd
   community.general.openwrt_init:
     name: httpd
-    enabled: yes
+    enabled: true
 '''
 
 RETURN = '''
 '''
 
 import os
-import glob
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_bytes, to_native
 
 module = None
 init_script = None
@@ -81,15 +80,12 @@ init_script = None
 # ===============================
 # Check if service is enabled
 def is_enabled():
-    (rc, out, err) = module.run_command("%s enabled" % init_script)
-    if rc == 0:
-        return True
-    return False
+    rc, dummy, dummy = module.run_command([init_script, 'enabled'])
+    return rc == 0
 
 
 # ===========================================
 # Main control flow
-
 def main():
     global module, init_script
     # init
@@ -98,22 +94,19 @@ def main():
             name=dict(required=True, type='str', aliases=['service']),
             state=dict(type='str', choices=['started', 'stopped', 'restarted', 'reloaded']),
             enabled=dict(type='bool'),
-            pattern=dict(type='str', required=False, default=None),
+            pattern=dict(type='str'),
         ),
         supports_check_mode=True,
-        required_one_of=[['state', 'enabled']],
+        required_one_of=[('state', 'enabled')],
     )
 
     # initialize
     service = module.params['name']
     init_script = '/etc/init.d/' + service
-    rc = 0
-    out = err = ''
     result = {
         'name': service,
         'changed': False,
     }
-
     # check if service exists
     if not os.path.exists(init_script):
         module.fail_json(msg='service %s does not exist' % service)
@@ -129,13 +122,10 @@ def main():
         # Change enable/disable if needed
         if enabled != module.params['enabled']:
             result['changed'] = True
-            if module.params['enabled']:
-                action = 'enable'
-            else:
-                action = 'disable'
+            action = 'enable' if module.params['enabled'] else 'disable'
 
             if not module.check_mode:
-                (rc, out, err) = module.run_command("%s %s" % (init_script, action))
+                rc, dummy, err = module.run_command([init_script, action])
                 # openwrt init scripts can return a non-zero exit code on a successful 'enable'
                 # command if the init script doesn't contain a STOP value, so we ignore the exit
                 # code and explicitly check if the service is now in the desired state
@@ -153,17 +143,13 @@ def main():
             psbin = module.get_bin_path('ps', True)
 
             # this should be busybox ps, so we only want/need to the 'w' option
-            (rc, psout, pserr) = module.run_command('%s w' % psbin)
+            rc, psout, dummy = module.run_command([psbin, 'w'])
             # If rc is 0, set running as appropriate
             if rc == 0:
                 lines = psout.split("\n")
-                for line in lines:
-                    if module.params['pattern'] in line and "pattern=" not in line:
-                        # so as to not confuse ./hacking/test-module.py
-                        running = True
-                        break
+                running = any((module.params['pattern'] in line and "pattern=" not in line) for line in lines)
         else:
-            (rc, out, err) = module.run_command("%s running" % init_script)
+            rc, dummy, dummy = module.run_command([init_script, 'running'])
             if rc == 0:
                 running = True
 
@@ -187,7 +173,7 @@ def main():
 
         if action:
             if not module.check_mode:
-                (rc, out, err) = module.run_command("%s %s" % (init_script, action))
+                rc, dummy, err = module.run_command([init_script, action])
                 if rc != 0:
                     module.fail_json(msg="Unable to %s service %s: %s" % (action, service, err))
 

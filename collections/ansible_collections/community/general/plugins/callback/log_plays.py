@@ -1,17 +1,19 @@
-# (C) 2012, Michael DeHaan, <michael.dehaan@gmail.com>
-# (c) 2017 Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# -*- coding: utf-8 -*-
+# Copyright (c) 2012, Michael DeHaan, <michael.dehaan@gmail.com>
+# Copyright (c) 2017 Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = '''
     author: Unknown (!UNKNOWN)
-    callback: log_plays
+    name: log_plays
     type: notification
     short_description: write playbook output to log file
     description:
-      - This callback writes playbook output to a file per host in the `/var/log/ansible/hosts` directory
+      - This callback writes playbook output to a file per host in the C(/var/log/ansible/hosts) directory
     requirements:
      - Whitelist in configuration
      - A writeable /var/log/ansible/hosts directory by the user executing Ansible on the controller
@@ -31,7 +33,7 @@ import time
 import json
 
 from ansible.utils.path import makedirs_safe
-from ansible.module_utils._text import to_bytes
+from ansible.module_utils.common.text.converters import to_bytes
 from ansible.module_utils.common._collections_compat import MutableMapping
 from ansible.parsing.ajson import AnsibleJSONEncoder
 from ansible.plugins.callback import CallbackBase

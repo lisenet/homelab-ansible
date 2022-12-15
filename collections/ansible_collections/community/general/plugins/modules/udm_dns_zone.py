@@ -1,9 +1,10 @@
 #!/usr/bin/python
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 
-# Copyright: (c) 2016, Adfinis SyGroup AG
+# Copyright (c) 2016, Adfinis SyGroup AG
 # Tobias Rueetschi <tobias.ruetschi@adfinis-sygroup.ch>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -22,58 +23,66 @@ requirements:
     - Python >= 2.6
 options:
     state:
-        required: false
+        type: str
         default: "present"
         choices: [ present, absent ]
         description:
             - Whether the dns zone is present or not.
     type:
+        type: str
         required: true
         description:
             - Define if the zone is a forward or reverse DNS zone.
             - "The available choices are: C(forward_zone), C(reverse_zone)."
     zone:
+        type: str
         required: true
         description:
             - DNS zone name, e.g. C(example.com).
+        aliases: [name]
     nameserver:
-        required: false
+        type: list
+        elements: str
+        default: []
         description:
-            - List of appropriate name servers. Required if C(state=present).
+            - List of appropriate name servers. Required if I(state=present).
     interfaces:
-        required: false
+        type: list
+        elements: str
+        default: []
         description:
             - List of interface IP addresses, on which the server should
-              response this zone. Required if C(state=present).
+              response this zone. Required if I(state=present).
 
     refresh:
-        required: false
+        type: int
         default: 3600
         description:
             - Interval before the zone should be refreshed.
     retry:
-        required: false
+        type: int
         default: 1800
         description:
             - Interval that should elapse before a failed refresh should be retried.
     expire:
-        required: false
+        type: int
         default: 604800
         description:
             - Specifies the upper limit on the time interval that can elapse before the zone is no longer authoritative.
     ttl:
-        required: false
+        type: int
         default: 600
         description:
             - Minimum TTL field that should be exported with any RR from this zone.
 
     contact:
-        required: false
+        type: str
         default: ''
         description:
             - Contact person in the SOA record.
     mx:
-        required: false
+        type: list
+        elements: str
         default: []
         description:
             - List of MX servers. (Must declared as A or AAAA records).
@@ -128,9 +137,11 @@ def main():
                       aliases=['name'],
                       type='str'),
             nameserver=dict(default=[],
-                            type='list'),
+                            type='list',
+                            elements='str'),
             interfaces=dict(default=[],
-                            type='list'),
+                            type='list',
+                            elements='str'),
             refresh=dict(default=3600,
                          type='int'),
             retry=dict(default=1800,
@@ -142,7 +153,8 @@ def main():
             contact=dict(default='',
                          type='str'),
             mx=dict(default=[],
-                    type='list'),
+                    type='list',
+                    elements='str'),
             state=dict(default='present',
                        choices=['present', 'absent'],
                        type='str')

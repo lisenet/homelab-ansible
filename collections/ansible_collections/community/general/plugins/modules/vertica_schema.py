@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -11,7 +12,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: vertica_schema
-short_description: Adds or removes Vertica database schema and roles.
+short_description: Adds or removes Vertica database schema and roles
 description:
   - Adds or removes Vertica database schema and, optionally, roles
     with schema access privileges.
@@ -20,44 +21,55 @@ description:
     will fail and only remove roles created for the schema if they have
     no dependencies.
 options:
-  name:
+  schema:
     description:
       - Name of the schema to add or remove.
     required: true
+    aliases: ['name']
+    type: str
   usage_roles:
     description:
       - Comma separated list of roles to create and grant usage access to the schema.
     aliases: ['usage_role']
+    type: str
   create_roles:
     description:
       - Comma separated list of roles to create and grant usage and create access to the schema.
     aliases: ['create_role']
+    type: str
   owner:
     description:
       - Name of the user to set as owner of the schema.
+    type: str
   state:
     description:
       - Whether to create C(present), or drop C(absent) a schema.
     default: present
     choices: ['present', 'absent']
+    type: str
   db:
     description:
       - Name of the Vertica database.
+    type: str
   cluster:
     description:
       - Name of the Vertica cluster.
     default: localhost
+    type: str
   port:
     description:
       - Vertica cluster port to connect to.
-    default: 5433
+    default: '5433'
+    type: str
   login_user:
     description:
       - The username used to authenticate with.
     default: dbadmin
+    type: str
   login_password:
     description:
       - The password used to authenticate with.
+    type: str
 notes:
   - The default authentication assumes that you are either logging in as or sudo'ing
     to the C(dbadmin) account on the host.
@@ -98,7 +110,7 @@ else:
     pyodbc_found = True
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 class NotSupportedError(Exception):
@@ -230,15 +242,15 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             schema=dict(required=True, aliases=['name']),
-            usage_roles=dict(default=None, aliases=['usage_role']),
-            create_roles=dict(default=None, aliases=['create_role']),
-            owner=dict(default=None),
+            usage_roles=dict(aliases=['usage_role']),
+            create_roles=dict(aliases=['create_role']),
+            owner=dict(),
             state=dict(default='present', choices=['absent', 'present']),
-            db=dict(default=None),
+            db=dict(),
             cluster=dict(default='localhost'),
             port=dict(default='5433'),
             login_user=dict(default='dbadmin'),
-            login_password=dict(default=None, no_log=True),
+            login_password=dict(no_log=True),
         ), supports_check_mode=True)
 
     if not pyodbc_found:

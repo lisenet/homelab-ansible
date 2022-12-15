@@ -1,20 +1,9 @@
 #!/usr/bin/python
-
-# (c) 2017, Petr Lautrbach <plautrba@redhat.com>
+# -*- coding: utf-8 -*-
+# Copyright (c) 2017, Petr Lautrbach <plautrba@redhat.com>
 # Based on seport.py module (c) 2014, Dan Keder <dan.keder@gmail.com>
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -51,7 +40,7 @@ options:
     description:
       - Reload SELinux policy after commit.
     type: bool
-    default: yes
+    default: true
   ignore_selinux_state:
     description:
     - Run independent of selinux runtime state
@@ -113,7 +102,7 @@ except ImportError:
 
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 def semanage_login_add(module, login, seuser, do_reload, serange='s0', sestore=''):

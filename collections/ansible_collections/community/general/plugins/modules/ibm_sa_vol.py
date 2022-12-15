@@ -4,7 +4,8 @@
 # Copyright (C) 2018 IBM CORPORATION
 # Author(s): Tzur Eliyahu <tzure@il.ibm.com>
 #
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -12,7 +13,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: ibm_sa_vol
-short_description: Handle volumes on IBM Spectrum Accelerate Family storage systems.
+short_description: Handle volumes on IBM Spectrum Accelerate Family storage systems
 
 description:
     - "This module creates or deletes volumes to be used on IBM Spectrum Accelerate Family storage systems."
@@ -22,19 +23,23 @@ options:
         description:
             - Volume name.
         required: true
+        type: str
     pool:
         description:
             - Volume pool.
         required: false
+        type: str
     state:
         description:
             - Volume state.
         default: "present"
         choices: [ "present", "absent" ]
+        type: str
     size:
         description:
             - Volume size.
         required: false
+        type: str
 
 extends_documentation_fragment:
 - community.general.ibm_storage

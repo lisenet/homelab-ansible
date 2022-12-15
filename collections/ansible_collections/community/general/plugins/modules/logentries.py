@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# (c) 2013, Ivan Vanderbyl <ivan@app.io>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2013, Ivan Vanderbyl <ivan@app.io>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -63,7 +64,7 @@ def query_log_status(module, le_path, path, state="present"):
     """ Returns whether a log is followed or not. """
 
     if state == "present":
-        rc, out, err = module.run_command("%s followed %s" % (le_path, path))
+        rc, out, err = module.run_command([le_path, "followed", path])
         if rc == 0:
             return True
 
@@ -87,7 +88,7 @@ def follow_log(module, le_path, logs, name=None, logtype=None):
             cmd.extend(['--name', name])
         if logtype:
             cmd.extend(['--type', logtype])
-        rc, out, err = module.run_command(' '.join(cmd))
+        rc, out, err = module.run_command(cmd)
 
         if not query_log_status(module, le_path, log):
             module.fail_json(msg="failed to follow '%s': %s" % (log, err.strip()))

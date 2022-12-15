@@ -1,8 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-#
-# (c) 2018, René Moser <mail@renemoser.net>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2018, René Moser <mail@renemoser.net>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -11,10 +11,14 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: cloud_init_data_facts
-short_description: Retrieve facts of cloud-init.
+short_description: Retrieve facts of cloud-init
 description:
   - Gathers facts by reading the status.json and result.json of cloud-init.
 author: René Moser (@resmo)
+extends_documentation_fragment:
+  - community.general.attributes
+  - community.general.attributes.facts
+  - community.general.attributes.facts_module
 options:
   filter:
     description:
@@ -85,10 +89,10 @@ cloud_init_data_facts:
 import os
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_text
+from ansible.module_utils.common.text.converters import to_text
 
 
-CLOUD_INIT_PATH = "/var/lib/cloud/data/"
+CLOUD_INIT_PATH = "/var/lib/cloud/data"
 
 
 def gather_cloud_init_data_facts(module):
@@ -100,7 +104,7 @@ def gather_cloud_init_data_facts(module):
         filter = module.params.get('filter')
         if filter is None or filter == i:
             res['cloud_init_data_facts'][i] = dict()
-            json_file = CLOUD_INIT_PATH + i + '.json'
+            json_file = os.path.join(CLOUD_INIT_PATH, i + '.json')
 
             if os.path.exists(json_file):
                 f = open(json_file, 'rb')

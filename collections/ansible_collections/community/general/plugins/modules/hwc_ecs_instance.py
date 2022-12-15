@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright (C) 2019 Huawei
-# GNU General Public License v3.0+ (see COPYING or
-# https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -33,6 +33,7 @@ options:
         description:
             - The timeouts for each operations.
         type: dict
+        default: {}
         suboptions:
             create:
                 description:
@@ -543,7 +544,7 @@ def build_module():
                 snapshot_id=dict(type='str')
             )),
             vpc_id=dict(type='str', required=True),
-            admin_pass=dict(type='str'),
+            admin_pass=dict(type='str', no_log=True),
             data_volumes=dict(type='list', elements='dict', options=dict(
                 volume_id=dict(type='str', required=True),
                 device=dict(type='str')

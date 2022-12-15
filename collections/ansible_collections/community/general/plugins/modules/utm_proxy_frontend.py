@@ -1,7 +1,9 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
-# Copyright: (c) 2018, Johannes Brunswicker <johannes.brunswicker@gmail.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2018, Johannes Brunswicker <johannes.brunswicker@gmail.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 
@@ -14,7 +16,7 @@ module: utm_proxy_frontend
 author:
     - Johannes Brunswicker (@MatrixCrawler)
 
-short_description: create, update or destroy reverse_proxy frontend entry in Sophos UTM
+short_description: Create, update or destroy reverse_proxy frontend entry in Sophos UTM
 
 description:
     - Create, update or destroy a reverse_proxy frontend entry in Sophos UTM.
@@ -31,7 +33,7 @@ options:
         description:
           - Whether to add the content type header or not
         type: bool
-        default: False
+        default: false
     address:
         type: str
         description:
@@ -57,7 +59,7 @@ options:
         description:
           - Whether to enable the compression
         type: bool
-        default: False
+        default: false
     domain:
         type: list
         elements: str
@@ -73,17 +75,17 @@ options:
         description:
           - Whether to enable html rewrite or not
         type: bool
-        default: False
+        default: false
     htmlrewrite_cookies:
         description:
           - Whether to enable html rewrite cookie or not
         type: bool
-        default: False
+        default: false
     implicitredirect:
         description:
           - Whether to enable implicit redirection or not
         type: bool
-        default: False
+        default: false
     lbmethod:
         type: str
         description:
@@ -109,7 +111,7 @@ options:
         description:
           - Whether to preserve host header
         type: bool
-        default: False
+        default: false
     profile:
         type: str
         description:
@@ -119,7 +121,7 @@ options:
         description:
           - Whether to activate the frontend entry or not
         type: bool
-        default: True
+        default: true
     type:
         type: str
         description:
@@ -132,7 +134,7 @@ options:
         description:
           - Whether to pass the host header or not
         type: bool
-        default: False
+        default: false
 
 extends_documentation_fragment:
 - community.general.utm
@@ -234,7 +236,7 @@ result:
 """
 
 from ansible_collections.community.general.plugins.module_utils.utm_utils import UTM, UTMModule
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 def main():

@@ -1,8 +1,11 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 #
 # Scaleway IP management module
 #
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) Ansible project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 
@@ -12,7 +15,7 @@ DOCUMENTATION = '''
 ---
 module: scaleway_ip
 short_description: Scaleway IP management module
-author: Remy Leone (@sieben)
+author: Remy Leone (@remyleone)
 description:
     - This module manages IP on Scaleway account
       U(https://developer.scaleway.com)
@@ -46,6 +49,10 @@ options:
       - EMEA-NL-EVS
       - par1
       - EMEA-FR-PAR1
+      - par2
+      - EMEA-FR-PAR2
+      - waw1
+      - EMEA-PL-WAW1
 
   id:
     type: str

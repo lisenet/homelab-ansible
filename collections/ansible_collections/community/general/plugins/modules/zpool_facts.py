@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# (c) 2016, Adam Števko <adam.stevko@gmail.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2016, Adam Števko <adam.stevko@gmail.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -11,14 +12,19 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: zpool_facts
-short_description: Gather facts about ZFS pools.
+short_description: Gather facts about ZFS pools
 description:
   - Gather facts from ZFS pool properties.
 author: Adam Števko (@xen0l)
+extends_documentation_fragment:
+  - community.general.attributes
+  - community.general.attributes.facts
+  - community.general.attributes.facts_module
 options:
     name:
         description:
             - ZFS pool name.
+        type: str
         aliases: [ "pool", "zpool" ]
         required: false
     parsable:
@@ -26,12 +32,13 @@ options:
             - Specifies if property values should be displayed in machine
               friendly format.
         type: bool
-        default: False
+        default: false
         required: false
     properties:
         description:
             - Specifies which dataset properties should be queried in comma-separated format.
               For more information about dataset properties, check zpool(1M) man page.
+        type: str
         default: all
         required: false
 '''
@@ -110,7 +117,7 @@ parsable:
     description: if parsable output should be provided in machine friendly format.
     returned: if 'parsable' is set to True
     type: bool
-    sample: True
+    sample: true
 '''
 
 from collections import defaultdict
@@ -123,32 +130,19 @@ class ZPoolFacts(object):
     def __init__(self, module):
 
         self.module = module
-
         self.name = module.params['name']
         self.parsable = module.params['parsable']
         self.properties = module.params['properties']
-
         self._pools = defaultdict(dict)
         self.facts = []
 
     def pool_exists(self):
-        cmd = [self.module.get_bin_path('zpool')]
-
-        cmd.append('list')
-        cmd.append(self.name)
-
-        (rc, out, err) = self.module.run_command(cmd)
-
-        if rc == 0:
-            return True
-        else:
-            return False
+        cmd = [self.module.get_bin_path('zpool'), 'list', self.name]
+        rc, dummy, dummy = self.module.run_command(cmd)
+        return rc == 0
 
     def get_facts(self):
-        cmd = [self.module.get_bin_path('zpool')]
-
-        cmd.append('get')
-        cmd.append('-H')
+        cmd = [self.module.get_bin_path('zpool'), 'get', '-H']
         if self.parsable:
             cmd.append('-p')
         cmd.append('-o')
@@ -157,41 +151,36 @@ class ZPoolFacts(object):
         if self.name:
             cmd.append(self.name)
 
-        (rc, out, err) = self.module.run_command(cmd)
+        rc, out, err = self.module.run_command(cmd, check_rc=True)
 
-        if rc == 0:
-            for line in out.splitlines():
-                pool, property, value = line.split('\t')
+        for line in out.splitlines():
+            pool, prop, value = line.split('\t')
 
-                self._pools[pool].update({property: value})
+            self._pools[pool].update({prop: value})
 
-            for k, v in iteritems(self._pools):
-                v.update({'name': k})
-                self.facts.append(v)
+        for k, v in iteritems(self._pools):
+            v.update({'name': k})
+            self.facts.append(v)
 
-            return {'ansible_zfs_pools': self.facts}
-        else:
-            self.module.fail_json(msg='Error while trying to get facts about ZFS pool: %s' % self.name,
-                                  stderr=err,
-                                  rc=rc)
+        return {'ansible_zfs_pools': self.facts}
 
 
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            name=dict(required=False, aliases=['pool', 'zpool'], type='str'),
-            parsable=dict(required=False, default=False, type='bool'),
-            properties=dict(required=False, default='all', type='str'),
+            name=dict(aliases=['pool', 'zpool'], type='str'),
+            parsable=dict(default=False, type='bool'),
+            properties=dict(default='all', type='str'),
         ),
         supports_check_mode=True
     )
 
     zpool_facts = ZPoolFacts(module)
 
-    result = {}
-    result['changed'] = False
-    result['name'] = zpool_facts.name
-
+    result = {
+        'changed': False,
+        'name': zpool_facts.name,
+    }
     if zpool_facts.parsable:
         result['parsable'] = zpool_facts.parsable
 

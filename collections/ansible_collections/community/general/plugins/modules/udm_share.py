@@ -1,9 +1,10 @@
 #!/usr/bin/python
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 
-# Copyright: (c) 2016, Adfinis SyGroup AG
+# Copyright (c) 2016, Adfinis SyGroup AG
 # Tobias Rueetschi <tobias.ruetschi@adfinis-sygroup.ch>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -37,17 +38,17 @@ options:
         required: false
         description:
             - Host FQDN (server which provides the share), e.g. C({{
-              ansible_fqdn }}). Required if C(state=present).
+              ansible_fqdn }}). Required if I(state=present).
         type: str
     path:
         required: false
         description:
-            - Directory on the providing server, e.g. C(/home). Required if C(state=present).
+            - Directory on the providing server, e.g. C(/home). Required if I(state=present).
         type: path
     sambaName:
         required: false
         description:
-            - Windows name. Required if C(state=present).
+            - Windows name. Required if I(state=present).
         type: str
         aliases: [ samba_name ]
     ou:
@@ -105,7 +106,7 @@ options:
         description:
         - Show in Windows network environment.
         type: bool
-        default: True
+        default: true
         aliases: [ samba_browsable ]
     sambaCreateMode:
         default: '0744'
@@ -124,6 +125,7 @@ options:
         description:
             - Option name in smb.conf and its value.
         type: list
+        elements: dict
         aliases: [ samba_custom_settings ]
     sambaDirectoryMode:
         default: '0755'
@@ -199,12 +201,14 @@ options:
         description:
             - Allowed host/network.
         type: list
+        elements: str
         aliases: [ samba_hosts_allow ]
     sambaHostsDeny:
         default: []
         description:
             - Denied host/network.
         type: list
+        elements: str
         aliases: [ samba_hosts_deny ]
     sambaInheritAcls:
         default: true
@@ -313,11 +317,13 @@ options:
         description:
             - Only allow access for this host, IP address or network.
         type: list
+        elements: str
     nfsCustomSettings:
         default: []
         description:
             - Option name in exports file.
         type: list
+        elements: str
         aliases: [ nfs_custom_settings ]
 '''
 
@@ -354,12 +360,10 @@ def main():
                        default='0'),
             group=dict(type='str',
                        default='0'),
-            path=dict(type='path',
-                      default=None),
+            path=dict(type='path'),
             directorymode=dict(type='str',
                                default='00755'),
-            host=dict(type='str',
-                      default=None),
+            host=dict(type='str'),
             root_squash=dict(type='bool',
                              default=True),
             subtree_checking=dict(type='bool',
@@ -369,8 +373,7 @@ def main():
             writeable=dict(type='bool',
                            default=True),
             sambaBlockSize=dict(type='str',
-                                aliases=['samba_block_size'],
-                                default=None),
+                                aliases=['samba_block_size']),
             sambaBlockingLocks=dict(type='bool',
                                     aliases=['samba_blocking_locks'],
                                     default=True),
@@ -384,6 +387,7 @@ def main():
                                 aliases=['samba_csc_policy'],
                                 default='manual'),
             sambaCustomSettings=dict(type='list',
+                                     elements='dict',
                                      aliases=['samba_custom_settings'],
                                      default=[]),
             sambaDirectoryMode=dict(type='str',
@@ -408,24 +412,23 @@ def main():
                                                  aliases=['samba_force_directory_security_mode'],
                                                  default=False),
             sambaForceGroup=dict(type='str',
-                                 aliases=['samba_force_group'],
-                                 default=None),
+                                 aliases=['samba_force_group']),
             sambaForceSecurityMode=dict(type='bool',
                                         aliases=['samba_force_security_mode'],
                                         default=False),
             sambaForceUser=dict(type='str',
-                                aliases=['samba_force_user'],
-                                default=None),
+                                aliases=['samba_force_user']),
             sambaHideFiles=dict(type='str',
-                                aliases=['samba_hide_files'],
-                                default=None),
+                                aliases=['samba_hide_files']),
             sambaHideUnreadable=dict(type='bool',
                                      aliases=['samba_hide_unreadable'],
                                      default=False),
             sambaHostsAllow=dict(type='list',
+                                 elements='str',
                                  aliases=['samba_hosts_allow'],
                                  default=[]),
             sambaHostsDeny=dict(type='list',
+                                elements='str',
                                 aliases=['samba_hosts_deny'],
                                 default=[]),
             sambaInheritAcls=dict(type='bool',
@@ -438,8 +441,7 @@ def main():
                                          aliases=['samba_inherit_permissions'],
                                          default=False),
             sambaInvalidUsers=dict(type='str',
-                                   aliases=['samba_invalid_users'],
-                                   default=None),
+                                   aliases=['samba_invalid_users']),
             sambaLevel2Oplocks=dict(type='bool',
                                     aliases=['samba_level_2_oplocks'],
                                     default=True),
@@ -450,8 +452,7 @@ def main():
                                 aliases=['samba_msdfs_root'],
                                 default=False),
             sambaName=dict(type='str',
-                           aliases=['samba_name'],
-                           default=None),
+                           aliases=['samba_name']),
             sambaNtAclSupport=dict(type='bool',
                                    aliases=['samba_nt_acl_support'],
                                    default=True),
@@ -459,11 +460,9 @@ def main():
                               aliases=['samba_oplocks'],
                               default=True),
             sambaPostexec=dict(type='str',
-                               aliases=['samba_postexec'],
-                               default=None),
+                               aliases=['samba_postexec']),
             sambaPreexec=dict(type='str',
-                              aliases=['samba_preexec'],
-                              default=None),
+                              aliases=['samba_preexec']),
             sambaPublic=dict(type='bool',
                              aliases=['samba_public'],
                              default=False),
@@ -474,20 +473,19 @@ def main():
                                     aliases=['samba_strict_locking'],
                                     default='Auto'),
             sambaVFSObjects=dict(type='str',
-                                 aliases=['samba_vfs_objects'],
-                                 default=None),
+                                 aliases=['samba_vfs_objects']),
             sambaValidUsers=dict(type='str',
-                                 aliases=['samba_valid_users'],
-                                 default=None),
+                                 aliases=['samba_valid_users']),
             sambaWriteList=dict(type='str',
-                                aliases=['samba_write_list'],
-                                default=None),
+                                aliases=['samba_write_list']),
             sambaWriteable=dict(type='bool',
                                 aliases=['samba_writeable'],
                                 default=True),
             nfs_hosts=dict(type='list',
+                           elements='str',
                            default=[]),
             nfsCustomSettings=dict(type='list',
+                                   elements='str',
                                    aliases=['nfs_custom_settings'],
                                    default=[]),
             state=dict(default='present',

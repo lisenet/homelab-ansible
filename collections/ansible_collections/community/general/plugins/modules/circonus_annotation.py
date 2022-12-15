@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# (c) 2014-2015, Epic Games, Inc.
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2014-2015, Epic Games, Inc.
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -11,7 +12,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: circonus_annotation
-short_description: create an annotation in circonus
+short_description: Create an annotation in circonus
 description:
     - Create an annotation event with a given category, title and description. Optionally start, end or durations can be provided
 author: "Nick Harring (@NickatEpic)"
@@ -143,7 +144,8 @@ annotation:
 import json
 import time
 import traceback
-from distutils.version import LooseVersion
+
+from ansible_collections.community.general.plugins.module_utils.version import LooseVersion
 
 REQUESTS_IMP_ERR = None
 try:
@@ -155,7 +157,7 @@ except ImportError:
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 from ansible.module_utils.six import PY3
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 def check_requests_dep(module):

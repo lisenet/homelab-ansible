@@ -1,8 +1,10 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
-# Copyright: (c) 2017-18, Abhijeet Kasurde <akasurde@redhat.com>
+# Copyright (c) 2017-18, Abhijeet Kasurde <akasurde@redhat.com>
 #
-#  GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+#  GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -10,7 +12,7 @@ __metaclass__ = type
 
 DOCUMENTATION = '''
 module: github_issue
-short_description: View GitHub issue.
+short_description: View GitHub issue
 description:
     - View GitHub issue for a given repository and organization.
 options:
@@ -18,26 +20,30 @@ options:
     description:
       - Name of repository from which issue needs to be retrieved.
     required: true
+    type: str
   organization:
     description:
       - Name of the GitHub organization in which the repository is hosted.
     required: true
+    type: str
   issue:
     description:
       - Issue number for which information is required.
     required: true
+    type: int
   action:
     description:
         - Get various details about issue depending upon action specified.
     default: 'get_status'
     choices:
         - 'get_status'
+    type: str
 author:
     - Abhijeet Kasurde (@Akasurde)
 '''
 
 RETURN = '''
-get_status:
+issue_status:
     description: State of the GitHub issue
     type: str
     returned: success

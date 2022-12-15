@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2017-2018 Dell EMC Inc.
-# GNU General Public License v3.0+ (see LICENSE or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -21,177 +22,223 @@ options:
   category:
     required: true
     description:
-      - Category to execute on OOB controller
+      - Category to execute on OOB controller.
     type: str
   command:
     required: true
     description:
-      - List of commands to execute on OOB controller
+      - List of commands to execute on OOB controller.
     type: list
+    elements: str
   baseuri:
     required: true
     description:
-      - Base URI of OOB controller
+      - Base URI of OOB controller.
     type: str
   username:
-    required: true
     description:
-      - Username for authentication with OOB controller
+      - Username for authenticating to OOB controller.
     type: str
   password:
-    required: true
     description:
-      - Password for authentication with OOB controller
+      - Password for authenticating to OOB controller.
     type: str
+  auth_token:
+    description:
+      - Security token for authenticating to OOB controller.
+    type: str
+    version_added: 2.3.0
+  session_uri:
+    description:
+      - URI of the session resource.
+    type: str
+    version_added: 2.3.0
   id:
     required: false
     aliases: [ account_id ]
     description:
-      - ID of account to delete/modify
+      - ID of account to delete/modify.
+      - Can also be used in account creation to work around vendor issues where the ID of the new user is required in the POST request.
     type: str
   new_username:
     required: false
     aliases: [ account_username ]
     description:
-      - Username of account to add/delete/modify
+      - Username of account to add/delete/modify.
     type: str
   new_password:
     required: false
     aliases: [ account_password ]
     description:
-      - New password of account to add/modify
+      - New password of account to add/modify.
     type: str
   roleid:
     required: false
     aliases: [ account_roleid ]
     description:
-      - Role of account to add/modify
+      - Role of account to add/modify.
     type: str
   bootdevice:
     required: false
     description:
-      - bootdevice when setting boot configuration
+      - Boot device when setting boot configuration.
     type: str
   timeout:
     description:
-      - Timeout in seconds for URL requests to OOB controller
+      - Timeout in seconds for HTTP requests to OOB controller.
     default: 10
     type: int
+  boot_override_mode:
+    description:
+      - Boot mode when using an override.
+    type: str
+    choices: [ Legacy, UEFI ]
+    version_added: 3.5.0
   uefi_target:
     required: false
     description:
-      - UEFI target when bootdevice is "UefiTarget"
+      - UEFI boot target when bootdevice is "UefiTarget".
     type: str
   boot_next:
     required: false
     description:
-      - BootNext target when bootdevice is "UefiBootNext"
+      - BootNext target when bootdevice is "UefiBootNext".
     type: str
   update_username:
     required: false
     aliases: [ account_updatename ]
     description:
-      - new update user name for account_username
+      - New user name for updating account_username.
     type: str
     version_added: '0.2.0'
   account_properties:
     required: false
     description:
-      - properties of account service to update
+      - Properties of account service to update.
     type: dict
+    default: {}
     version_added: '0.2.0'
   resource_id:
     required: false
     description:
-      - The ID of the System, Manager or Chassis to modify
+      - ID of the System, Manager or Chassis to modify.
     type: str
     version_added: '0.2.0'
   update_image_uri:
     required: false
     description:
-      - The URI of the image for the update
+      - URI of the image for the update.
     type: str
     version_added: '0.2.0'
   update_protocol:
     required: false
     description:
-      - The protocol for the update
+      - Protocol for the update.
     type: str
     version_added: '0.2.0'
   update_targets:
     required: false
     description:
-      - The list of target resource URIs to apply the update to
+      - List of target resource URIs to apply the update to.
     type: list
     elements: str
+    default: []
     version_added: '0.2.0'
   update_creds:
     required: false
     description:
-      - The credentials for retrieving the update image
+      - Credentials for retrieving the update image.
     type: dict
     version_added: '0.2.0'
     suboptions:
       username:
         required: false
         description:
-          - The username for retrieving the update image
+          - Username for retrieving the update image.
         type: str
       password:
         required: false
         description:
-          - The password for retrieving the update image
+          - Password for retrieving the update image.
         type: str
+  update_apply_time:
+    required: false
+    description:
+      - Time when to apply the update.
+    type: str
+    choices:
+      - Immediate
+      - OnReset
+      - AtMaintenanceWindowStart
+      - InMaintenanceWindowOnReset
+      - OnStartUpdateRequest
+    version_added: '6.1.0'
+  update_handle:
+    required: false
+    description:
+      - Handle to check the status of an update in progress.
+    type: str
+    version_added: '6.1.0'
   virtual_media:
     required: false
     description:
-      - The options for VirtualMedia commands
+      - Options for VirtualMedia commands.
     type: dict
     version_added: '0.2.0'
     suboptions:
       media_types:
         required: false
         description:
-          - The list of media types appropriate for the image
+          - List of media types appropriate for the image.
         type: list
         elements: str
+        default: []
       image_url:
         required: false
         description:
-          - The URL od the image the insert or eject
+          - URL of the image to insert or eject.
         type: str
       inserted:
         required: false
         description:
-          - Indicates if the image is treated as inserted on command completion
+          - Indicates that the image is treated as inserted on command completion.
         type: bool
-        default: True
+        default: true
       write_protected:
         required: false
         description:
-          - Indicates if the media is treated as write-protected
+          - Indicates that the media is treated as write-protected.
         type: bool
-        default: True
+        default: true
       username:
         required: false
         description:
-          - The username for accessing the image URL
+          - Username for accessing the image URL.
         type: str
       password:
         required: false
         description:
-          - The password for accessing the image URL
+          - Password for accessing the image URL.
         type: str
       transfer_protocol_type:
         required: false
         description:
-          - The network protocol to use with the image
+          - Network protocol to use with the image.
         type: str
       transfer_method:
         required: false
         description:
-          - The transfer method to use with the image
+          - Transfer method to use with the image.
         type: str
+  strip_etag_quotes:
+    description:
+      - Removes surrounding quotes of etag used in C(If-Match) header
+        of C(PATCH) requests.
+      - Only use this option to resolve bad vendor implementation where
+        C(If-Match) only matches the unquoted etag string.
+    type: bool
+    default: false
+    version_added: 3.7.0
 
 author: "Jose Delarosa (@jose-delarosa)"
 '''
@@ -278,19 +325,28 @@ EXAMPLES = '''
       username: "{{ username }}"
       password: "{{ password }}"
 
+  - name: Set one-time boot to BiosSetup
+    community.general.redfish_command:
+      category: Systems
+      command: SetOneTimeBoot
+      boot_next: BiosSetup
+      boot_override_mode: Legacy
+      baseuri: "{{ baseuri }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+
   - name: Disable persistent boot device override
     community.general.redfish_command:
       category: Systems
       command: DisableBootOverride
 
-  - name: Set chassis indicator LED to blink
+  - name: Set system indicator LED to blink using security token for auth
     community.general.redfish_command:
-      category: Chassis
+      category: Systems
       command: IndicatorLedBlink
-      resource_id: 1U
+      resource_id: 437XR1138R2
       baseuri: "{{ baseuri }}"
-      username: "{{ username }}"
-      password: "{{ password }}"
+      auth_token: "{{ result.session.token }}"
 
   - name: Add user
     community.general.redfish_command:
@@ -413,6 +469,31 @@ EXAMPLES = '''
       password: "{{ password }}"
       timeout: 20
 
+  - name: Create session
+    community.general.redfish_command:
+      category: Sessions
+      command: CreateSession
+      baseuri: "{{ baseuri }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+    register: result
+
+  - name: Set chassis indicator LED to blink using security token for auth
+    community.general.redfish_command:
+      category: Chassis
+      command: IndicatorLedBlink
+      resource_id: 1U
+      baseuri: "{{ baseuri }}"
+      auth_token: "{{ result.session.token }}"
+
+  - name: Delete session using security token created by CreateSesssion above
+    community.general.redfish_command:
+      category: Sessions
+      command: DeleteSession
+      baseuri: "{{ baseuri }}"
+      auth_token: "{{ result.session.token }}"
+      session_uri: "{{ result.session.uri }}"
+
   - name: Clear Sessions
     community.general.redfish_command:
       category: Sessions
@@ -445,6 +526,29 @@ EXAMPLES = '''
         username: operator
         password: supersecretpwd
 
+  - name: Perform requested operations to continue the update
+    community.general.redfish_command:
+      category: Update
+      command: PerformRequestedOperations
+      baseuri: "{{ baseuri }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+      update_handle: /redfish/v1/TaskService/TaskMonitors/735
+
+  - name: Insert Virtual Media
+    community.general.redfish_command:
+      category: Systems
+      command: VirtualMediaInsert
+      baseuri: "{{ baseuri }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+      virtual_media:
+        image_url: 'http://example.com/images/SomeLinux-current.iso'
+        media_types:
+          - CD
+          - DVD
+      resource_id: 1
+
   - name: Insert Virtual Media
     community.general.redfish_command:
       category: Manager
@@ -458,6 +562,17 @@ EXAMPLES = '''
           - CD
           - DVD
       resource_id: BMC
+
+  - name: Eject Virtual Media
+    community.general.redfish_command:
+      category: Systems
+      command: VirtualMediaEject
+      baseuri: "{{ baseuri }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+      virtual_media:
+        image_url: 'http://example.com/images/SomeLinux-current.iso'
+      resource_id: 1
 
   - name: Eject Virtual Media
     community.general.redfish_command:
@@ -522,38 +637,56 @@ msg:
     returned: always
     type: str
     sample: "Action was successful"
+return_values:
+    description: Dictionary containing command-specific response data from the action.
+    returned: on success
+    type: dict
+    version_added: 6.1.0
+    sample: {
+        "update_status": {
+            "handle": "/redfish/v1/TaskService/TaskMonitors/735",
+            "messages": [],
+            "resets_requested": [],
+            "ret": true,
+            "status": "New"
+        }
+    }
 '''
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.general.plugins.module_utils.redfish_utils import RedfishUtils
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 # More will be added as module features are expanded
 CATEGORY_COMMANDS_ALL = {
     "Systems": ["PowerOn", "PowerForceOff", "PowerForceRestart", "PowerGracefulRestart",
-                "PowerGracefulShutdown", "PowerReboot", "SetOneTimeBoot", "EnableContinuousBootOverride", "DisableBootOverride"],
+                "PowerGracefulShutdown", "PowerReboot", "SetOneTimeBoot", "EnableContinuousBootOverride", "DisableBootOverride",
+                "IndicatorLedOn", "IndicatorLedOff", "IndicatorLedBlink", "VirtualMediaInsert", "VirtualMediaEject"],
     "Chassis": ["IndicatorLedOn", "IndicatorLedOff", "IndicatorLedBlink"],
     "Accounts": ["AddUser", "EnableUser", "DeleteUser", "DisableUser",
                  "UpdateUserRole", "UpdateUserPassword", "UpdateUserName",
                  "UpdateAccountServiceProperties"],
-    "Sessions": ["ClearSessions"],
+    "Sessions": ["ClearSessions", "CreateSession", "DeleteSession"],
     "Manager": ["GracefulRestart", "ClearLogs", "VirtualMediaInsert",
                 "VirtualMediaEject", "PowerOn", "PowerForceOff", "PowerForceRestart",
                 "PowerGracefulRestart", "PowerGracefulShutdown", "PowerReboot"],
-    "Update": ["SimpleUpdate"]
+    "Update": ["SimpleUpdate", "PerformRequestedOperations"],
 }
 
 
 def main():
     result = {}
+    return_values = {}
     module = AnsibleModule(
         argument_spec=dict(
             category=dict(required=True),
-            command=dict(required=True, type='list'),
+            command=dict(required=True, type='list', elements='str'),
             baseuri=dict(required=True),
-            username=dict(required=True),
-            password=dict(required=True, no_log=True),
+            username=dict(),
+            password=dict(no_log=True),
+            auth_token=dict(no_log=True),
+            session_uri=dict(),
             id=dict(aliases=["account_id"]),
             new_username=dict(aliases=["account_username"]),
             new_password=dict(aliases=["account_password"], no_log=True),
@@ -564,6 +697,7 @@ def main():
             timeout=dict(type='int', default=10),
             uefi_target=dict(),
             boot_next=dict(),
+            boot_override_mode=dict(choices=['Legacy', 'UEFI']),
             resource_id=dict(),
             update_image_uri=dict(),
             update_protocol=dict(),
@@ -572,9 +706,12 @@ def main():
                 type='dict',
                 options=dict(
                     username=dict(),
-                    password=dict()
+                    password=dict(no_log=True)
                 )
             ),
+            update_apply_time=dict(choices=['Immediate', 'OnReset', 'AtMaintenanceWindowStart',
+                                            'InMaintenanceWindowOnReset', 'OnStartUpdateRequest']),
+            update_handle=dict(),
             virtual_media=dict(
                 type='dict',
                 options=dict(
@@ -587,8 +724,18 @@ def main():
                     transfer_protocol_type=dict(),
                     transfer_method=dict(),
                 )
-            )
+            ),
+            strip_etag_quotes=dict(type='bool', default=False),
         ),
+        required_together=[
+            ('username', 'password'),
+        ],
+        required_one_of=[
+            ('username', 'auth_token'),
+        ],
+        mutually_exclusive=[
+            ('username', 'auth_token'),
+        ],
         supports_check_mode=False
     )
 
@@ -597,7 +744,8 @@ def main():
 
     # admin credentials used for authentication
     creds = {'user': module.params['username'],
-             'pswd': module.params['password']}
+             'pswd': module.params['password'],
+             'token': module.params['auth_token']}
 
     # user to add/modify/delete
     user = {'account_id': module.params['id'],
@@ -618,27 +766,33 @@ def main():
         'update_image_uri': module.params['update_image_uri'],
         'update_protocol': module.params['update_protocol'],
         'update_targets': module.params['update_targets'],
-        'update_creds': module.params['update_creds']
+        'update_creds': module.params['update_creds'],
+        'update_apply_time': module.params['update_apply_time'],
+        'update_handle': module.params['update_handle'],
     }
 
     # Boot override options
     boot_opts = {
         'bootdevice': module.params['bootdevice'],
         'uefi_target': module.params['uefi_target'],
-        'boot_next': module.params['boot_next']
+        'boot_next': module.params['boot_next'],
+        'boot_override_mode': module.params['boot_override_mode'],
     }
 
     # VirtualMedia options
     virtual_media = module.params['virtual_media']
 
+    # Etag options
+    strip_etag_quotes = module.params['strip_etag_quotes']
+
     # Build root URI
     root_uri = "https://" + module.params['baseuri']
     rf_utils = RedfishUtils(creds, root_uri, timeout, module,
-                            resource_id=resource_id, data_modification=True)
+                            resource_id=resource_id, data_modification=True, strip_etag_quotes=strip_etag_quotes)
 
     # Check that Category is valid
     if category not in CATEGORY_COMMANDS_ALL:
-        module.fail_json(msg=to_native("Invalid Category '%s'. Valid Categories = %s" % (category, CATEGORY_COMMANDS_ALL.keys())))
+        module.fail_json(msg=to_native("Invalid Category '%s'. Valid Categories = %s" % (category, list(CATEGORY_COMMANDS_ALL.keys()))))
 
     # Check that all commands are valid
     for cmd in command_list:
@@ -685,6 +839,12 @@ def main():
             elif command == "DisableBootOverride":
                 boot_opts['override_enabled'] = 'Disabled'
                 result = rf_utils.set_boot_override(boot_opts)
+            elif command.startswith('IndicatorLed'):
+                result = rf_utils.manage_system_indicator_led(command)
+            elif command == 'VirtualMediaInsert':
+                result = rf_utils.virtual_media_insert(virtual_media, category)
+            elif command == 'VirtualMediaEject':
+                result = rf_utils.virtual_media_eject(virtual_media, category)
 
     elif category == "Chassis":
         result = rf_utils._find_chassis_resource()
@@ -700,7 +860,7 @@ def main():
         else:
             for command in command_list:
                 if command in led_commands:
-                    result = rf_utils.manage_indicator_led(command)
+                    result = rf_utils.manage_chassis_indicator_led(command)
 
     elif category == "Sessions":
         # execute only if we find SessionService resources
@@ -711,6 +871,10 @@ def main():
         for command in command_list:
             if command == "ClearSessions":
                 result = rf_utils.clear_sessions()
+            elif command == "CreateSession":
+                result = rf_utils.create_session()
+            elif command == "DeleteSession":
+                result = rf_utils.delete_session(module.params['session_uri'])
 
     elif category == "Manager":
         # execute only if we find a Manager service resource
@@ -729,9 +893,9 @@ def main():
             elif command == 'ClearLogs':
                 result = rf_utils.clear_logs()
             elif command == 'VirtualMediaInsert':
-                result = rf_utils.virtual_media_insert(virtual_media)
+                result = rf_utils.virtual_media_insert(virtual_media, category)
             elif command == 'VirtualMediaEject':
-                result = rf_utils.virtual_media_eject(virtual_media)
+                result = rf_utils.virtual_media_eject(virtual_media, category)
 
     elif category == "Update":
         # execute only if we find UpdateService resources
@@ -742,12 +906,19 @@ def main():
         for command in command_list:
             if command == "SimpleUpdate":
                 result = rf_utils.simple_update(update_opts)
+                if 'update_status' in result:
+                    return_values['update_status'] = result['update_status']
+            elif command == "PerformRequestedOperations":
+                result = rf_utils.perform_requested_update_operations(update_opts['update_handle'])
 
     # Return data back or fail with proper message
     if result['ret'] is True:
         del result['ret']
         changed = result.get('changed', True)
-        module.exit_json(changed=changed, msg='Action was successful')
+        session = result.get('session', dict())
+        module.exit_json(changed=changed, session=session,
+                         msg='Action was successful',
+                         return_values=return_values)
     else:
         module.fail_json(msg=to_native(result['msg']))
 

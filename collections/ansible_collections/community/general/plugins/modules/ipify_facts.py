@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# Copyright: (c) 2015, René Moser <mail@renemoser.net>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2015, René Moser <mail@renemoser.net>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -16,6 +17,10 @@ description:
   - If behind NAT and need to know the public IP of your internet gateway.
 author:
 - René Moser (@resmo)
+extends_documentation_fragment:
+  - community.general.attributes
+  - community.general.attributes.facts
+  - community.general.attributes.facts_module
 options:
   api_url:
     description:
@@ -32,7 +37,7 @@ options:
     description:
       - When set to C(NO), SSL certificates will not be validated.
     type: bool
-    default: yes
+    default: true
 notes:
   - Visit https://www.ipify.org to get more information.
 '''
@@ -62,7 +67,7 @@ import json
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.urls import fetch_url
-from ansible.module_utils._text import to_text
+from ansible.module_utils.common.text.converters import to_text
 
 
 class IpifyFacts(object):

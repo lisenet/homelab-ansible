@@ -1,10 +1,11 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# (c) 2014, Jasper N. Brouwer <jasper@nerdsweide.nl>
-# (c) 2014, Ramon de la Fuente <ramon@delafuente.nl>
+# Copyright (c) 2014, Jasper N. Brouwer <jasper@nerdsweide.nl>
+# Copyright (c) 2014, Ramon de la Fuente <ramon@delafuente.nl>
 #
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -14,13 +15,13 @@ DOCUMENTATION = '''
 ---
 module: deploy_helper
 author: "Ramon de la Fuente (@ramondelafuente)"
-short_description: Manages some of the steps common in deploying projects.
+short_description: Manages some of the steps common in deploying projects
 description:
   - The Deploy Helper manages some of the steps common in deploying software.
     It creates a folder structure, manages a symlink for the current release
     and cleans up old releases.
-  - "Running it with the C(state=query) or C(state=present) will return the C(deploy_helper) fact.
-    C(project_path), whatever you set in the path parameter,
+  - "Running it with the I(state=query) or I(state=present) will return the C(deploy_helper) fact.
+    C(project_path), whatever you set in the I(path) parameter,
     C(current_path), the path to the symlink that points to the active release,
     C(releases_path), the path to the folder to keep releases in,
     C(shared_path), the path to the folder to keep shared resources in,
@@ -33,43 +34,43 @@ description:
 options:
   path:
     type: path
-    required: True
+    required: true
     aliases: ['dest']
     description:
-      - the root path of the project. Alias I(dest).
+      - The root path of the project.
         Returned in the C(deploy_helper.project_path) fact.
 
   state:
     type: str
     description:
-      - the state of the project.
+      - The state of the project.
         C(query) will only gather facts,
         C(present) will create the project I(root) folder, and in it the I(releases) and I(shared) folders,
         C(finalize) will remove the unfinished_filename file, create a symlink to the newly
           deployed release and optionally clean old releases,
         C(clean) will remove failed & old releases,
-        C(absent) will remove the project folder (synonymous to the M(ansible.builtin.file) module with C(state=absent))
+        C(absent) will remove the project folder (synonymous to the M(ansible.builtin.file) module with I(state=absent)).
     choices: [ present, finalize, absent, clean, query ]
     default: present
 
   release:
     type: str
     description:
-      - the release version that is being deployed. Defaults to a timestamp format %Y%m%d%H%M%S (i.e. '20141119223359').
-        This parameter is optional during C(state=present), but needs to be set explicitly for C(state=finalize).
-        You can use the generated fact C(release={{ deploy_helper.new_release }}).
+      - The release version that is being deployed. Defaults to a timestamp format %Y%m%d%H%M%S (i.e. '20141119223359').
+        This parameter is optional during I(state=present), but needs to be set explicitly for I(state=finalize).
+        You can use the generated fact I(release={{ deploy_helper.new_release }}).
 
   releases_path:
     type: str
     description:
-      - the name of the folder that will hold the releases. This can be relative to C(path) or absolute.
+      - The name of the folder that will hold the releases. This can be relative to I(path) or absolute.
         Returned in the C(deploy_helper.releases_path) fact.
     default: releases
 
   shared_path:
     type: path
     description:
-      - the name of the folder that will hold the shared resources. This can be relative to C(path) or absolute.
+      - The name of the folder that will hold the shared resources. This can be relative to I(path) or absolute.
         If this is set to an empty string, no shared folder will be created.
         Returned in the C(deploy_helper.shared_path) fact.
     default: shared
@@ -77,38 +78,38 @@ options:
   current_path:
     type: path
     description:
-      - the name of the symlink that is created when the deploy is finalized. Used in C(finalize) and C(clean).
+      - The name of the symlink that is created when the deploy is finalized. Used in I(finalize) and I(clean).
         Returned in the C(deploy_helper.current_path) fact.
     default: current
 
   unfinished_filename:
     type: str
     description:
-      - the name of the file that indicates a deploy has not finished. All folders in the releases_path that
-        contain this file will be deleted on C(state=finalize) with clean=True, or C(state=clean). This file is
-        automatically deleted from the I(new_release_path) during C(state=finalize).
+      - The name of the file that indicates a deploy has not finished. All folders in the I(releases_path) that
+        contain this file will be deleted on I(state=finalize) with I(clean=True), or I(state=clean). This file is
+        automatically deleted from the I(new_release_path) during I(state=finalize).
     default: DEPLOY_UNFINISHED
 
   clean:
     description:
-      - Whether to run the clean procedure in case of C(state=finalize).
+      - Whether to run the clean procedure in case of I(state=finalize).
     type: bool
-    default: 'yes'
+    default: true
 
   keep_releases:
     type: int
     description:
-      - the number of old releases to keep when cleaning. Used in C(finalize) and C(clean). Any unfinished builds
+      - The number of old releases to keep when cleaning. Used in I(finalize) and I(clean). Any unfinished builds
         will be deleted first, so only correct releases will count. The current version will not count.
     default: 5
 
 notes:
-  - Facts are only returned for C(state=query) and C(state=present). If you use both, you should pass any overridden
+  - Facts are only returned for I(state=query) and I(state=present). If you use both, you should pass any overridden
     parameters to both calls, otherwise the second call will overwrite the facts of the first one.
-  - When using C(state=clean), the releases are ordered by I(creation date). You should be able to switch to a
+  - When using I(state=clean), the releases are ordered by I(creation date). You should be able to switch to a
     new naming strategy without problems.
   - Because of the default behaviour of generating the I(new_release) fact, this module will not be idempotent
-    unless you pass your own release name with C(release). Due to the nature of deploying software, this should not
+    unless you pass your own release name with I(release). Due to the nature of deploying software, this should not
     be much of a problem.
 extends_documentation_fragment: files
 '''
@@ -233,7 +234,7 @@ EXAMPLES = '''
     path: /path/to/root
     release: '{{ deploy_helper.new_release }}'
     state: finalize
-    clean: False
+    clean: false
 - community.general.deploy_helper:
     path: /path/to/root
     state: clean
@@ -274,7 +275,7 @@ import time
 import traceback
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 class DeployHelper(object):
@@ -359,8 +360,6 @@ class DeployHelper(object):
                 self.module.fail_json(msg="%s exists but is not a symbolic link" % path)
 
     def create_link(self, source, link_name):
-        changed = False
-
         if os.path.islink(link_name):
             norm_link = os.path.normpath(os.path.realpath(link_name))
             norm_source = os.path.normpath(os.path.realpath(source))
@@ -407,6 +406,9 @@ class DeployHelper(object):
 
     def remove_unfinished_link(self, path):
         changed = False
+
+        if not self.release:
+            return changed
 
         tmp_link_name = os.path.join(path, self.release + '.' + self.unfinished_filename)
         if not self.module.check_mode and os.path.exists(tmp_link_name):
@@ -455,15 +457,18 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             path=dict(aliases=['dest'], required=True, type='path'),
-            release=dict(required=False, type='str', default=None),
-            releases_path=dict(required=False, type='str', default='releases'),
-            shared_path=dict(required=False, type='path', default='shared'),
-            current_path=dict(required=False, type='path', default='current'),
-            keep_releases=dict(required=False, type='int', default=5),
-            clean=dict(required=False, type='bool', default=True),
-            unfinished_filename=dict(required=False, type='str', default='DEPLOY_UNFINISHED'),
-            state=dict(required=False, choices=['present', 'absent', 'clean', 'finalize', 'query'], default='present')
+            release=dict(type='str'),
+            releases_path=dict(type='str', default='releases'),
+            shared_path=dict(type='path', default='shared'),
+            current_path=dict(type='path', default='current'),
+            keep_releases=dict(type='int', default=5),
+            clean=dict(type='bool', default=True),
+            unfinished_filename=dict(type='str', default='DEPLOY_UNFINISHED'),
+            state=dict(choices=['present', 'absent', 'clean', 'finalize', 'query'], default='present')
         ),
+        required_if=[
+            ('state', 'finalize', ['release']),
+        ],
         add_file_common_args=True,
         supports_check_mode=True
     )
@@ -490,8 +495,6 @@ def main():
         result['ansible_facts'] = {'deploy_helper': facts}
 
     elif deploy_helper.state == 'finalize':
-        if not deploy_helper.release:
-            module.fail_json(msg="'release' is a required parameter for state=finalize (try the 'deploy_helper.new_release' fact)")
         if deploy_helper.keep_releases <= 0:
             module.fail_json(msg="'keep_releases' should be at least 1")
 

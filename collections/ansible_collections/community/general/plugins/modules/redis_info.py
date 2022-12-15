@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2020, Pavlo Bashynskyi (@levonet) <levonet@gmail.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2020, Pavlo Bashynskyi (@levonet) <levonet@gmail.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -15,6 +16,9 @@ short_description: Gather information about Redis servers
 version_added: '0.2.0'
 description:
 - Gathers information and statistics about Redis servers.
+extends_documentation_fragment:
+- community.general.attributes
+- community.general.attributes.info_module
 options:
   login_host:
     description:
@@ -196,7 +200,7 @@ except ImportError:
     HAS_REDIS_PACKAGE = False
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 def redis_client(**client_params):

@@ -1,7 +1,9 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 #
 # Copyright (c) 2015 CenturyLink
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -9,7 +11,7 @@ __metaclass__ = type
 
 DOCUMENTATION = '''
 module: clc_modify_server
-short_description: modify servers in CenturyLink Cloud.
+short_description: Modify servers in CenturyLink Cloud
 description:
   - An Ansible module to modify servers in CenturyLink Cloud.
 options:
@@ -17,7 +19,8 @@ options:
     description:
       - A list of server Ids to modify.
     type: list
-    required: True
+    required: true
+    elements: str
   cpu:
     description:
       - How many CPUs to update on the server
@@ -56,7 +59,7 @@ options:
     description:
       - Whether to wait for the provisioning tasks to finish before returning.
     type: bool
-    default: 'yes'
+    default: true
 requirements:
     - python = 2.7
     - requests >= 2.5.0
@@ -309,7 +312,8 @@ __version__ = '${version}'
 import json
 import os
 import traceback
-from distutils.version import LooseVersion
+
+from ansible_collections.community.general.plugins.module_utils.version import LooseVersion
 
 REQUESTS_IMP_ERR = None
 try:
@@ -353,8 +357,7 @@ class ClcModifyServer:
             self.module.fail_json(msg=missing_required_lib('clc-sdk'), exception=CLC_IMP_ERR)
         if not REQUESTS_FOUND:
             self.module.fail_json(msg=missing_required_lib('requests'), exception=REQUESTS_IMP_ERR)
-        if requests.__version__ and LooseVersion(
-                requests.__version__) < LooseVersion('2.5.0'):
+        if requests.__version__ and LooseVersion(requests.__version__) < LooseVersion('2.5.0'):
             self.module.fail_json(
                 msg='requests library  version should be >= 2.5.0')
 
@@ -396,7 +399,7 @@ class ClcModifyServer:
         :return: argument spec dictionary
         """
         argument_spec = dict(
-            server_ids=dict(type='list', required=True),
+            server_ids=dict(type='list', required=True, elements='str'),
             state=dict(default='present', choices=['present', 'absent']),
             cpu=dict(),
             memory=dict(),

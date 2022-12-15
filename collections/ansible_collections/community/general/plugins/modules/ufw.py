@@ -1,11 +1,12 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2014, Ahti Kitsik <ak@ahtik.com>
-# Copyright: (c) 2014, Jarno Keskikangas <jarno.keskikangas@gmail.com>
-# Copyright: (c) 2013, Aleksey Ovcharenko <aleksey.ovcharenko@gmail.com>
-# Copyright: (c) 2013, James Martin <jmartin@basho.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2014, Ahti Kitsik <ak@ahtik.com>
+# Copyright (c) 2014, Jarno Keskikangas <jarno.keskikangas@gmail.com>
+# Copyright (c) 2013, Aleksey Ovcharenko <aleksey.ovcharenko@gmail.com>
+# Copyright (c) 2013, James Martin <jmartin@basho.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -54,6 +55,8 @@ options:
     description:
       - Insert the corresponding rule as rule number NUM.
       - Note that ufw numbers rules starting with 1.
+      - If I(delete=true) and a value is provided for I(insert),
+        then I(insert) is ignored.
     type: int
   insert_relative_to:
     description:
@@ -120,6 +123,8 @@ options:
   delete:
     description:
       - Delete rule.
+      - If I(delete=true) and a value is provided for I(insert),
+        then I(insert) is ignored.
     type: bool
     default: false
   interface:
@@ -174,7 +179,7 @@ EXAMPLES = r'''
 - community.general.ufw:
     rule: reject
     port: auth
-    log: yes
+    log: true
 
 # ufw supports connection rate limiting, which is useful for protecting
 # against brute-force login attacks. ufw will deny connections if an IP
@@ -187,7 +192,7 @@ EXAMPLES = r'''
     proto: tcp
 
 # Allow OpenSSH. (Note that as ufw manages its own state, simply removing
-# a rule=allow task can leave those ports exposed. Either use delete=yes
+# a rule=allow task can leave those ports exposed. Either use delete=true
 # or a separate state=reset task)
 - community.general.ufw:
     rule: allow
@@ -197,7 +202,7 @@ EXAMPLES = r'''
   community.general.ufw:
     rule: allow
     name: OpenSSH
-    delete: yes
+    delete: true
 
 - name: Deny all access to port 53
   community.general.ufw:
@@ -280,9 +285,9 @@ EXAMPLES = r'''
 - name: Deny forwarded/routed traffic from subnet 1.2.3.0/24 to subnet 4.5.6.0/24
   community.general.ufw:
     rule: deny
-    route: yes
-    src: 1.2.3.0/24
-    dest: 4.5.6.0/24
+    route: true
+    src: 192.0.2.0/24
+    dest: 198.51.100.0/24
 '''
 
 import re
@@ -511,12 +516,12 @@ def main():
                                  'interface_in and interface_out')
             # Rules are constructed according to the long format
             #
-            # ufw [--dry-run] [route] [delete] [insert NUM] allow|deny|reject|limit [in|out on INTERFACE] [log|log-all] \
+            # ufw [--dry-run] [route] [delete | insert NUM] allow|deny|reject|limit [in|out on INTERFACE] [log|log-all] \
             #     [from ADDRESS [port PORT]] [to ADDRESS [port PORT]] \
             #     [proto protocol] [app application] [comment COMMENT]
             cmd.append([module.boolean(params['route']), 'route'])
             cmd.append([module.boolean(params['delete']), 'delete'])
-            if params['insert'] is not None:
+            if params['insert'] is not None and not params['delete']:
                 relative_to_cmd = params['insert_relative_to']
                 if relative_to_cmd == 'zero':
                     insert_to = params['insert']
@@ -526,8 +531,8 @@ def main():
                     lines = [(numbered_line_re.match(line), '(v6)' in line) for line in numbered_state.splitlines()]
                     lines = [(int(matcher.group(1)), ipv6) for (matcher, ipv6) in lines if matcher]
                     last_number = max([no for (no, ipv6) in lines]) if lines else 0
-                    has_ipv4 = any([not ipv6 for (no, ipv6) in lines])
-                    has_ipv6 = any([ipv6 for (no, ipv6) in lines])
+                    has_ipv4 = any(not ipv6 for (no, ipv6) in lines)
+                    has_ipv6 = any(ipv6 for (no, ipv6) in lines)
                     if relative_to_cmd == 'first-ipv4':
                         relative_to = 1
                     elif relative_to_cmd == 'last-ipv4':

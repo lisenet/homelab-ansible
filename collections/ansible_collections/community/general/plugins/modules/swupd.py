@@ -1,8 +1,10 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
-# (c) 2017, Alberto Murillo <alberto.murillo.silva@intel.com>
+# Copyright (c) 2017, Alberto Murillo <alberto.murillo.silva@intel.com>
 #
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -11,7 +13,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: swupd
-short_description: Manages updates and bundles in ClearLinux systems.
+short_description: Manages updates and bundles in ClearLinux systems
 description:
   - Manages updates and bundles with the swupd bundle manager, which is used by the
     Clear Linux Project for Intel Architecture.
@@ -69,7 +71,7 @@ options:
 EXAMPLES = '''
 - name: Update the OS to the latest version
   community.general.swupd:
-    update: yes
+    update: true
 
 - name: Installs the "foo" bundle
   community.general.swupd:
@@ -83,11 +85,11 @@ EXAMPLES = '''
 
 - name: Check integrity of filesystem
   community.general.swupd:
-    verify: yes
+    verify: true
 
 - name: Downgrade OS to release 12920
   community.general.swupd:
-    verify: yes
+    verify: true
     manifest: 12920
 '''
 

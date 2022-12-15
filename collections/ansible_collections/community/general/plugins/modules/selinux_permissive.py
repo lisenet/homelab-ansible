@@ -1,9 +1,10 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2015, Michael Scherer <misc@zarb.org>
+# Copyright (c) 2015, Michael Scherer <misc@zarb.org>
 # inspired by code of github.com/dandiker/
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -20,7 +21,6 @@ options:
         - The domain that will be added or removed from the list of permissive domains.
     type: str
     required: true
-    default: ''
     aliases: [ name ]
   permissive:
     description:
@@ -30,14 +30,15 @@ options:
   no_reload:
     description:
         - Disable reloading of the SELinux policy after making change to a domain's permissive setting.
-        - The default is C(no), which causes policy to be reloaded when a domain changes state.
+        - The default is C(false), which causes policy to be reloaded when a domain changes state.
         - Reloading the policy does not work on older versions of the C(policycoreutils-python) library, for example in EL 6."
     type: bool
-    default: no
+    default: false
   store:
     description:
       - Name of the SELinux policy store to use.
     type: str
+    default: ''
 notes:
     - Requires a recent version of SELinux and C(policycoreutils-python) (EL 6 or newer).
 requirements: [ policycoreutils-python ]
@@ -63,7 +64,7 @@ except ImportError:
     SEOBJECT_IMP_ERR = traceback.format_exc()
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 def main():

@@ -1,8 +1,10 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 #
 # Copyright (c) 2015 CenturyLink
 #
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -10,7 +12,7 @@ __metaclass__ = type
 
 DOCUMENTATION = '''
 module: clc_loadbalancer
-short_description: Create, Delete shared loadbalancers in CenturyLink Cloud.
+short_description: Create, Delete shared loadbalancers in CenturyLink Cloud
 description:
   - An Ansible module to Create, Delete shared loadbalancers in CenturyLink Cloud.
 options:
@@ -18,7 +20,7 @@ options:
     description:
       - The name of the loadbalancer
     type: str
-    required: True
+    required: true
   description:
     description:
       - A description for the loadbalancer
@@ -27,12 +29,12 @@ options:
     description:
       - The alias of your CLC Account
     type: str
-    required: True
+    required: true
   location:
     description:
       - The location of the datacenter where the load balancer resides in
     type: str
-    required: True
+    required: true
   method:
     description:
       -The balancing method for the load balancer pool
@@ -47,12 +49,13 @@ options:
     description:
       - Port to configure on the public-facing side of the load balancer pool
     type: str
-    choices: [80, 443]
+    choices: ['80', '443']
   nodes:
     description:
       - A list of nodes that needs to be added to the load balancer pool
     type: list
     default: []
+    elements: dict
   status:
     description:
       - The status of the loadbalancer
@@ -208,7 +211,8 @@ import json
 import os
 import traceback
 from time import sleep
-from distutils.version import LooseVersion
+
+from ansible_collections.community.general.plugins.module_utils.version import LooseVersion
 
 REQUESTS_IMP_ERR = None
 try:
@@ -253,8 +257,7 @@ class ClcLoadBalancer:
             self.module.fail_json(msg=missing_required_lib('clc-sdk'), exception=CLC_IMP_ERR)
         if not REQUESTS_FOUND:
             self.module.fail_json(msg=missing_required_lib('requests'), exception=REQUESTS_IMP_ERR)
-        if requests.__version__ and LooseVersion(
-                requests.__version__) < LooseVersion('2.5.0'):
+        if requests.__version__ and LooseVersion(requests.__version__) < LooseVersion('2.5.0'):
             self.module.fail_json(
                 msg='requests library  version should be >= 2.5.0')
 
@@ -863,13 +866,13 @@ class ClcLoadBalancer:
         """
         argument_spec = dict(
             name=dict(required=True),
-            description=dict(default=None),
+            description=dict(),
             location=dict(required=True),
             alias=dict(required=True),
             port=dict(choices=[80, 443]),
             method=dict(choices=['leastConnection', 'roundRobin']),
             persistence=dict(choices=['standard', 'sticky']),
-            nodes=dict(type='list', default=[]),
+            nodes=dict(type='list', default=[], elements='dict'),
             status=dict(default='enabled', choices=['enabled', 'disabled']),
             state=dict(
                 default='present',

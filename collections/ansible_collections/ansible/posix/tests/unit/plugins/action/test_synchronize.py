@@ -55,6 +55,7 @@ class TaskMock(object):
     become = None
     become_user = None
     become_method = None
+    check_mode = False
 
 
 class StdinMock(object):
@@ -125,7 +126,7 @@ class SynchronizeTester(object):
         metapath = os.path.join(fixturepath, 'meta.yaml')
         with open(metapath, 'rb') as f:
             fdata = f.read()
-        test_meta = yaml.load(fdata)
+        test_meta = yaml.safe_load(fdata)
 
         # load initial play context vars
         if '_play_context' in test_meta:

@@ -1,7 +1,9 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
-# Copyright: (c) 2016-2017, Hewlett Packard Enterprise Development LP
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2016-2017, Hewlett Packard Enterprise Development LP
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
@@ -24,15 +26,20 @@ options:
     name:
       description:
         - Enclosure name.
+      type: str
     options:
       description:
         - "List with options to gather additional information about an Enclosure and related resources.
           Options allowed: C(script), C(environmentalConfiguration), and C(utilization). For the option C(utilization),
           you can provide specific parameters."
+      type: list
+      elements: raw
 
 extends_documentation_fragment:
-- community.general.oneview
-- community.general.oneview.factsparams
+  - community.general.oneview
+  - community.general.oneview.factsparams
+  - community.general.attributes
+  - community.general.attributes.info_module
 
 '''
 
@@ -46,7 +53,9 @@ EXAMPLES = '''
   no_log: true
   delegate_to: localhost
   register: result
-- ansible.builtin.debug:
+
+- name: Print fetched information about Enclosures
+  ansible.builtin.debug:
     msg: "{{ result.enclosures }}"
 
 - name: Gather paginated, filtered and sorted information about Enclosures
@@ -63,7 +72,9 @@ EXAMPLES = '''
   no_log: true
   delegate_to: localhost
   register: result
-- ansible.builtin.debug:
+
+- name: Print fetched information about paginated, filtered ans sorted list of Enclosures
+  ansible.builtin.debug:
     msg: "{{ result.enclosures }}"
 
 - name: Gather information about an Enclosure by name
@@ -76,7 +87,9 @@ EXAMPLES = '''
   no_log: true
   delegate_to: localhost
   register: result
-- ansible.builtin.debug:
+
+- name: Print fetched information about Enclosure found by name
+  ansible.builtin.debug:
     msg: "{{ result.enclosures }}"
 
 - name: Gather information about an Enclosure by name with options
@@ -93,13 +106,21 @@ EXAMPLES = '''
   no_log: true
   delegate_to: localhost
   register: result
-- ansible.builtin.debug:
+
+- name: Print fetched information about Enclosure found by name
+  ansible.builtin.debug:
     msg: "{{ result.enclosures }}"
-- ansible.builtin.debug:
+
+- name: Print fetched information about Enclosure Script
+  ansible.builtin.debug:
     msg: "{{ result.enclosure_script }}"
-- ansible.builtin.debug:
+
+- name: Print fetched information about Enclosure Environmental Configuration
+  ansible.builtin.debug:
     msg: "{{ result.enclosure_environmental_configuration }}"
-- ansible.builtin.debug:
+
+- name: Print fetched information about Enclosure Utilization
+  ansible.builtin.debug:
     msg: "{{ result.enclosure_utilization }}"
 
 - name: "Gather information about an Enclosure with temperature data at a resolution of one sample per day, between two
@@ -121,9 +142,13 @@ EXAMPLES = '''
   no_log: true
   delegate_to: localhost
   register: result
-- ansible.builtin.debug:
+
+- name: Print fetched information about Enclosure found by name
+  ansible.builtin.debug:
     msg: "{{ result.enclosures }}"
-- ansible.builtin.debug:
+
+- name: Print fetched information about Enclosure Utilization
+  ansible.builtin.debug:
     msg: "{{ result.enclosure_utilization }}"
 '''
 
@@ -153,15 +178,17 @@ from ansible_collections.community.general.plugins.module_utils.oneview import O
 
 
 class EnclosureInfoModule(OneViewModuleBase):
-    argument_spec = dict(name=dict(type='str'), options=dict(type='list'), params=dict(type='dict'))
+    argument_spec = dict(
+        name=dict(type='str'),
+        options=dict(type='list', elements='raw'),
+        params=dict(type='dict')
+    )
 
     def __init__(self):
-        super(EnclosureInfoModule, self).__init__(additional_arg_spec=self.argument_spec)
-        self.is_old_facts = self.module._name in ('oneview_enclosure_facts', 'community.general.oneview_enclosure_facts')
-        if self.is_old_facts:
-            self.module.deprecate("The 'oneview_enclosure_facts' module has been renamed to 'oneview_enclosure_info', "
-                                  "and the renamed one no longer returns ansible_facts",
-                                  version='3.0.0', collection_name='community.general')  # was Ansible 2.13
+        super(EnclosureInfoModule, self).__init__(
+            additional_arg_spec=self.argument_spec,
+            supports_check_mode=True,
+        )
 
     def execute_module(self):
 
@@ -177,11 +204,7 @@ class EnclosureInfoModule(OneViewModuleBase):
 
         info['enclosures'] = enclosures
 
-        if self.is_old_facts:
-            return dict(changed=False,
-                        ansible_facts=info)
-        else:
-            return dict(changed=False, **info)
+        return dict(changed=False, **info)
 
     def _gather_optional_info(self, options, enclosure):
 

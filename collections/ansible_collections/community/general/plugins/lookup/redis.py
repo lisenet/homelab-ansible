@@ -1,11 +1,13 @@
-# (c) 2012, Jan-Piet Mens <jpmens(at)gmail.com>
-# (c) 2017 Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# -*- coding: utf-8 -*-
+# Copyright (c) 2012, Jan-Piet Mens <jpmens(at)gmail.com>
+# Copyright (c) 2017 Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = '''
-    lookup: redis
+    name: redis
     author:
       - Jan-Piet Mens (@jpmens) <jpmens(at)gmail.com>
       - Ansible Core Team
@@ -80,7 +82,7 @@ try:
 except ImportError:
     pass
 
-from ansible.module_utils._text import to_text
+from ansible.module_utils.common.text.converters import to_text
 from ansible.errors import AnsibleError
 from ansible.plugins.lookup import LookupBase
 

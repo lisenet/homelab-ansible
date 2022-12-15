@@ -1,8 +1,10 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 #
-# Copyright: (c) Ansible Project
+# Copyright (c) Ansible Project
 #
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
@@ -16,6 +18,9 @@ description:
   - This module was called C(jenkins_job_info) before Ansible 2.9. The usage did not change.
 requirements:
   - "python-jenkins >= 0.4.12"
+extends_documentation_fragment:
+  - community.general.attributes
+  - community.general.attributes.info_module
 options:
   name:
     type: str
@@ -33,12 +38,12 @@ options:
     type: str
     description:
       - Password to authenticate with the Jenkins server.
-      - This is a required parameter, if C(token) is not provided.
+      - This is mutually exclusive with I(token).
   token:
     type: str
     description:
       - API token used to authenticate with the Jenkins server.
-      - This is a required parameter, if C(password) is not provided.
+      - This is mutually exclusive with I(password).
   url:
     type: str
     description:
@@ -59,6 +64,11 @@ author:
 '''
 
 EXAMPLES = '''
+# Get all Jenkins jobs anonymously
+- community.general.jenkins_job_info:
+    user: admin
+  register: my_jenkins_job_info
+
 # Get all Jenkins jobs using basic auth
 - community.general.jenkins_job_info:
     user: admin
@@ -112,7 +122,7 @@ EXAMPLES = '''
     user: admin
     token: 126df5c60d66c66e3b75b11104a16a8a
     url: https://jenkins.example.com
-    validate_certs: False
+    validate_certs: false
   register: my_jenkins_job_info
 '''
 
@@ -146,7 +156,7 @@ except ImportError:
     HAS_JENKINS = False
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 def get_jenkins_connection(module):
@@ -232,14 +242,8 @@ def main():
             ['password', 'token'],
             ['name', 'glob'],
         ],
-        required_one_of=[
-            ['password', 'token'],
-        ],
         supports_check_mode=True,
     )
-    if module._name in ('jenkins_job_facts', 'community.general.jenkins_job_facts'):
-        module.deprecate("The 'jenkins_job_facts' module has been renamed to 'jenkins_job_info'",
-                         version='3.0.0', collection_name='community.general')  # was Ansible 2.13
 
     test_dependencies(module)
     jobs = list()

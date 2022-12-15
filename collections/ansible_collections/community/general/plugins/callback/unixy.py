@@ -1,13 +1,15 @@
-# Copyright: (c) 2017, Allyson Bowles <@akatch>
-# Copyright: (c) 2012-2014, Michael DeHaan <michael.dehaan@gmail.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# -*- coding: utf-8 -*-
+# Copyright (c) 2017, Allyson Bowles <@akatch>
+# Copyright (c) 2012-2014, Michael DeHaan <michael.dehaan@gmail.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 # Make coding more python3-ish
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = '''
-    callback: unixy
+    name: unixy
     type: stdout
     author: Allyson Bowles (@akatch)
     short_description: condensed Ansible output
@@ -22,7 +24,7 @@ DOCUMENTATION = '''
 from os.path import basename
 from ansible import constants as C
 from ansible import context
-from ansible.module_utils._text import to_text
+from ansible.module_utils.common.text.converters import to_text
 from ansible.utils.color import colorize, hostcolor
 from ansible.plugins.callback.default import CallbackModule as CallbackModule_default
 
@@ -61,7 +63,7 @@ class CallbackModule(CallbackModule_default):
 
     def _preprocess_result(self, result):
         self.delegated_vars = result._result.get('_ansible_delegated_vars', None)
-        self._handle_exception(result._result, use_stderr=self.display_failed_stderr)
+        self._handle_exception(result._result, use_stderr=self.get_option('display_failed_stderr'))
         self._handle_warnings(result._result)
 
     def _process_result_output(self, result, msg):
@@ -107,7 +109,7 @@ class CallbackModule(CallbackModule_default):
         self._display.display(msg)
 
     def v2_runner_on_skipped(self, result, ignore_errors=False):
-        if self.display_skipped_hosts:
+        if self.get_option('display_skipped_hosts'):
             self._preprocess_result(result)
             display_color = C.COLOR_SKIP
             msg = "skipped"
@@ -126,7 +128,7 @@ class CallbackModule(CallbackModule_default):
             msg += " | item: %s" % (item_value,)
 
         task_result = self._process_result_output(result, msg)
-        self._display.display("  " + task_result, display_color, stderr=self.display_failed_stderr)
+        self._display.display("  " + task_result, display_color, stderr=self.get_option('display_failed_stderr'))
 
     def v2_runner_on_ok(self, result, msg="ok", display_color=C.COLOR_OK):
         self._preprocess_result(result)
@@ -140,7 +142,7 @@ class CallbackModule(CallbackModule_default):
             display_color = C.COLOR_CHANGED
             task_result = self._process_result_output(result, msg)
             self._display.display("  " + task_result, display_color)
-        elif self.display_ok_hosts:
+        elif self.get('display_ok_hosts'):
             task_result = self._process_result_output(result, msg)
             self._display.display("  " + task_result, display_color)
 
@@ -160,7 +162,7 @@ class CallbackModule(CallbackModule_default):
         display_color = C.COLOR_UNREACHABLE
         task_result = self._process_result_output(result, msg)
 
-        self._display.display("  " + task_result, display_color, stderr=self.display_failed_stderr)
+        self._display.display("  " + task_result, display_color, stderr=self.get_option('display_failed_stderr'))
 
     def v2_on_file_diff(self, result):
         if result._task.loop and 'results' in result._result:
@@ -203,7 +205,7 @@ class CallbackModule(CallbackModule_default):
                 colorize(u'ignored', t['ignored'], None)),
                 log_only=True
             )
-        if stats.custom and self.show_custom_stats:
+        if stats.custom and self.get_option('show_custom_stats'):
             self._display.banner("CUSTOM STATS: ")
             # per host
             # TODO: come up with 'pretty format'

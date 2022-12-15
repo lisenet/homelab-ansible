@@ -1,8 +1,10 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 #
 # Copyright (c) 2015 CenturyLink
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -10,7 +12,7 @@ __metaclass__ = type
 
 DOCUMENTATION = '''
 module: clc_alert_policy
-short_description: Create or Delete Alert Policies at CenturyLink Cloud.
+short_description: Create or Delete Alert Policies at CenturyLink Cloud
 description:
   - An Ansible module to Create or Delete Alert Policies at CenturyLink Cloud.
 options:
@@ -18,7 +20,7 @@ options:
     description:
       - The alias of your CLC Account
     type: str
-    required: True
+    required: true
   name:
     description:
       - The name of the alert policy. This is mutually exclusive with id
@@ -32,6 +34,7 @@ options:
       - A list of recipient email ids to notify the alert.
         This is required for state 'present'
     type: list
+    elements: str
   metric:
     description:
       - The metric on which to measure the condition that will trigger the alert.
@@ -78,7 +81,7 @@ EXAMPLES = '''
 ---
 - name: Create Alert Policy Example
   hosts: localhost
-  gather_facts: False
+  gather_facts: false
   connection: local
   tasks:
     - name: Create an Alert Policy for disk above 80% for 5 minutes
@@ -99,7 +102,7 @@ EXAMPLES = '''
 
 - name: Delete Alert Policy Example
   hosts: localhost
-  gather_facts: False
+  gather_facts: false
   connection: local
   tasks:
     - name: Delete an Alert Policy
@@ -159,7 +162,8 @@ __version__ = '${version}'
 import json
 import os
 import traceback
-from distutils.version import LooseVersion
+
+from ansible_collections.community.general.plugins.module_utils.version import LooseVersion
 
 REQUESTS_IMP_ERR = None
 try:
@@ -220,13 +224,12 @@ class ClcAlertPolicy:
             name=dict(),
             id=dict(),
             alias=dict(required=True),
-            alert_recipients=dict(type='list'),
+            alert_recipients=dict(type='list', elements='str'),
             metric=dict(
                 choices=[
                     'cpu',
                     'memory',
-                    'disk'],
-                default=None),
+                    'disk']),
             duration=dict(type='str'),
             threshold=dict(type='int'),
             state=dict(default='present', choices=['present', 'absent'])

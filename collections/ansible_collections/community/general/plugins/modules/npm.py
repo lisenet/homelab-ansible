@@ -1,45 +1,46 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # Copyright (c) 2017 Chris Hoffman <christopher.hoffman@gmail.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 
-DOCUMENTATION = '''
+DOCUMENTATION = r'''
 ---
 module: npm
 short_description: Manage node.js packages with npm
 description:
-  - Manage node.js packages with Node Package Manager (npm)
+  - Manage node.js packages with Node Package Manager (npm).
 author: "Chris Hoffman (@chrishoffman)"
 options:
   name:
     description:
-      - The name of a node.js library to install
+      - The name of a node.js library to install.
     type: str
     required: false
   path:
     description:
-      - The base path where to install the node.js libraries
+      - The base path where to install the node.js libraries.
     type: path
     required: false
   version:
     description:
-      - The version to be installed
+      - The version to be installed.
     type: str
     required: false
   global:
     description:
-      - Install the node.js library globally
+      - Install the node.js library globally.
     required: false
-    default: no
+    default: false
     type: bool
   executable:
     description:
       - The executable location for npm.
-      - This is useful if you are using a version manager, such as nvm
+      - This is useful if you are using a version manager, such as nvm.
     type: path
     required: false
   ignore_scripts:
@@ -47,23 +48,23 @@ options:
       - Use the C(--ignore-scripts) flag when installing.
     required: false
     type: bool
-    default: no
+    default: false
   unsafe_perm:
     description:
       - Use the C(--unsafe-perm) flag when installing.
     type: bool
-    default: no
+    default: false
   ci:
     description:
-      - Install packages based on package-lock file, same as running npm ci
+      - Install packages based on package-lock file, same as running C(npm ci).
     type: bool
-    default: no
+    default: false
   production:
     description:
-      - Install dependencies in production mode, excluding devDependencies
+      - Install dependencies in production mode, excluding devDependencies.
     required: false
     type: bool
-    default: no
+    default: false
   registry:
     description:
       - The registry to install modules from.
@@ -71,16 +72,28 @@ options:
     type: str
   state:
     description:
-      - The state of the node.js library
+      - The state of the node.js library.
     required: false
     type: str
     default: present
     choices: [ "present", "absent", "latest" ]
+  no_optional:
+    description:
+      - Use the C(--no-optional) flag when installing.
+    type: bool
+    default: false
+    version_added: 2.0.0
+  no_bin_links:
+    description:
+      - Use the C(--no-bin-links) flag when installing.
+    type: bool
+    default: false
+    version_added: 2.5.0
 requirements:
     - npm installed in bin path (recommended /usr/local/bin)
 '''
 
-EXAMPLES = '''
+EXAMPLES = r'''
 - name: Install "coffee-script" node.js package.
   community.general.npm:
     name: coffee-script
@@ -95,12 +108,12 @@ EXAMPLES = '''
 - name: Install "coffee-script" node.js package globally.
   community.general.npm:
     name: coffee-script
-    global: yes
+    global: true
 
 - name: Remove the globally package "coffee-script".
   community.general.npm:
     name: coffee-script
-    global: yes
+    global: true
     state: absent
 
 - name: Install "coffee-script" node.js package from custom registry.
@@ -124,12 +137,12 @@ EXAMPLES = '''
     state: present
 '''
 
+import json
 import os
 import re
 
 from ansible.module_utils.basic import AnsibleModule
-
-import json
+from ansible.module_utils.common.text.converters import to_native
 
 
 class Npm(object):
@@ -144,6 +157,8 @@ class Npm(object):
         self.ignore_scripts = kwargs['ignore_scripts']
         self.unsafe_perm = kwargs['unsafe_perm']
         self.state = kwargs['state']
+        self.no_optional = kwargs['no_optional']
+        self.no_bin_links = kwargs['no_bin_links']
 
         if kwargs['executable']:
             self.executable = kwargs['executable'].split(' ')
@@ -155,23 +170,27 @@ class Npm(object):
         else:
             self.name_version = self.name
 
-    def _exec(self, args, run_in_check_mode=False, check_rc=True):
+    def _exec(self, args, run_in_check_mode=False, check_rc=True, add_package_name=True):
         if not self.module.check_mode or (self.module.check_mode and run_in_check_mode):
             cmd = self.executable + args
 
             if self.glbl:
                 cmd.append('--global')
-            if self.production and ('install' in cmd or 'update' in cmd):
+            if self.production and ('install' in cmd or 'update' in cmd or 'ci' in cmd):
                 cmd.append('--production')
             if self.ignore_scripts:
                 cmd.append('--ignore-scripts')
             if self.unsafe_perm:
                 cmd.append('--unsafe-perm')
-            if self.name:
+            if self.name_version and add_package_name:
                 cmd.append(self.name_version)
             if self.registry:
                 cmd.append('--registry')
                 cmd.append(self.registry)
+            if self.no_optional:
+                cmd.append('--no-optional')
+            if self.no_bin_links:
+                cmd.append('--no-bin-links')
 
             # If path is specified, cd into that path and run the command.
             cwd = None
@@ -191,16 +210,24 @@ class Npm(object):
 
         installed = list()
         missing = list()
-        data = json.loads(self._exec(cmd, True, False))
+        data = {}
+        try:
+            data = json.loads(self._exec(cmd, True, False, False) or '{}')
+        except (getattr(json, 'JSONDecodeError', ValueError)) as e:
+            self.module.fail_json(msg="Failed to parse NPM output with error %s" % to_native(e))
         if 'dependencies' in data:
-            for dep in data['dependencies']:
-                if 'missing' in data['dependencies'][dep] and data['dependencies'][dep]['missing']:
+            for dep, props in data['dependencies'].items():
+
+                if 'missing' in props and props['missing']:
                     missing.append(dep)
-                elif 'invalid' in data['dependencies'][dep] and data['dependencies'][dep]['invalid']:
+                elif 'invalid' in props and props['invalid']:
                     missing.append(dep)
                 else:
                     installed.append(dep)
-            if self.name and self.name not in installed:
+                    if 'version' in props and props['version']:
+                        dep_version = dep + '@' + str(props['version'])
+                        installed.append(dep_version)
+            if self.name_version and self.name_version not in installed:
                 missing.append(self.name)
         # Named dependency not installed
         else:
@@ -245,6 +272,8 @@ def main():
         ignore_scripts=dict(default=False, type='bool'),
         unsafe_perm=dict(default=False, type='bool'),
         ci=dict(default=False, type='bool'),
+        no_optional=dict(default=False, type='bool'),
+        no_bin_links=dict(default=False, type='bool'),
     )
     arg_spec['global'] = dict(default=False, type='bool')
     module = AnsibleModule(
@@ -263,6 +292,8 @@ def main():
     ignore_scripts = module.params['ignore_scripts']
     unsafe_perm = module.params['unsafe_perm']
     ci = module.params['ci']
+    no_optional = module.params['no_optional']
+    no_bin_links = module.params['no_bin_links']
 
     if not path and not glbl:
         module.fail_json(msg='path must be specified when not using global')
@@ -271,7 +302,7 @@ def main():
 
     npm = Npm(module, name=name, path=path, version=version, glbl=glbl, production=production,
               executable=executable, registry=registry, ignore_scripts=ignore_scripts,
-              unsafe_perm=unsafe_perm, state=state)
+              unsafe_perm=unsafe_perm, state=state, no_optional=no_optional, no_bin_links=no_bin_links)
 
     changed = False
     if ci:

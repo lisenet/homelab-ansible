@@ -1,7 +1,12 @@
+---
 ####################################################################
 # WARNING: These are designed specifically for Ansible tests       #
 # and should not be used as examples of how to write Ansible roles #
 ####################################################################
+
+# Copyright (c) Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 - block:
   - tempfile:
@@ -9,7 +14,7 @@
       suffix: supervisorctl-tests
     register: supervisord_sock_path
 
-  - command: 'echo {{ output_dir }}'
+  - command: 'echo {{ remote_tmp_dir }}'
     register: echo
   - set_fact:
       remote_dir: '{{ echo.stdout }}'
@@ -21,7 +26,7 @@
           - '{{ ansible_os_family }}.yml'
           - 'defaults.yml'
 
-  - include_tasks: '{{ item }}'
+  - include_tasks: '{{ item }}'
     with_first_found:
       - files:
         - 'install_{{ ansible_distribution }}.yml' # CentOS
@@ -39,7 +44,7 @@
   when: ansible_os_family != 'RedHat' or ansible_distribution_major_version|int > 6
 
   always:
-  - include_tasks: '{{ item }}'
+  - include_tasks: '{{ item }}'
     when: ansible_os_family != 'RedHat' or ansible_distribution_major_version|int > 6
     with_first_found:
       - files:

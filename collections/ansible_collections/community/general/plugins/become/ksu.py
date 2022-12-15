@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
-# Copyright: (c) 2018, Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2018, Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = '''
-    become: ksu
+    name: ksu
     short_description: Kerberos substitute user
     description:
         - This become plugins allows your remote/login user to execute commands as another user via the ksu utility.
-    author: ansible (@core)
+    author: Ansible Core Team
     options:
         become_user:
             description: User you 'become' to execute the task
@@ -24,7 +25,7 @@ DOCUMENTATION = '''
             env:
               - name: ANSIBLE_BECOME_USER
               - name: ANSIBLE_KSU_USER
-            required: True
+            required: true
         become_exe:
             description: Su executable
             default: ksu
@@ -55,7 +56,7 @@ DOCUMENTATION = '''
               - name: ANSIBLE_KSU_FLAGS
         become_pass:
             description: ksu password
-            required: False
+            required: false
             vars:
               - name: ansible_ksu_pass
               - name: ansible_become_pass
@@ -82,7 +83,7 @@ DOCUMENTATION = '''
 
 import re
 
-from ansible.module_utils._text import to_bytes
+from ansible.module_utils.common.text.converters import to_bytes
 from ansible.plugins.become import BecomeBase
 
 

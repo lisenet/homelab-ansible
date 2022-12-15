@@ -1,6 +1,8 @@
 #!/usr/bin/python
-# GNU General Public License v3.0+ (see COPYING or
-# https://www.gnu.org/licenses/gpl-3.0.txt)
+# -*- coding: utf-8 -*-
+# Copyright (c) Ansible project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 #
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
@@ -20,6 +22,7 @@ options:
   uuid:
     description:
       uuid of device, this is string with length greater than 16.
+    type: str
 
   command_options:
     description:
@@ -29,10 +32,12 @@ options:
         - cmms
         - cmms_by_uuid
         - cmms_by_chassis_uuid
+    type: str
 
   chassis:
     description:
       uuid of chassis, this is string with length greater than 16.
+    type: str
 
 extends_documentation_fragment:
 - community.general.lxca_common

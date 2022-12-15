@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 # Copyright 2014, Max Riveiro, <kavu13@gmail.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -55,11 +56,11 @@ options:
     default: 'https://api.rollbar.com/api/1/deploy/'
   validate_certs:
     description:
-      - If C(no), SSL certificates for the target url will not be validated.
+      - If C(false), SSL certificates for the target url will not be validated.
         This should only be used on personally controlled sites using
         self-signed certificates.
     required: false
-    default: 'yes'
+    default: true
     type: bool
 '''
 
@@ -84,7 +85,7 @@ import traceback
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six.moves.urllib.parse import urlencode
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 from ansible.module_utils.urls import fetch_url
 
 
@@ -92,7 +93,7 @@ def main():
 
     module = AnsibleModule(
         argument_spec=dict(
-            token=dict(required=True),
+            token=dict(required=True, no_log=True),
             environment=dict(required=True),
             revision=dict(required=True),
             user=dict(required=False),

@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2018, Martin Migasiewicz <migasiew.nk@gmail.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2018, Martin Migasiewicz <migasiew.nk@gmail.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -12,7 +13,7 @@ DOCUMENTATION = r'''
 module: launchd
 author:
 - Martin Migasiewicz (@martinm82)
-short_description:  Manage macOS services
+short_description: Manage macOS services
 version_added: 1.0.0
 description:
 - Manage launchd services on target macOS hosts.
@@ -46,9 +47,9 @@ options:
       - Whether the service should not be restarted automatically by launchd.
       - Services might have the 'KeepAlive' attribute set to true in a launchd configuration.
         In case this is set to true, stopping a service will cause that launchd starts the service again.
-      - Set this option to C(yes) to let this module change the 'KeepAlive' attribute to false.
+      - Set this option to C(true) to let this module change the 'KeepAlive' attribute to false.
       type: bool
-      default: no
+      default: false
 notes:
 - A user must privileged to manage services using this module.
 requirements:
@@ -81,7 +82,7 @@ EXAMPLES = r'''
   community.general.launchd:
     name: org.memcached
     state: stopped
-    force_stop: yes
+    force_stop: true
 
 - name: Restart memcached
   community.general.launchd:
@@ -114,6 +115,7 @@ from abc import ABCMeta, abstractmethod
 from time import sleep
 
 from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.common.text.converters import to_native
 
 
 class ServiceState:
@@ -140,21 +142,25 @@ class Plist:
         self.__changed = False
         self.__service = service
 
-        state, pid, dummy, dummy = LaunchCtlList(module, service).run()
+        state, pid, dummy, dummy = LaunchCtlList(module, self.__service).run()
 
-        self.__file = self.__find_service_plist(service)
+        # Check if readPlist is available or not
+        self.old_plistlib = hasattr(plistlib, 'readPlist')
+
+        self.__file = self.__find_service_plist(self.__service)
         if self.__file is None:
-            msg = 'Unable to infer the path of %s service plist file' % service
+            msg = 'Unable to infer the path of %s service plist file' % self.__service
             if pid is None and state == ServiceState.UNLOADED:
                 msg += ' and it was not found among active services'
             module.fail_json(msg=msg)
         self.__update(module)
 
-    def __find_service_plist(self, service_name):
+    @staticmethod
+    def __find_service_plist(service_name):
         """Finds the plist file associated with a service"""
 
         launchd_paths = [
-            os.path.expanduser('~/Library/LaunchAgents'),
+            os.path.join(os.getenv('HOME'), 'Library/LaunchAgents'),
             '/Library/LaunchAgents',
             '/Library/LaunchDaemons',
             '/System/Library/LaunchAgents',
@@ -176,9 +182,38 @@ class Plist:
         self.__handle_param_enabled(module)
         self.__handle_param_force_stop(module)
 
+    def __read_plist_file(self, module):
+        service_plist = {}
+        if self.old_plistlib:
+            return plistlib.readPlist(self.__file)
+
+        # readPlist is deprecated in Python 3 and onwards
+        try:
+            with open(self.__file, 'rb') as plist_fp:
+                service_plist = plistlib.load(plist_fp)
+        except Exception as e:
+            module.fail_json(msg="Failed to read plist file "
+                                 "%s due to %s" % (self.__file, to_native(e)))
+        return service_plist
+
+    def __write_plist_file(self, module, service_plist=None):
+        if not service_plist:
+            service_plist = {}
+
+        if self.old_plistlib:
+            plistlib.writePlist(service_plist, self.__file)
+            return
+        # writePlist is deprecated in Python 3 and onwards
+        try:
+            with open(self.__file, 'wb') as plist_fp:
+                plistlib.dump(service_plist, plist_fp)
+        except Exception as e:
+            module.fail_json(msg="Failed to write to plist file "
+                                 " %s due to %s" % (self.__file, to_native(e)))
+
     def __handle_param_enabled(self, module):
         if module.params['enabled'] is not None:
-            service_plist = plistlib.readPlist(self.__file)
+            service_plist = self.__read_plist_file(module)
 
             # Enable/disable service startup at boot if requested
             # Launchctl does not expose functionality to set the RunAtLoad
@@ -191,12 +226,12 @@ class Plist:
 
                     # Update the plist with one of the changes done.
                     if not module.check_mode:
-                        plistlib.writePlist(service_plist, self.__file)
+                        self.__write_plist_file(module, service_plist)
                         self.__changed = True
 
     def __handle_param_force_stop(self, module):
         if module.params['force_stop'] is not None:
-            service_plist = plistlib.readPlist(self.__file)
+            service_plist = self.__read_plist_file(module)
 
             # Set KeepAlive to false in case force_stop is defined to avoid
             # that the service gets restarted when stopping was requested.
@@ -207,7 +242,7 @@ class Plist:
 
                     # Update the plist with one of the changes done.
                     if not module.check_mode:
-                        plistlib.writePlist(service_plist, self.__file)
+                        self.__write_plist_file(module, service_plist)
                         self.__changed = True
 
     def is_changed(self):
@@ -325,7 +360,7 @@ class LaunchCtlStart(LaunchCtlTask):
     def runCommand(self):
         state, dummy, dummy, dummy = self.get_state()
 
-        if state == ServiceState.STOPPED or state == ServiceState.LOADED:
+        if state in (ServiceState.STOPPED, ServiceState.LOADED):
             self.reload()
             self.start()
         elif state == ServiceState.STARTED:
@@ -361,7 +396,7 @@ class LaunchCtlStop(LaunchCtlTask):
             if self._plist.is_changed():
                 self.reload()
                 self.stop()
-        elif state == ServiceState.STARTED or state == ServiceState.LOADED:
+        elif state in (ServiceState.STARTED, ServiceState.LOADED):
             if self._plist.is_changed():
                 self.reload()
             self.stop()

@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright (c) 2018, Simon Weald <ansible@simonweald.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
@@ -11,13 +12,16 @@ DOCUMENTATION = '''
 ---
 module: memset_memstore_info
 author: "Simon Weald (@glitchcrab)"
-short_description: Retrieve Memstore product usage information.
+short_description: Retrieve Memstore product usage information
 notes:
     - An API key generated via the Memset customer control panel is needed with the
       following minimum scope - I(memstore.usage).
 description:
     - Retrieve Memstore product usage information.
     - This module was called C(memset_memstore_facts) before Ansible 2.9. The usage did not change.
+extends_documentation_fragment:
+    - community.general.attributes
+    - community.general.attributes.info_module
 options:
     api_key:
         required: true
@@ -127,7 +131,7 @@ def get_facts(args=None):
         retvals['failed'] = has_failed
         retvals['msg'] = msg
         retvals['stderr'] = "API returned an error: {0}" . format(response.status_code)
-        return(retvals)
+        return retvals
 
     # we don't want to return the same thing twice
     msg = None
@@ -139,7 +143,7 @@ def get_facts(args=None):
         if val is not None:
             retvals[val] = eval(val)
 
-    return(retvals)
+    return retvals
 
 
 def main():
@@ -149,11 +153,8 @@ def main():
             api_key=dict(required=True, type='str', no_log=True),
             name=dict(required=True, type='str')
         ),
-        supports_check_mode=False
+        supports_check_mode=True,
     )
-    if module._name in ('memset_memstore_facts', 'community.general.memset_memstore_facts'):
-        module.deprecate("The 'memset_memstore_facts' module has been renamed to 'memset_memstore_info'",
-                         version='3.0.0', collection_name='community.general')  # was Ansible 2.13
 
     # populate the dict with the user-provided vars.
     args = dict()

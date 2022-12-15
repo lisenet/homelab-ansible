@@ -1,6 +1,8 @@
 #!/usr/bin/python
-# Copyright: Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# -*- coding: utf-8 -*-
+# Copyright Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -8,7 +10,7 @@ __metaclass__ = type
 
 DOCUMENTATION = '''
 module: rax_cdb_database
-short_description: 'create / delete a database in the Cloud Databases'
+short_description: Create / delete a database in the Cloud Databases
 description:
   - create / delete a database in the Cloud Databases.
 options:
@@ -16,12 +18,12 @@ options:
     type: str
     description:
       - The databases server UUID
-    required: yes
+    required: true
   name:
     type: str
     description:
       - Name to give to the database
-    required: yes
+    required: true
   character_set:
     type: str
     description:

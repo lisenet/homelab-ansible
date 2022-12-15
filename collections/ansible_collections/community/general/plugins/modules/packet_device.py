@@ -1,9 +1,10 @@
 #!/usr/bin/python
-# (c) 2016, Tomas Karasek <tom.to.the.k@gmail.com>
-# (c) 2016, Matt Baldwin <baldwin@stackpointcloud.com>
-# (c) 2016, Thibaud Morel l'Horset <teebes@gmail.com>
-#
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# -*- coding: utf-8 -*-
+# Copyright (c) 2016, Tomas Karasek <tom.to.the.k@gmail.com>
+# Copyright (c) 2016, Matt Baldwin <baldwin@stackpointcloud.com>
+# Copyright (c) 2016, Thibaud Morel l'Horset <teebes@gmail.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -13,7 +14,7 @@ DOCUMENTATION = '''
 ---
 module: packet_device
 
-short_description: Manage a bare metal server in the Packet Host.
+short_description: Manage a bare metal server in the Packet Host
 
 description:
     - Manage a bare metal server in the Packet Host (a "device" in the API terms).
@@ -31,20 +32,25 @@ options:
   auth_token:
     description:
       - Packet API token. You can also supply it in env var C(PACKET_API_TOKEN).
+    type: str
 
   count:
     description:
       - The number of devices to create. Count number can be included in hostname via the %d string formatter.
     default: 1
+    type: int
 
   count_offset:
     description:
       - From which number to start the count.
     default: 1
+    type: int
 
   device_ids:
     description:
       - List of device IDs on which to operate.
+    type: list
+    elements: str
 
   tags:
     description:
@@ -57,10 +63,12 @@ options:
   facility:
     description:
       - Facility slug for device creation. See Packet API for current list - U(https://www.packet.net/developers/api/facilities/).
+    type: str
 
   features:
     description:
       - Dict with "features" for device creation. See Packet API docs for details.
+    type: dict
 
   hostnames:
     description:
@@ -68,6 +76,8 @@ options:
       - If given string or one-item list, you can use the C("%d") Python string format to expand numbers from I(count).
       - If only one hostname, it might be expanded to list if I(count)>1.
     aliases: [name]
+    type: list
+    elements: str
 
   locked:
     description:
@@ -79,15 +89,18 @@ options:
   operating_system:
     description:
       - OS slug for device creation. See Packet API for current list - U(https://www.packet.net/developers/api/operatingsystems/).
+    type: str
 
   plan:
     description:
       - Plan slug for device creation. See Packet API for current list - U(https://www.packet.net/developers/api/plans/).
+    type: str
 
   project_id:
     description:
       - ID of project of the device.
     required: true
+    type: str
 
   state:
     description:
@@ -96,10 +109,12 @@ options:
       - If set to C(active), the module call will block until all the specified devices are in state active due to the Packet API, or until I(wait_timeout).
     choices: [present, absent, active, inactive, rebooted]
     default: present
+    type: str
 
   user_data:
     description:
       - Userdata blob made available to the machine
+    type: str
 
   wait_for_public_IPv:
     description:
@@ -107,16 +122,22 @@ options:
       - If set to 4, it will wait until IPv4 is assigned to the instance.
       - If set to 6, wait until public IPv6 is assigned to the instance.
     choices: [4,6]
+    type: int
 
   wait_timeout:
     description:
       - How long (seconds) to wait either for automatic IP address assignment, or for the device to reach the C(active) I(state).
       - If I(wait_for_public_IPv) is set and I(state) is C(active), the module will wait for both events consequently, applying the timeout twice.
     default: 900
+    type: int
+
   ipxe_script_url:
     description:
       - URL of custom iPXE script for provisioning.
       - More about custom iPXE for Packet devices at U(https://help.packet.net/technical/infrastructure/custom-ipxe).
+    type: str
+    default: ''
+
   always_pxe:
     description:
       - Persist PXE as the first boot option.
@@ -235,16 +256,23 @@ RETURN = '''
 changed:
     description: True if a device was altered in any way (created, modified or removed)
     type: bool
-    sample: True
+    sample: true
     returned: success
 
 devices:
     description: Information about each device that was processed
     type: list
-    sample: '[{"hostname": "my-server.com", "id": "2a5122b9-c323-4d5c-b53c-9ad3f54273e7",
-               "public_ipv4": "147.229.15.12", "private-ipv4": "10.0.15.12",
-               "tags": [], "locked": false, "state": "provisioning",
-               "public_ipv6": ""2604:1380:2:5200::3"}]'
+    sample:
+      - {
+            "hostname": "my-server.com",
+            "id": "2a5122b9-c323-4d5c-b53c-9ad3f54273e7",
+            "public_ipv4": "147.229.15.12",
+            "private-ipv4": "10.0.15.12",
+            "tags": [],
+            "locked": false,
+            "state": "provisioning",
+            "public_ipv6": "2604:1380:2:5200::3"
+        }
     returned: success
 '''  # NOQA
 
@@ -256,7 +284,7 @@ import uuid
 import traceback
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 HAS_PACKET_SDK = True
 try:
@@ -489,11 +517,10 @@ def wait_for_devices_active(module, packet_conn, watched_devices):
 def wait_for_public_IPv(module, packet_conn, created_devices):
 
     def has_public_ip(addr_list, ip_v):
-        return any([a['public'] and a['address_family'] == ip_v and
-                    a['address'] for a in addr_list])
+        return any(a['public'] and a['address_family'] == ip_v and a['address'] for a in addr_list)
 
     def all_have_public_ip(ds, ip_v):
-        return all([has_public_ip(d.ip_addresses, ip_v) for d in ds])
+        return all(has_public_ip(d.ip_addresses, ip_v) for d in ds)
 
     address_family = module.params.get('wait_for_public_IPv')
 
@@ -601,17 +628,17 @@ def main():
                             no_log=True),
             count=dict(type='int', default=1),
             count_offset=dict(type='int', default=1),
-            device_ids=dict(type='list'),
+            device_ids=dict(type='list', elements='str'),
             facility=dict(),
             features=dict(type='dict'),
-            hostnames=dict(type='list', aliases=['name']),
+            hostnames=dict(type='list', elements='str', aliases=['name']),
             tags=dict(type='list', elements='str'),
             locked=dict(type='bool', default=False, aliases=['lock']),
             operating_system=dict(),
             plan=dict(),
             project_id=dict(required=True),
             state=dict(choices=ALLOWED_STATES, default='present'),
-            user_data=dict(default=None),
+            user_data=dict(),
             wait_for_public_IPv=dict(type='int', choices=[4, 6]),
             wait_timeout=dict(type='int', default=900),
             ipxe_script_url=dict(default=''),

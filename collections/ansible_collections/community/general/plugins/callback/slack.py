@@ -1,6 +1,8 @@
-# (C) 2014-2015, Matt Martz <matt@sivel.net>
-# (C) 2017 Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# -*- coding: utf-8 -*-
+# Copyright (c) 2014-2015, Matt Martz <matt@sivel.net>
+# Copyright (c) 2017 Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 # Make coding more python3-ish
 from __future__ import (absolute_import, division, print_function)
@@ -8,7 +10,7 @@ __metaclass__ = type
 
 DOCUMENTATION = '''
     author: Unknown (!UNKNOWN)
-    callback: slack
+    name: slack
     type: notification
     requirements:
       - whitelist in configuration
@@ -19,7 +21,7 @@ DOCUMENTATION = '''
         - Before 2.4 only environment variables were available for configuring this plugin
     options:
       webhook_url:
-        required: True
+        required: true
         description: Slack Webhook URL
         env:
           - name: SLACK_WEBHOOK_URL
@@ -49,7 +51,7 @@ DOCUMENTATION = '''
         ini:
           - section: callback_slack
             key: validate_certs
-        default: True
+        default: true
         type: bool
 '''
 
@@ -58,7 +60,7 @@ import os
 import uuid
 
 from ansible import context
-from ansible.module_utils._text import to_text
+from ansible.module_utils.common.text.converters import to_text
 from ansible.module_utils.urls import open_url
 from ansible.plugins.callback import CallbackBase
 

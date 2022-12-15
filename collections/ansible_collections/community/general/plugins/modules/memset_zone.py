@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright (c) 2018, Simon Weald <ansible@simonweald.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
@@ -11,7 +12,7 @@ DOCUMENTATION = '''
 ---
 module: memset_zone
 author: "Simon Weald (@glitchcrab)"
-short_description: Creates and deletes Memset DNS zones.
+short_description: Creates and deletes Memset DNS zones
 notes:
   - Zones can be thought of as a logical group of domains, all of which share the
     same DNS records (i.e. they point to the same IP). An API key generated via the
@@ -43,6 +44,7 @@ options:
             - The default TTL for all records created in the zone. This must be a
               valid int from U(https://www.memset.com/apidocs/methods_dns.html#dns.zone_create).
         type: int
+        default: 0
         choices: [ 0, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400 ]
     force:
         required: false
@@ -139,7 +141,7 @@ def check(args=None):
     retvals['changed'] = has_changed
     retvals['failed'] = has_failed
 
-    return(retvals)
+    return retvals
 
 
 def create_zone(args=None, zone_exists=None, payload=None):
@@ -185,7 +187,7 @@ def create_zone(args=None, zone_exists=None, payload=None):
         _has_failed, _msg, response = memset_api_call(api_key=args['api_key'], api_method=api_method, payload=payload)
         memset_api = response.json()
 
-    return(has_failed, has_changed, memset_api, msg)
+    return has_failed, has_changed, memset_api, msg
 
 
 def delete_zone(args=None, zone_exists=None, payload=None):
@@ -233,7 +235,7 @@ def delete_zone(args=None, zone_exists=None, payload=None):
     else:
         has_failed, has_changed = False, False
 
-    return(has_failed, has_changed, memset_api, msg)
+    return has_failed, has_changed, memset_api, msg
 
 
 def create_or_delete(args=None):
@@ -255,7 +257,7 @@ def create_or_delete(args=None):
         retvals['failed'] = _has_failed
         retvals['msg'] = _msg
 
-        return(retvals)
+        return retvals
 
     zone_exists, _msg, counter, _zone_id = get_zone_id(zone_name=args['name'], current_zones=response.json())
 
@@ -271,7 +273,7 @@ def create_or_delete(args=None):
         if val is not None:
             retvals[val] = eval(val)
 
-    return(retvals)
+    return retvals
 
 
 def main():

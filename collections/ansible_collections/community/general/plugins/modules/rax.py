@@ -1,6 +1,8 @@
 #!/usr/bin/python
-# Copyright: Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# -*- coding: utf-8 -*-
+# Copyright Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -9,7 +11,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: rax
-short_description: create / delete an instance in Rackspace Public Cloud
+short_description: Create / delete an instance in Rackspace Public Cloud
 description:
      - creates / deletes a Rackspace Public Cloud instance and optionally
        waits for it to be 'running'.
@@ -20,15 +22,15 @@ options:
         created servers. Only applicable when used with the I(group) attribute
         or meta key.
     type: bool
-    default: 'yes'
+    default: true
   boot_from_volume:
     description:
       - Whether or not to boot the instance from a Cloud Block Storage volume.
-        If C(yes) and I(image) is specified a new volume will be created at
+        If C(true) and I(image) is specified a new volume will be created at
         boot time. I(boot_volume_size) is required with I(image) to create a
         new volume at boot time.
     type: bool
-    default: 'no'
+    default: false
   boot_volume:
     type: str
     description:
@@ -45,12 +47,12 @@ options:
       - Whether the I(boot_volume) or newly created volume from I(image) will
         be terminated when the server is terminated
     type: bool
-    default: 'no'
+    default: false
   config_drive:
     description:
       - Attach read-only configuration drive to server as label config-2
     type: bool
-    default: 'no'
+    default: false
   count:
     type: int
     description:
@@ -72,25 +74,28 @@ options:
   exact_count:
     description:
       - Explicitly ensure an exact count of instances, used with
-        state=active/present. If specified as C(yes) and I(count) is less than
+        state=active/present. If specified as C(true) and I(count) is less than
         the servers matched, servers will be deleted to match the count. If
         the number of matched servers is fewer than specified in I(count)
         additional servers will be added.
     type: bool
-    default: 'no'
+    default: false
   extra_client_args:
     type: dict
+    default: {}
     description:
       - A hash of key/value pairs to be used when creating the cloudservers
         client. This is considered an advanced option, use it wisely and
         with caution.
   extra_create_args:
     type: dict
+    default: {}
     description:
       - A hash of key/value pairs to be used when creating a new server.
         This is considered an advanced option, use it wisely and with caution.
   files:
     type: dict
+    default: {}
     description:
       - Files to insert into the instance. remotefilename:localcontent
   flavor:
@@ -110,6 +115,7 @@ options:
         with this image
   instance_ids:
     type: list
+    elements: str
     description:
       - list of instance ids, currently only used when state='absent' to
         remove instances
@@ -121,6 +127,7 @@ options:
       - keypair
   meta:
     type: dict
+    default: {}
     description:
       - A hash of metadata to associate with the instance
   name:
@@ -129,6 +136,7 @@ options:
       - Name to give the instance
   networks:
     type: list
+    elements: str
     description:
       - The network to attach to the instances. If specified, you must include
         ALL networks including the public and private interfaces. Can be C(id)
@@ -153,7 +161,7 @@ options:
     description:
       - wait for the instance to be in state 'running' before returning
     type: bool
-    default: 'no'
+    default: false
   wait_timeout:
     type: int
     description:
@@ -175,7 +183,7 @@ extends_documentation_fragment:
 
 EXAMPLES = '''
 - name: Build a Cloud Server
-  gather_facts: False
+  gather_facts: false
   tasks:
     - name: Server build request
       local_action:
@@ -187,7 +195,7 @@ EXAMPLES = '''
         key_name: my_rackspace_key
         files:
           /root/test.txt: /home/localuser/test.txt
-        wait: yes
+        wait: true
         state: present
         networks:
           - private
@@ -196,7 +204,7 @@ EXAMPLES = '''
 
 - name: Build an exact count of cloud servers with incremented names
   hosts: local
-  gather_facts: False
+  gather_facts: false
   tasks:
     - name: Server build requests
       local_action:
@@ -208,9 +216,9 @@ EXAMPLES = '''
         state: present
         count: 10
         count_offset: 10
-        exact_count: yes
+        exact_count: true
         group: test
-        wait: yes
+        wait: true
       register: rax
 '''
 
@@ -810,12 +818,11 @@ def main():
             flavor=dict(),
             group=dict(),
             image=dict(),
-            instance_ids=dict(type='list'),
+            instance_ids=dict(type='list', elements='str'),
             key_name=dict(aliases=['keypair']),
             meta=dict(type='dict', default={}),
             name=dict(),
-            networks=dict(type='list', default=['public', 'private']),
-            service=dict(),
+            networks=dict(type='list', elements='str', default=['public', 'private']),
             state=dict(default='present', choices=['present', 'absent']),
             user_data=dict(no_log=True),
             wait=dict(default=False, type='bool'),
@@ -830,13 +837,6 @@ def main():
 
     if not HAS_PYRAX:
         module.fail_json(msg='pyrax is required for this module')
-
-    service = module.params.get('service')
-
-    if service is not None:
-        module.fail_json(msg='The "service" attribute has been deprecated, '
-                             'please remove "service: cloudservers" from your '
-                             'playbook pertaining to the "rax" module')
 
     auto_increment = module.params.get('auto_increment')
     boot_from_volume = module.params.get('boot_from_volume')

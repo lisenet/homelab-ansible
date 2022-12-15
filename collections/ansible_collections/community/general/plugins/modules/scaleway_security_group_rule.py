@@ -1,11 +1,12 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 #
 # Scaleway Security Group Rule management module
 #
 # Copyright (C) 2018 Antoine Barbare (antoinebarbare@gmail.com).
 #
-# GNU General Public License v3.0+ (see COPYING or
-# https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 
@@ -17,11 +18,12 @@ module: scaleway_security_group_rule
 short_description: Scaleway Security Group Rule management module
 author: Antoine Barbare (@abarbare)
 description:
-    - This module manages Security Group Rule on Scaleway account
-      U(https://developer.scaleway.com)
+  - This module manages Security Group Rule on Scaleway account
+    U(https://developer.scaleway.com)
 extends_documentation_fragment:
-- community.general.scaleway
-
+  - community.general.scaleway
+requirements:
+  - ipaddress
 
 options:
   state:
@@ -43,6 +45,10 @@ options:
       - EMEA-NL-EVS
       - par1
       - EMEA-FR-PAR1
+      - par2
+      - EMEA-FR-PAR2
+      - waw1
+      - EMEA-PL-WAW1
 
   protocol:
     type: str
@@ -125,10 +131,20 @@ data:
     }
 '''
 
+import traceback
+
 from ansible_collections.community.general.plugins.module_utils.scaleway import SCALEWAY_LOCATION, scaleway_argument_spec, Scaleway, payload_from_object
-from ansible_collections.community.general.plugins.module_utils.compat.ipaddress import ip_network
-from ansible.module_utils._text import to_text
-from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.common.text.converters import to_text
+from ansible.module_utils.basic import AnsibleModule, missing_required_lib
+
+try:
+    from ipaddress import ip_network
+except ImportError:
+    IPADDRESS_IMP_ERR = traceback.format_exc()
+    HAS_IPADDRESS = False
+else:
+    IPADDRESS_IMP_ERR = None
+    HAS_IPADDRESS = True
 
 
 def get_sgr_from_api(security_group_rules, security_group_rule):
@@ -251,6 +267,8 @@ def main():
         argument_spec=argument_spec,
         supports_check_mode=True,
     )
+    if not HAS_IPADDRESS:
+        module.fail_json(msg=missing_required_lib('ipaddress'), exception=IPADDRESS_IMP_ERR)
 
     core(module)
 

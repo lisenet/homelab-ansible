@@ -16,10 +16,10 @@
     permanent: yes
     state: enabled
 
-- name: RedHat | Enable Service DHCP Failover in Firewalld
+- name: RedHat | Enable DHCP Failover Port {{ firewall_dhcp_failover_port }} in Firewalld
   firewalld:
     immediate: yes
-    port: "647/tcp"
+    port: "{{ firewall_dhcp_failover_port }}/tcp"
     permanent: yes
     state: enabled
 

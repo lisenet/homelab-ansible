@@ -1,7 +1,7 @@
 # Copyright (c) 2020 Shay Rybak <shay.rybak@stackpath.com>
 # Copyright (c) 2020 Ansible Project
-# GNGeneral Public License v3.0+
-# (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
@@ -66,6 +66,12 @@ def test_get_stack_slugs(inventory):
     ]
 
 
+def test_verify_file(tmp_path, inventory):
+    file = tmp_path / "foobar.stackpath_compute.yml"
+    file.touch()
+    assert inventory.verify_file(str(file)) is True
+
+
 def test_verify_file_bad_config(inventory):
     assert inventory.verify_file('foobar.stackpath_compute.yml') is False
 
@@ -101,7 +107,7 @@ def test_validate_config(inventory):
     }
     with pytest.raises(AnsibleError) as error_message:
         inventory._validate_config(config)
-        assert "config missing client_secret, a required paramter" in error_message
+        assert "config missing client_secret, a required parameter" in error_message
 
     config = {
         "client_secret": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
@@ -110,7 +116,7 @@ def test_validate_config(inventory):
     }
     with pytest.raises(AnsibleError) as error_message:
         inventory._validate_config(config)
-        assert "config missing client_id, a required paramter" in error_message
+        assert "config missing client_id, a required parameter" in error_message
 
 
 def test_populate(inventory):

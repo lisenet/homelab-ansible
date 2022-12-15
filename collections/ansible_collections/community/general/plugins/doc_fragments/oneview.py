@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright: (c) 2016-2017, Hewlett Packard Enterprise Development LP
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2016-2017, Hewlett Packard Enterprise Development LP
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
@@ -13,12 +14,32 @@ class ModuleDocFragment(object):
     DOCUMENTATION = r'''
 options:
     config:
-      description:
+        description:
         - Path to a .json configuration file containing the OneView client configuration.
           The configuration file is optional and when used should be present in the host running the ansible commands.
           If the file path is not provided, the configuration will be loaded from environment variables.
           For links to example configuration files or how to use the environment variables verify the notes section.
-      type: path
+        type: path
+    api_version:
+        description:
+        - OneView API Version.
+        type: int
+    image_streamer_hostname:
+        description:
+        - IP address or hostname for the HPE Image Streamer REST API.
+        type: str
+    hostname:
+        description:
+        - IP address or hostname for the appliance.
+        type: str
+    username:
+        description:
+        - Username for API authentication.
+        type: str
+    password:
+        description:
+        - Password for API authentication.
+        type: str
 
 requirements:
   - python >= 2.7.9
@@ -42,7 +63,7 @@ options:
             - When the ETag Validation is enabled, the request will be conditionally processed only if the current ETag
                 for the resource matches the ETag provided in the data.
         type: bool
-        default: yes
+        default: true
 '''
 
     FACTSPARAMS = r'''

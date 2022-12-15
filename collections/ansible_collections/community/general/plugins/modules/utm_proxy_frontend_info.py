@@ -1,7 +1,9 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
-# Copyright: (c) 2018, Johannes Brunswicker <johannes.brunswicker@gmail.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2018, Johannes Brunswicker <johannes.brunswicker@gmail.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 
@@ -14,7 +16,7 @@ module: utm_proxy_frontend_info
 author:
     - Johannes Brunswicker (@MatrixCrawler)
 
-short_description: create, update or destroy reverse_proxy frontend entry in Sophos UTM
+short_description: Create, update or destroy reverse_proxy frontend entry in Sophos UTM
 
 description:
     - Create, update or destroy a reverse_proxy frontend entry in SOPHOS UTM.
@@ -29,8 +31,9 @@ options:
         required: true
 
 extends_documentation_fragment:
-- community.general.utm
-
+    - community.general.utm
+    - community.general.attributes
+    - community.general.attributes.info_module
 '''
 
 EXAMPLES = """
@@ -120,7 +123,7 @@ result:
 """
 
 from ansible_collections.community.general.plugins.module_utils.utm_utils import UTM, UTMModule
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 def main():
@@ -128,8 +131,9 @@ def main():
     key_to_check_for_changes = []
     module = UTMModule(
         argument_spec=dict(
-            name=dict(type='str', required=True)
-        )
+            name=dict(type='str', required=True),
+        ),
+        supports_check_mode=True,
     )
     try:
         UTM(module, endpoint, key_to_check_for_changes, info_only=True).execute()

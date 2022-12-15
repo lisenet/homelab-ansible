@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright: (c) 2018, Bojan Vitnik <bvitnik@mainstream.rs>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2018, Bojan Vitnik <bvitnik@mainstream.rs>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -20,7 +21,6 @@ except ImportError:
     XENAPI_IMP_ERR = traceback.format_exc()
 
 from ansible.module_utils.basic import env_fallback, missing_required_lib
-from ansible.module_utils.common.network import is_mac
 from ansible.module_utils.ansible_release import __version__ as ANSIBLE_VERSION
 
 

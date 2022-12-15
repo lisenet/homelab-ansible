@@ -1,7 +1,9 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
-# Copyright: (c) 2020, Christian Wollinger <cwollinger@web.de>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2020, Christian Wollinger <cwollinger@web.de>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
@@ -43,7 +45,7 @@ options:
     address:
         description:
             - The IP address for the A or AAAA record.
-            - Required for C(type=A) or C(type=AAAA)
+            - Required for I(type=A) or I(type=AAAA).
         type: str
     ttl:
         description:
@@ -69,38 +71,38 @@ options:
     port:
         description:
             - Sets the port of the SRV record.
-            - Required for C(type=SRV)
+            - Required for I(type=SRV).
         type: int
     target:
         description:
             - Sets the target of the SRV record.
-            - Required for C(type=SRV)
+            - Required for I(type=SRV).
         type: str
     order:
         description:
             - Sets the order of the NAPTR record.
-            - Required for C(type=NAPTR)
+            - Required for I(type=NAPTR).
         type: int
     preference:
         description:
             - Sets the preference of the NAPTR record.
-            - Required for C(type=NAPTR)
+            - Required for I(type=NAPTR).
         type: int
     flags:
         description:
             - Sets one of the possible flags of NAPTR record.
-            - Required for C(type=NAPTR)
+            - Required for I(type=NAPTR).
         type: str
         choices: ['S', 'A', 'U', 'P']
     service:
         description:
             - Sets the service of the NAPTR record.
-            - Required for C(type=NAPTR)
+            - Required for I(type=NAPTR).
         type: str
     replacement:
         description:
             - Sets the replacement of the NAPTR record.
-            - Required for C(type=NAPTR)
+            - Required for I(type=NAPTR).
         type: str
     username:
         description:
@@ -156,7 +158,6 @@ record:
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-import os
 
 
 class ResourceRecord(object):
@@ -205,9 +206,11 @@ class ResourceRecord(object):
     def list_record(self, record):
         # check if the record exists via list on ipwcli
         search = 'list %s' % (record.replace(';', '&&').replace('set', 'where'))
-        cmd = [self.module.get_bin_path('ipwcli', True)]
-        cmd.append('-user=%s' % (self.user))
-        cmd.append('-password=%s' % (self.password))
+        cmd = [
+            self.module.get_bin_path('ipwcli', True),
+            '-user=%s' % self.user,
+            '-password=%s' % self.password,
+        ]
         rc, out, err = self.module.run_command(cmd, data=search)
 
         if 'Invalid username or password' in out:
@@ -222,9 +225,11 @@ class ResourceRecord(object):
     def deploy_record(self, record):
         # check what happens if create fails on ipworks
         stdin = 'create %s' % (record)
-        cmd = [self.module.get_bin_path('ipwcli', True)]
-        cmd.append('-user=%s' % (self.user))
-        cmd.append('-password=%s' % (self.password))
+        cmd = [
+            self.module.get_bin_path('ipwcli', True),
+            '-user=%s' % self.user,
+            '-password=%s' % self.password,
+        ]
         rc, out, err = self.module.run_command(cmd, data=stdin)
 
         if 'Invalid username or password' in out:
@@ -238,9 +243,11 @@ class ResourceRecord(object):
     def delete_record(self, record):
         # check what happens if create fails on ipworks
         stdin = 'delete %s' % (record.replace(';', '&&').replace('set', 'where'))
-        cmd = [self.module.get_bin_path('ipwcli', True)]
-        cmd.append('-user=%s' % (self.user))
-        cmd.append('-password=%s' % (self.password))
+        cmd = [
+            self.module.get_bin_path('ipwcli', True),
+            '-user=%s' % self.user,
+            '-password=%s' % self.password,
+        ]
         rc, out, err = self.module.run_command(cmd, data=stdin)
 
         if 'Invalid username or password' in out:

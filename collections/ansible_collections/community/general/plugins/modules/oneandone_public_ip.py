@@ -1,18 +1,8 @@
 #!/usr/bin/python
-# This file is part of Ansible
-#
-# Ansible is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Ansible is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
+# -*- coding: utf-8 -*-
+# Copyright (c) Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -20,7 +10,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: oneandone_public_ip
-short_description: Configure 1&1 public IPs.
+short_description: Configure 1&1 public IPs
 description:
      - Create, update, and remove public IPs.
        This module has a dependency on 1and1 >= 1.0
@@ -69,7 +59,7 @@ options:
     description:
       - wait for the instance to be in state 'running' before returning
     required: false
-    default: "yes"
+    default: true
     type: bool
   wait_timeout:
     description:
@@ -274,7 +264,7 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             auth_token=dict(
-                type='str',
+                type='str', no_log=True,
                 default=os.environ.get('ONEANDONE_AUTH_TOKEN')),
             api_url=dict(
                 type='str',

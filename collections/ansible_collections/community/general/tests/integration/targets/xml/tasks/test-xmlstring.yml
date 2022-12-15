@@ -1,4 +1,8 @@
 ---
+# Copyright (c) Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
+
   - name: Copy expected results to remote
     copy:
       src: "results/{{ item }}"
@@ -25,8 +29,8 @@
   - name: Test expected result
     assert:
       that:
-      - xmlresponse.changed == false
-      - comparison.changed == false  # identical
+      - xmlresponse is not changed
+      - comparison is not changed  # identical
     #command: diff -u {{ role_path }}/results/test-pretty-print-only.xml /tmp/ansible-xml-beers.xml
 
 
@@ -49,8 +53,8 @@
   - name: Test expected result
     assert:
       that:
-      - xmlresponse.changed == true
-      - comparison.changed == false  # identical
+      - xmlresponse is changed
+      - comparison is not changed  # identical
     #command: diff -u {{ role_path }}/results/test-pretty-print-only.xml /tmp/ansible-xml-beers.xml
 
 
@@ -63,7 +67,7 @@
       add_children:
       - beer: Old Rasputin
     register: xmlresponse_modification
- 
+
   - name: Compare to expected result
     copy:
       content: '{{ xmlresponse_modification.xmlstring }}'
@@ -76,6 +80,6 @@
   - name: Test expected result
     assert:
       that:
-      - xmlresponse_modification.changed == true
-      - comparison.changed == false  # identical
+      - xmlresponse_modification is changed
+      - comparison is not changed  # identical
     #command: diff -u {{ role_path }}/results/test-pretty-print.xml /tmp/ansible-xml-beers.xml

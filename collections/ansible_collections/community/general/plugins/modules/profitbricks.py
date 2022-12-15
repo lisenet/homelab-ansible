@@ -1,6 +1,8 @@
 #!/usr/bin/python
-# Copyright: Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# -*- coding: utf-8 -*-
+# Copyright Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -9,7 +11,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: profitbricks
-short_description: Create, destroy, start, stop, and reboot a ProfitBricks virtual machine.
+short_description: Create, destroy, start, stop, and reboot a ProfitBricks virtual machine
 description:
      - Create, destroy, update, start, stop, and reboot a ProfitBricks virtual machine. When the virtual machine is created it can optionally wait
        for it to be 'running' before returning. This module has a dependency on profitbricks >= 1.0.0
@@ -18,7 +20,7 @@ options:
     description:
       - Whether or not to increment a single number in the name for created virtual machines.
     type: bool
-    default: 'yes'
+    default: true
   name:
     description:
       - The name of the virtual machine.
@@ -35,6 +37,8 @@ options:
     description:
       - Public SSH keys allowing access to the virtual machine.
     type: list
+    elements: str
+    default: []
   datacenter:
     description:
       - The datacenter to provision this virtual machine.
@@ -70,6 +74,8 @@ options:
     description:
       - list of instance ids, currently only used when state='absent' to remove instances.
     type: list
+    elements: str
+    default: []
   count:
     description:
       - The number of virtual machines to create.
@@ -85,7 +91,7 @@ options:
     description:
       - This will assign the machine to the public LAN. If no LAN exists with public Internet access it is created.
     type: bool
-    default: 'no'
+    default: false
   lan:
     description:
       - The ID of the LAN you wish to add the servers to.
@@ -103,7 +109,7 @@ options:
     description:
       - wait for the instance to be in state 'running' before returning
     type: bool
-    default: 'yes'
+    default: true
   wait_timeout:
     description:
       - how long before wait gives up, in seconds
@@ -113,7 +119,7 @@ options:
     description:
       - remove the bootVolume of the virtual machine you're destroying.
     type: bool
-    default: 'yes'
+    default: true
   state:
     description:
       - create or terminate instances
@@ -196,7 +202,7 @@ except ImportError:
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six.moves import xrange
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 LOCATIONS = ['us/las',
@@ -580,13 +586,13 @@ def main():
                             default='AMD_OPTERON'),
             volume_size=dict(type='int', default=10),
             disk_type=dict(choices=['HDD', 'SSD'], default='HDD'),
-            image_password=dict(default=None, no_log=True),
-            ssh_keys=dict(type='list', default=[]),
+            image_password=dict(no_log=True),
+            ssh_keys=dict(type='list', elements='str', default=[], no_log=False),
             bus=dict(choices=['VIRTIO', 'IDE'], default='VIRTIO'),
             lan=dict(type='int', default=1),
             count=dict(type='int', default=1),
             auto_increment=dict(type='bool', default=True),
-            instance_ids=dict(type='list', default=[]),
+            instance_ids=dict(type='list', elements='str', default=[]),
             subscription_user=dict(),
             subscription_password=dict(no_log=True),
             location=dict(choices=LOCATIONS, default='us/las'),

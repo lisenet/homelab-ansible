@@ -1,3 +1,8 @@
+---
+# Copyright (c) Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 - name: list sessions
   consul_session:
     state: list
@@ -82,50 +87,48 @@
     that:
       - result is failed
 
-- when: pyopenssl_version.stdout is version('0.15', '>=')
-  block:
-    - name: ensure SSL certificate is checked
-      consul_session:
-        state: info
-        id: '{{ session_id }}'
-        port: 8501
-        scheme: https
-      register: result
-      ignore_errors: True
+- name: ensure SSL certificate is checked
+  consul_session:
+    state: info
+    id: '{{ session_id }}'
+    port: 8501
+    scheme: https
+  register: result
+  ignore_errors: True
 
-    - name: previous task should fail since certificate is not known
-      assert:
-        that:
-          - result is failed
-          - "'certificate verify failed' in result.msg"
+- name: previous task should fail since certificate is not known
+  assert:
+    that:
+      - result is failed
+      - "'certificate verify failed' in result.msg"
 
-    - name: ensure SSL certificate isn't checked when validate_certs is disabled
-      consul_session:
-        state: info
-        id: '{{ session_id }}'
-        port: 8501
-        scheme: https
-        validate_certs: False
-      register: result
+- name: ensure SSL certificate isn't checked when validate_certs is disabled
+  consul_session:
+    state: info
+    id: '{{ session_id }}'
+    port: 8501
+    scheme: https
+    validate_certs: False
+  register: result
 
-    - name: previous task should succeed since certificate isn't checked
-      assert:
-        that:
-          - result is changed
+- name: previous task should succeed since certificate isn't checked
+  assert:
+    that:
+      - result is changed
 
-    - name: ensure a secure connection is possible
-      consul_session:
-        state: info
-        id: '{{ session_id }}'
-        port: 8501
-        scheme: https
-      environment:
-        REQUESTS_CA_BUNDLE: '{{ remote_dir }}/cert.pem'
-      register: result
+- name: ensure a secure connection is possible
+  consul_session:
+    state: info
+    id: '{{ session_id }}'
+    port: 8501
+    scheme: https
+  environment:
+    REQUESTS_CA_BUNDLE: '{{ remote_dir }}/cert.pem'
+  register: result
 
-    - assert:
-        that:
-          - result is changed
+- assert:
+    that:
+      - result is changed
 
 - name: delete a session
   consul_session:
@@ -160,3 +163,15 @@
     that:
       - search_deleted is skipped  # each iteration is skipped
       - search_deleted is not changed  # and then unchanged
+
+- name: ensure session can be created with a ttl
+  consul_session:
+    state: present
+    name: session-with-ttl
+    ttl: 180  # sec
+  register: result
+
+- assert:
+    that:
+      - result is changed
+      - result['ttl'] == 180

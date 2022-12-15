@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# (c) 2016, René Moser <mail@renemoser.net>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2016, René Moser <mail@renemoser.net>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -11,10 +12,13 @@ __metaclass__ = type
 DOCUMENTATION = r'''
 ---
 module: nginx_status_info
-short_description: Retrieve information on nginx status.
+short_description: Retrieve information on nginx status
 description:
   - Gathers information from nginx from an URL having C(stub_status) enabled.
 author: "René Moser (@resmo)"
+extends_documentation_fragment:
+  - community.general.attributes
+  - community.general.attributes.info_module
 options:
   url:
     type: str
@@ -94,7 +98,7 @@ data:
 import re
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.urls import fetch_url
-from ansible.module_utils._text import to_text
+from ansible.module_utils.common.text.converters import to_text
 
 
 class NginxStatusInfo(object):

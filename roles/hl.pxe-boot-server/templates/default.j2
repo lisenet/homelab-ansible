@@ -5,12 +5,24 @@ menu title Homelab PXE Menu
 label Install Rocky 8 Server (Packer kickstart, no swap)
   kernel /networkboot/{{ networkboot_directory_rocky8 }}/vmlinuz
   append initrd=/networkboot/{{ networkboot_directory_rocky8 }}/initrd.img inst.repo=ftp://{{ ansible_default_ipv4.address }}/pub/pxe/{{ networkboot_directory_rocky8 }} inst.ks=ftp://{{ ansible_default_ipv4.address }}/pub/pxe/{{ kickstart_file_rocky8_packer }}
+label Install Rocky 9 Server (Packer kickstart, no swap)
+  kernel /networkboot/{{ networkboot_directory_rocky9 }}/vmlinuz
+  append initrd=/networkboot/{{ networkboot_directory_rocky9 }}/initrd.img inst.repo=ftp://{{ ansible_default_ipv4.address }}/pub/pxe/{{ networkboot_directory_rocky9 }} inst.ks=ftp://{{ ansible_default_ipv4.address }}/pub/pxe/{{ kickstart_file_rocky9_packer }}
 label Install CentOS 7 Server (Packer kickstart, no swap)
   kernel /networkboot/{{ networkboot_directory_centos7 }}/vmlinuz
   append initrd=/networkboot/{{ networkboot_directory_centos7 }}/initrd.img inst.repo=ftp://{{ ansible_default_ipv4.address }}/pub/pxe/{{ networkboot_directory_centos7 }} ks=ftp://{{ ansible_default_ipv4.address }}/pub/pxe/{{ kickstart_file_centos7_packer }}
 label Install Rocky 8 Server (host kickstart 240GB sda, swap)
   kernel /networkboot/{{ networkboot_directory_rocky8 }}/vmlinuz
   append initrd=/networkboot/{{ networkboot_directory_rocky8 }}/initrd.img inst.repo=ftp://{{ ansible_default_ipv4.address }}/pub/pxe/{{ networkboot_directory_rocky8 }} inst.ks=ftp://{{ ansible_default_ipv4.address }}/pub/pxe/{{ kickstart_file_rocky8_host }}
+label Install Rocky 9 Server (host kickstart 240GB sda, swap)
+  kernel /networkboot/{{ networkboot_directory_rocky9 }}/vmlinuz
+  append initrd=/networkboot/{{ networkboot_directory_rocky9 }}/initrd.img inst.repo=ftp://{{ ansible_default_ipv4.address }}/pub/pxe/{{ networkboot_directory_rocky9 }} inst.ks=ftp://{{ ansible_default_ipv4.address }}/pub/pxe/{{ kickstart_file_rocky9_host }}
+label Install Ubuntu 20.04 LTS Server
+  kernel /networkboot/{{ networkboot_directory_ubuntu2004server }}/linux
+  append initrd=/networkboot/{{ networkboot_directory_ubuntu2004server }}/initrd.gz ks=nfs:{{ ansible_default_ipv4.address }}:/var/nfs/{{ networkboot_directory_ubuntu2004server }}/preseed/{{ kickstart_file_ubuntu2004server }} ---
+label Install Ubuntu 20.04 LTS Desktop
+  kernel /networkboot/{{ networkboot_directory_ubuntu2004desktop }}/linux
+  append initrd=/networkboot/{{ networkboot_directory_ubuntu2004desktop }}/initrd.gz ks=nfs:{{ ansible_default_ipv4.address }}:/var/nfs/{{ networkboot_directory_ubuntu2004desktop }}/preseed/{{ kickstart_file_ubuntu2004desktop }} ---
 label Install Ubuntu 18.04 LTS Server
   kernel /networkboot/{{ networkboot_directory_ubuntu1804server }}/linux
   append initrd=/networkboot/{{ networkboot_directory_ubuntu1804server }}/initrd.gz ks=nfs:{{ ansible_default_ipv4.address }}:/var/nfs/{{ networkboot_directory_ubuntu1804server }}/preseed/{{ kickstart_file_ubuntu1804server }} ---

@@ -1,10 +1,11 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2013, Daniel Jaouen <dcj24@cornell.edu>
-# Copyright: (c) 2016, Indrajit Raychaudhuri <irc+code@indrajit.com>
+# Copyright (c) 2013, Daniel Jaouen <dcj24@cornell.edu>
+# Copyright (c) 2016, Indrajit Raychaudhuri <irc+code@indrajit.com>
 #
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -32,7 +33,7 @@ options:
   path:
     description:
     - "':' separated list of paths to search for 'brew' executable."
-    default: '/usr/local/bin'
+    default: '/usr/local/bin:/opt/homebrew/bin'
     type: path
   state:
     description:
@@ -50,8 +51,7 @@ options:
     - Update homebrew itself first.
     - Note that C(brew cask update) is a synonym for C(brew update).
     type: bool
-    default: no
-    aliases: [ 'update-brew' ]
+    default: false
   install_options:
     description:
     - Options flags to install a package.
@@ -62,13 +62,13 @@ options:
     description:
     - Allow external apps.
     type: bool
-    default: no
+    default: false
   upgrade_all:
     description:
     - Upgrade all casks.
     - Mutually exclusive with C(upgraded) state.
     type: bool
-    default: no
+    default: false
     aliases: [ 'upgrade' ]
   greedy:
     description:
@@ -76,7 +76,7 @@ options:
     - Passes --greedy to brew cask outdated when checking
       if an installed cask has a newer version available.
     type: bool
-    default: no
+    default: false
 '''
 EXAMPLES = '''
 - name: Install cask
@@ -101,11 +101,17 @@ EXAMPLES = '''
     state: present
     install_options: 'debug,appdir=/Applications'
 
+- name: Install cask with force option
+  community.general.homebrew_cask:
+    name: alfred
+    state: present
+    install_options: force
+
 - name: Allow external app
   community.general.homebrew_cask:
     name: alfred
     state: present
-    accept_external_apps: True
+    accept_external_apps: true
 
 - name: Remove cask with force option
   community.general.homebrew_cask:
@@ -127,7 +133,7 @@ EXAMPLES = '''
   community.general.homebrew_cask:
     name: 1password
     state: upgraded
-    greedy: True
+    greedy: true
 
 - name: Using sudo password for installing cask
   community.general.homebrew_cask:
@@ -140,7 +146,9 @@ import os
 import re
 import tempfile
 
-from ansible.module_utils._text import to_bytes
+from ansible_collections.community.general.plugins.module_utils.version import LooseVersion
+
+from ansible.module_utils.common.text.converters import to_bytes
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import iteritems, string_types
 
@@ -356,6 +364,18 @@ class HomebrewCask(object):
         else:
             self._current_cask = cask
             return cask
+
+    @property
+    def brew_version(self):
+        try:
+            return self._brew_version
+        except AttributeError:
+            return None
+
+    @brew_version.setter
+    def brew_version(self, brew_version):
+        self._brew_version = brew_version
+
     # /class properties -------------------------------------------- }}}
 
     def __init__(self, module, path=path, casks=None, state=None,
@@ -434,15 +454,12 @@ class HomebrewCask(object):
         if not self.valid_cask(self.current_cask):
             return False
 
-        cask_is_outdated_command = (
-            [
-                self.brew_path,
-                'cask',
-                'outdated',
-            ]
-            + (['--greedy'] if self.greedy else [])
-            + [self.current_cask]
-        )
+        if self._brew_cask_command_is_deprecated():
+            base_opts = [self.brew_path, 'outdated', '--cask']
+        else:
+            base_opts = [self.brew_path, 'cask', 'outdated']
+
+        cask_is_outdated_command = base_opts + (['--greedy'] if self.greedy else []) + [self.current_cask]
 
         rc, out, err = self.module.run_command(cask_is_outdated_command)
 
@@ -454,18 +471,35 @@ class HomebrewCask(object):
             self.message = 'Invalid cask: {0}.'.format(self.current_cask)
             raise HomebrewCaskException(self.message)
 
-        cmd = [
-            "{brew_path}".format(brew_path=self.brew_path),
-            "cask",
-            "list",
-            self.current_cask
-        ]
+        if self._brew_cask_command_is_deprecated():
+            base_opts = [self.brew_path, "list", "--cask"]
+        else:
+            base_opts = [self.brew_path, "cask", "list"]
+
+        cmd = base_opts + [self.current_cask]
         rc, out, err = self.module.run_command(cmd)
 
         if rc == 0:
             return True
         else:
             return False
+
+    def _get_brew_version(self):
+        if self.brew_version:
+            return self.brew_version
+
+        cmd = [self.brew_path, '--version']
+
+        rc, out, err = self.module.run_command(cmd, check_rc=True)
+
+        # get version string from first line of "brew --version" output
+        version = out.split('\n')[0].split(' ')[1]
+        self.brew_version = version
+        return self.brew_version
+
+    def _brew_cask_command_is_deprecated(self):
+        # The `brew cask` replacements were fully available in 2.6.0 (https://brew.sh/2020/12/01/homebrew-2.6.0/)
+        return LooseVersion(self._get_brew_version()) >= LooseVersion('2.6.0')
     # /checks ------------------------------------------------------ }}}
 
     # commands ----------------------------------------------------- {{{
@@ -537,11 +571,10 @@ class HomebrewCask(object):
             self.message = 'Casks would be upgraded.'
             raise HomebrewCaskException(self.message)
 
-        opts = (
-            [self.brew_path, 'cask', 'upgrade']
-        )
-
-        cmd = [opt for opt in opts if opt]
+        if self._brew_cask_command_is_deprecated():
+            cmd = [self.brew_path, 'upgrade', '--cask']
+        else:
+            cmd = [self.brew_path, 'cask', 'upgrade']
 
         rc, out, err = '', '', ''
 
@@ -572,7 +605,7 @@ class HomebrewCask(object):
             self.message = 'Invalid cask: {0}.'.format(self.current_cask)
             raise HomebrewCaskException(self.message)
 
-        if self._current_cask_is_installed():
+        if '--force' not in self.install_options and self._current_cask_is_installed():
             self.unchanged_count += 1
             self.message = 'Cask already installed: {0}'.format(
                 self.current_cask,
@@ -586,10 +619,12 @@ class HomebrewCask(object):
             )
             raise HomebrewCaskException(self.message)
 
-        opts = (
-            [self.brew_path, 'cask', 'install', self.current_cask]
-            + self.install_options
-        )
+        if self._brew_cask_command_is_deprecated():
+            base_opts = [self.brew_path, 'install', '--cask']
+        else:
+            base_opts = [self.brew_path, 'cask', 'install']
+
+        opts = base_opts + [self.current_cask] + self.install_options
 
         cmd = [opt for opt in opts if opt]
 
@@ -650,11 +685,13 @@ class HomebrewCask(object):
             )
             raise HomebrewCaskException(self.message)
 
-        opts = (
-            [self.brew_path, 'cask', command]
-            + self.install_options
-            + [self.current_cask]
-        )
+        if self._brew_cask_command_is_deprecated():
+            base_opts = [self.brew_path, command, '--cask']
+        else:
+            base_opts = [self.brew_path, 'cask', command]
+
+        opts = base_opts + self.install_options + [self.current_cask]
+
         cmd = [opt for opt in opts if opt]
 
         rc, out, err = '', '', ''
@@ -703,10 +740,12 @@ class HomebrewCask(object):
             )
             raise HomebrewCaskException(self.message)
 
-        opts = (
-            [self.brew_path, 'cask', 'uninstall', self.current_cask]
-            + self.install_options
-        )
+        if self._brew_cask_command_is_deprecated():
+            base_opts = [self.brew_path, 'uninstall', '--cask']
+        else:
+            base_opts = [self.brew_path, 'cask', 'uninstall']
+
+        opts = base_opts + [self.current_cask] + self.install_options
 
         cmd = [opt for opt in opts if opt]
 
@@ -747,7 +786,7 @@ def main():
                 elements='str',
             ),
             path=dict(
-                default="/usr/local/bin",
+                default="/usr/local/bin:/opt/homebrew/bin",
                 required=False,
                 type='path',
             ),
@@ -766,7 +805,6 @@ def main():
             ),
             update_homebrew=dict(
                 default=False,
-                aliases=["update-brew"],
                 type='bool',
             ),
             install_options=dict(

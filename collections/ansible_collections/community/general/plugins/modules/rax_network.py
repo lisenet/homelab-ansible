@@ -1,6 +1,8 @@
 #!/usr/bin/python
-# Copyright: Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# -*- coding: utf-8 -*-
+# Copyright Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -9,7 +11,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: rax_network
-short_description: create / delete an isolated network in Rackspace Public Cloud
+short_description: Create / delete an isolated network in Rackspace Public Cloud
 description:
      - creates / deletes a Rackspace Public Cloud isolated network.
 options:
@@ -25,7 +27,7 @@ options:
     type: str
     description:
       - Label (name) to give the network
-    required: yes
+    required: true
   cidr:
     type: str
     description:
@@ -40,7 +42,7 @@ extends_documentation_fragment:
 
 EXAMPLES = '''
 - name: Build an Isolated Network
-  gather_facts: False
+  gather_facts: false
 
   tasks:
     - name: Network create request

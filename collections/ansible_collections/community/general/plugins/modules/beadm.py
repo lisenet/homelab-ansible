@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2016, Adam Števko <adam.stevko@gmail.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2016, Adam Števko <adam.stevko@gmail.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -11,7 +12,7 @@ __metaclass__ = type
 DOCUMENTATION = r'''
 ---
 module: beadm
-short_description: Manage ZFS boot environments on FreeBSD/Solaris/illumos systems.
+short_description: Manage ZFS boot environments on FreeBSD/Solaris/illumos systems
 description:
     - Create, delete or activate ZFS boot environments.
     - Mount and unmount ZFS boot environments.
@@ -21,7 +22,7 @@ options:
         description:
             - ZFS boot environment name.
         type: str
-        required: True
+        required: true
         aliases: [ "be" ]
     snapshot:
         description:
@@ -132,11 +133,10 @@ force:
     description: If forced action is wanted
     returned: always
     type: bool
-    sample: False
+    sample: false
 '''
 
 import os
-import re
 from ansible.module_utils.basic import AnsibleModule
 
 
@@ -154,9 +154,7 @@ class BE(object):
         self.is_freebsd = os.uname()[0] == 'FreeBSD'
 
     def _beadm_list(self):
-        cmd = [self.module.get_bin_path('beadm')]
-        cmd.append('list')
-        cmd.append('-H')
+        cmd = [self.module.get_bin_path('beadm'), 'list', '-H']
         if '@' in self.name:
             cmd.append('-s')
         return self.module.run_command(cmd)
@@ -166,10 +164,10 @@ class BE(object):
             for line in out.splitlines():
                 if self.is_freebsd:
                     check = line.split()
-                    if(check == []):
+                    if check == []:
                         continue
                     full_name = check[0].split('/')
-                    if(full_name == []):
+                    if full_name == []:
                         continue
                     check[0] = full_name[len(full_name) - 1]
                     if check[0] == self.name:
@@ -191,7 +189,7 @@ class BE(object):
         return None
 
     def exists(self):
-        (rc, out, _) = self._beadm_list()
+        (rc, out, dummy) = self._beadm_list()
 
         if rc == 0:
             if self._find_be_by_name(out):
@@ -202,7 +200,7 @@ class BE(object):
             return False
 
     def is_activated(self):
-        (rc, out, _) = self._beadm_list()
+        (rc, out, dummy) = self._beadm_list()
 
         if rc == 0:
             line = self._find_be_by_name(out)
@@ -218,46 +216,30 @@ class BE(object):
         return False
 
     def activate_be(self):
-        cmd = [self.module.get_bin_path('beadm')]
-
-        cmd.append('activate')
-        cmd.append(self.name)
-
+        cmd = [self.module.get_bin_path('beadm'), 'activate', self.name]
         return self.module.run_command(cmd)
 
     def create_be(self):
-        cmd = [self.module.get_bin_path('beadm')]
-
-        cmd.append('create')
+        cmd = [self.module.get_bin_path('beadm'), 'create']
 
         if self.snapshot:
-            cmd.append('-e')
-            cmd.append(self.snapshot)
-
+            cmd.extend(['-e', self.snapshot])
         if not self.is_freebsd:
             if self.description:
-                cmd.append('-d')
-                cmd.append(self.description)
-
+                cmd.extend(['-d', self.description])
             if self.options:
-                cmd.append('-o')
-                cmd.append(self.options)
+                cmd.extend(['-o', self.options])
 
         cmd.append(self.name)
 
         return self.module.run_command(cmd)
 
     def destroy_be(self):
-        cmd = [self.module.get_bin_path('beadm')]
-
-        cmd.append('destroy')
-        cmd.append('-F')
-        cmd.append(self.name)
-
+        cmd = [self.module.get_bin_path('beadm'), 'destroy', '-F', self.name]
         return self.module.run_command(cmd)
 
     def is_mounted(self):
-        (rc, out, _) = self._beadm_list()
+        (rc, out, dummy) = self._beadm_list()
 
         if rc == 0:
             line = self._find_be_by_name(out)
@@ -276,10 +258,7 @@ class BE(object):
         return False
 
     def mount_be(self):
-        cmd = [self.module.get_bin_path('beadm')]
-
-        cmd.append('mount')
-        cmd.append(self.name)
+        cmd = [self.module.get_bin_path('beadm'), 'mount', self.name]
 
         if self.mountpoint:
             cmd.append(self.mountpoint)
@@ -287,9 +266,7 @@ class BE(object):
         return self.module.run_command(cmd)
 
     def unmount_be(self):
-        cmd = [self.module.get_bin_path('beadm')]
-
-        cmd.append('unmount')
+        cmd = [self.module.get_bin_path('beadm'), 'unmount']
         if self.force:
             cmd.append('-f')
         cmd.append(self.name)

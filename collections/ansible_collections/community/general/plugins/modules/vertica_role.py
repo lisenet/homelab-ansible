@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -11,41 +12,50 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: vertica_role
-short_description: Adds or removes Vertica database roles and assigns roles to them.
+short_description: Adds or removes Vertica database roles and assigns roles to them
 description:
   - Adds or removes Vertica database role and, optionally, assign other roles.
 options:
-  name:
+  role:
     description:
       - Name of the role to add or remove.
     required: true
+    type: str
+    aliases: ['name']
   assigned_roles:
     description:
       - Comma separated list of roles to assign to the role.
     aliases: ['assigned_role']
+    type: str
   state:
     description:
       - Whether to create C(present), drop C(absent) or lock C(locked) a role.
     choices: ['present', 'absent']
     default: present
+    type: str
   db:
     description:
       - Name of the Vertica database.
+    type: str
   cluster:
     description:
       - Name of the Vertica cluster.
     default: localhost
+    type: str
   port:
     description:
       - Vertica cluster port to connect to.
-    default: 5433
+    default: '5433'
+    type: str
   login_user:
     description:
       - The username used to authenticate with.
     default: dbadmin
+    type: str
   login_password:
     description:
       - The password used to authenticate with.
+    type: str
 notes:
   - The default authentication assumes that you are either logging in as or sudo'ing
     to the C(dbadmin) account on the host.
@@ -78,7 +88,7 @@ else:
     pyodbc_found = True
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 class NotSupportedError(Exception):
@@ -168,11 +178,11 @@ def main():
             role=dict(required=True, aliases=['name']),
             assigned_roles=dict(default=None, aliases=['assigned_role']),
             state=dict(default='present', choices=['absent', 'present']),
-            db=dict(default=None),
+            db=dict(),
             cluster=dict(default='localhost'),
             port=dict(default='5433'),
             login_user=dict(default='dbadmin'),
-            login_password=dict(default=None, no_log=True),
+            login_password=dict(no_log=True),
         ), supports_check_mode=True)
 
     if not pyodbc_found:

@@ -1,34 +1,37 @@
-# (c) 2015, Alejandro Guirao <lekumberri@gmail.com>
-# (c) 2012-17 Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# -*- coding: utf-8 -*-
+# Copyright (c) 2015, Alejandro Guirao <lekumberri@gmail.com>
+# Copyright (c) 2012-17 Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = '''
-    lookup: shelvefile
+    name: shelvefile
     author: Alejandro Guirao (!UNKNOWN) <lekumberri@gmail.com>
     short_description: read keys from Python shelve file
     description:
       - Read keys from Python shelve file.
     options:
       _terms:
-        description: sets of key value pairs of parameters
+        description: Sets of key value pairs of parameters.
       key:
-        description: key to query
-        required: True
+        description: Key to query.
+        required: true
       file:
-        description: path to shelve file
-        required: True
+        description: Path to shelve file.
+        required: true
 '''
 
 EXAMPLES = """
-- name: retrieve a string value corresponding to a key inside a Python shelve file
-  ansible.builtin.debug: msg="{{ lookup('community.general.shelvefile', 'file=path_to_some_shelve_file.db key=key_to_retrieve') }}
+- name: Retrieve a string value corresponding to a key inside a Python shelve file
+  ansible.builtin.debug:
+    msg: "{{ lookup('community.general.shelvefile', 'file=path_to_some_shelve_file.db key=key_to_retrieve') }}"
 """
 
 RETURN = """
 _list:
-  description: value(s) of key(s) in shelve file(s)
+  description: Value(s) of key(s) in shelve file(s).
   type: list
   elements: str
 """
@@ -36,7 +39,7 @@ import shelve
 
 from ansible.errors import AnsibleError, AnsibleAssertionError
 from ansible.plugins.lookup import LookupBase
-from ansible.module_utils._text import to_bytes, to_text
+from ansible.module_utils.common.text.converters import to_bytes, to_text
 
 
 class LookupModule(LookupBase):
@@ -51,7 +54,6 @@ class LookupModule(LookupBase):
         return res
 
     def run(self, terms, variables=None, **kwargs):
-
         if not isinstance(terms, list):
             terms = [terms]
 

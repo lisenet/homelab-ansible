@@ -4,7 +4,8 @@
 # Copyright (C) 2018 IBM CORPORATION
 # Author(s): Tzur Eliyahu <tzure@il.ibm.com>
 #
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -12,7 +13,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: ibm_sa_host_ports
-short_description: Add host ports on IBM Spectrum Accelerate Family storage systems.
+short_description: Add host ports on IBM Spectrum Accelerate Family storage systems
 
 description:
     - "This module adds ports to or removes them from the hosts
@@ -23,27 +24,31 @@ options:
         description:
             - Host name.
         required: true
+        type: str
     state:
         description:
             - Host ports state.
         default: "present"
         choices: [ "present", "absent" ]
+        type: str
     iscsi_name:
         description:
             - iSCSI initiator name.
         required: false
+        type: str
     fcaddress:
         description:
             - Fiber channel address.
         required: false
+        type: str
     num_of_visible_targets:
         description:
             - Number of visible targets.
         required: false
+        type: str
 
 extends_documentation_fragment:
 - community.general.ibm_storage
-
 
 author:
     - Tzur Eliyahu (@tzure)

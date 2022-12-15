@@ -4,7 +4,8 @@
 # Copyright (C) 2018 IBM CORPORATION
 # Author(s): Tzur Eliyahu <tzure@il.ibm.com>
 #
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -12,7 +13,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: ibm_sa_pool
-short_description: Handles pools on IBM Spectrum Accelerate Family storage systems.
+short_description: Handles pools on IBM Spectrum Accelerate Family storage systems
 
 description:
     - "This module creates or deletes pools to be used on IBM Spectrum Accelerate Family storage systems"
@@ -22,27 +23,33 @@ options:
         description:
             - Pool name.
         required: true
+        type: str
     state:
         description:
             - Pool state.
         default: "present"
         choices: [ "present", "absent" ]
+        type: str
     size:
         description:
             - Pool size in GB
         required: false
+        type: str
     snapshot_size:
         description:
             - Pool snapshot size in GB
         required: false
+        type: str
     domain:
         description:
             - Adds the pool to the specified domain.
         required: false
+        type: str
     perf_class:
         description:
             - Assigns a perf_class to the pool.
         required: false
+        type: str
 
 extends_documentation_fragment:
 - community.general.ibm_storage

@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2015, Steve Gargan <steve.gargan@gmail.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2015, Steve Gargan <steve.gargan@gmail.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -67,6 +68,7 @@ options:
             associated with the session will be release and can be acquired once
             the associated lock delay has expired.
         type: list
+        elements: str
     host:
         description:
           - The host of the consul agent defaults to localhost.
@@ -86,7 +88,7 @@ options:
         description:
           - Whether to verify the TLS certificate of the consul agent.
         type: bool
-        default: True
+        default: true
     behavior:
         description:
           - The optional behavior that can be attached to the session when it
@@ -94,6 +96,17 @@ options:
         choices: [ delete, release ]
         type: str
         default: release
+    ttl:
+        description:
+          - Specifies the duration of a session in seconds (between 10 and 86400).
+        type: int
+        version_added: 5.4.0
+    token:
+        description:
+          - The token key identifying an ACL rule set that controls access to
+            the key value pair.
+        type: str
+        version_added: 5.6.0
 '''
 
 EXAMPLES = '''
@@ -120,6 +133,11 @@ EXAMPLES = '''
 - name: Retrieve active sessions
   community.general.consul_session:
     state: list
+
+- name: Register session with a ttl
+  community.general.consul_session:
+    name: session-with-ttl
+    ttl: 600  # sec
 '''
 
 try:
@@ -184,6 +202,7 @@ def update_session(module):
     datacenter = module.params.get('datacenter')
     node = module.params.get('node')
     behavior = module.params.get('behavior')
+    ttl = module.params.get('ttl')
 
     consul_client = get_consul_api(module)
 
@@ -191,6 +210,7 @@ def update_session(module):
         session = consul_client.session.create(
             name=name,
             behavior=behavior,
+            ttl=ttl,
             node=node,
             lock_delay=delay,
             dc=datacenter,
@@ -200,6 +220,7 @@ def update_session(module):
                          session_id=session,
                          name=name,
                          behavior=behavior,
+                         ttl=ttl,
                          delay=delay,
                          checks=checks,
                          node=node)
@@ -226,7 +247,8 @@ def get_consul_api(module):
     return consul.Consul(host=module.params.get('host'),
                          port=module.params.get('port'),
                          scheme=module.params.get('scheme'),
-                         verify=module.params.get('validate_certs'))
+                         verify=module.params.get('validate_certs'),
+                         token=module.params.get('token'))
 
 
 def test_dependencies(module):
@@ -237,9 +259,10 @@ def test_dependencies(module):
 
 def main():
     argument_spec = dict(
-        checks=dict(type='list'),
+        checks=dict(type='list', elements='str'),
         delay=dict(type='int', default='15'),
         behavior=dict(type='str', default='release', choices=['release', 'delete']),
+        ttl=dict(type='int'),
         host=dict(type='str', default='localhost'),
         port=dict(type='int', default=8500),
         scheme=dict(type='str', default='http'),
@@ -249,6 +272,7 @@ def main():
         node=dict(type='str'),
         state=dict(type='str', default='present', choices=['absent', 'info', 'list', 'node', 'present']),
         datacenter=dict(type='str'),
+        token=dict(type='str', no_log=True),
     )
 
     module = AnsibleModule(

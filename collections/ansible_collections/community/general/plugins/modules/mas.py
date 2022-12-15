@@ -1,9 +1,10 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2020, Lukas Bestle <project-ansible@lukasbestle.com>
-# Copyright: (c) 2017, Michael Heap <m@michaelheap.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2020, Lukas Bestle <project-ansible@lukasbestle.com>
+# Copyright (c) 2017, Michael Heap <m@michaelheap.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -39,7 +40,7 @@ options:
         description:
             - Upgrade all installed Mac App Store apps.
         type: bool
-        default: "no"
+        default: false
         aliases: ["upgrade"]
 requirements:
     - macOS 10.11+
@@ -76,7 +77,7 @@ EXAMPLES = '''
 
 - name: Upgrade all installed Mac App Store apps
   community.general.mas:
-    upgrade_all: yes
+    upgrade_all: true
 
 - name: Install specific apps and also upgrade all others
   community.general.mas:
@@ -84,21 +85,22 @@ EXAMPLES = '''
       - 409183694 # Keynote
       - 413857545 # Divvy
     state: present
-    upgrade_all: yes
+    upgrade_all: true
 
 - name: Uninstall Divvy
   community.general.mas:
     id: 413857545
     state: absent
-  become: yes # Uninstallation requires root permissions
+  become: true # Uninstallation requires root permissions
 '''
 
 RETURN = r''' # '''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_native
-from distutils.version import StrictVersion
+from ansible.module_utils.common.text.converters import to_native
 import os
+
+from ansible_collections.community.general.plugins.module_utils.version import LooseVersion
 
 
 class Mas(object):
@@ -145,7 +147,7 @@ class Mas(object):
 
         # Is the version recent enough?
         rc, out, err = self.run(['version'])
-        if rc != 0 or not out.strip() or StrictVersion(out.strip()) < StrictVersion('1.5.0'):
+        if rc != 0 or not out.strip() or LooseVersion(out.strip()) < LooseVersion('1.5.0'):
             self.module.fail_json(msg='`mas` tool in version 1.5.0+ needed, got ' + out.strip())
 
     def check_signin(self):
@@ -272,7 +274,7 @@ def main():
             if mas.is_installed(app):
                 # Ensure we are root
                 if os.getuid() != 0:
-                    module.fail_json(msg="Uninstalling apps requires root permissions ('become: yes')")
+                    module.fail_json(msg="Uninstalling apps requires root permissions ('become: true')")
 
                 mas.app_command('uninstall', app)
 

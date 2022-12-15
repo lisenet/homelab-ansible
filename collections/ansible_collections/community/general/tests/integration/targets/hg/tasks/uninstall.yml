@@ -1,3 +1,8 @@
+---
+# Copyright (c) Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 - name: restore the updated python
   command: mv "{{ which_python.stdout }}.updated" "{{ which_python.stdout }}"
 
@@ -34,6 +39,12 @@
     state: absent
     autoremove: yes
   when: ansible_facts.pkg_mgr in ['pkgng', 'community.general.pkgng']
+
+- name: uninstall packages which were not originally installed (zypper)
+  package:
+    name: mercurial
+    state: absent
+  when: ansible_facts.pkg_mgr in ['zypper', 'community.general.zypper']
 
 - name: restore the default python
   raw: mv "{{ which_python.stdout }}.default" "{{ which_python.stdout }}"

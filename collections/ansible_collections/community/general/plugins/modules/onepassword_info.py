@@ -1,10 +1,11 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# (c) 2018, Ryan Conway (@rylon)
-# (c) 2018, Scott Buchanan <sbuchanan@ri.pn> (onepassword.py used as starting point)
-# (c) 2018, Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2018, Ryan Conway (@rylon)
+# Copyright (c) 2018, Scott Buchanan <sbuchanan@ri.pn> (onepassword.py used as starting point)
+# Copyright (c) 2018, Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 
 from __future__ import (absolute_import, division, print_function)
@@ -20,9 +21,6 @@ requirements:
 notes:
     - Tested with C(op) version 0.5.5
     - "Based on the C(onepassword) lookup plugin by Scott Buchanan <sbuchanan@ri.pn>."
-    - When this module is called with the deprecated C(onepassword_facts) name, potentially sensitive data
-      from 1Password is returned as Ansible facts. Facts are subject to caching if enabled, which means this
-      data could be stored in clear text on disk or in a database.
 short_description: Gather items from 1Password
 description:
     - M(community.general.onepassword_info) wraps the C(op) command line utility to fetch data about one or more 1Password items.
@@ -31,9 +29,13 @@ description:
     - This module was called C(onepassword_facts) before Ansible 2.9, returning C(ansible_facts).
       Note that the M(community.general.onepassword_info) module no longer returns C(ansible_facts)!
       You must now use the C(register) option to use the facts in other tasks.
+extends_documentation_fragment:
+    - community.general.attributes
+    - community.general.attributes.info_module
 options:
     search_terms:
         type: list
+        elements: dict
         description:
             - A list of one or more search terms.
             - Each search term can either be a simple string or it can be a dictionary for more control.
@@ -56,7 +58,7 @@ options:
                 type: str
                 description:
                     - The name of the particular 1Password vault to search, useful if your 1Password user has access to multiple vaults (optional).
-        required: True
+        required: true
     auto_login:
         type: dict
         description:
@@ -81,18 +83,17 @@ options:
                 description:
                     - The master password for your subdomain.
                     - This is always required when specifying C(auto_login).
-                required: True
+                required: true
             secret_key:
                 type: str
                 description:
                     - The secret key for your subdomain.
                     - Only required for initial sign in.
-        default: {}
-        required: False
+        required: false
     cli_path:
         type: path
         description: Used to specify the exact path to the C(op) command line interface
-        required: False
+        required: false
         default: 'op'
 '''
 
@@ -115,7 +116,7 @@ EXAMPLES = '''
         vault:   Name of the vault       # optional, only necessary if there is more than 1 Vault available
   delegate_to: localhost
   register: my_1password_item
-  no_log: True                           # Don't want to log the secrets to the console!
+  no_log: true                           # Don't want to log the secrets to the console!
 
 # Gather secrets combining simple and advanced search terms to retrieve two items, one of which we fetch two
 # fields. In the first 'password' is fetched, as a field name is not specified (default behaviour) and in the
@@ -165,8 +166,10 @@ import re
 
 from subprocess import Popen, PIPE
 
-from ansible.module_utils._text import to_bytes, to_native
+from ansible.module_utils.common.text.converters import to_bytes, to_native
 from ansible.module_utils.basic import AnsibleModule
+
+from ansible_collections.community.general.plugins.module_utils.onepassword import OnePasswordConfig
 
 
 class AnsibleModuleError(Exception):
@@ -181,13 +184,14 @@ class OnePasswordInfo(object):
 
     def __init__(self):
         self.cli_path = module.params.get('cli_path')
-        self.config_file_path = '~/.op/config'
         self.auto_login = module.params.get('auto_login')
         self.logged_in = False
         self.token = None
 
         terms = module.params.get('search_terms')
         self.terms = self.parse_search_terms(terms)
+
+        self._config = OnePasswordConfig()
 
     def _run(self, args, expected_rc=0, command_input=None, ignore_errors=False):
         if self.token:
@@ -296,12 +300,12 @@ class OnePasswordInfo(object):
             except AnsibleModuleError as e:
                 module.fail_json(msg="Failed to perform initial sign in to 1Password: %s" % to_native(e))
         else:
-            module.fail_json(msg="Unable to perform an initial sign in to 1Password. Please run '%s sigin' "
+            module.fail_json(msg="Unable to perform an initial sign in to 1Password. Please run '%s signin' "
                                  "or define credentials in 'auto_login'. See the module documentation for details." % self.cli_path)
 
     def get_token(self):
         # If the config file exists, assume an initial signin has taken place and try basic sign in
-        if os.path.isfile(self.config_file_path):
+        if os.path.isfile(self._config.config_file_path):
 
             if self.auto_login is not None:
 
@@ -372,20 +376,14 @@ def main():
                 master_password=dict(required=True, type='str', no_log=True),
                 secret_key=dict(type='str', no_log=True),
             ), default=None),
-            search_terms=dict(required=True, type='list')
+            search_terms=dict(required=True, type='list', elements='dict'),
         ),
         supports_check_mode=True
     )
 
     results = {'onepassword': OnePasswordInfo().run()}
 
-    if module._name in ('onepassword_facts', 'community.general.onepassword_facts'):
-        module.deprecate("The 'onepassword_facts' module has been renamed to 'onepassword_info'. "
-                         "When called with the new name it no longer returns 'ansible_facts'",
-                         version='3.0.0', collection_name='community.general')  # was Ansible 2.13
-        module.exit_json(changed=False, ansible_facts=results)
-    else:
-        module.exit_json(changed=False, **results)
+    module.exit_json(changed=False, **results)
 
 
 if __name__ == '__main__':

@@ -3,7 +3,8 @@
 
 # Copyright 2016 Dino Occhialini <dino.occhialini@gmail.com>
 #
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -37,61 +38,68 @@ options:
               that they are not required by other packages and were not
               explicitly installed by a user.
         type: bool
-        default: no
+        default: false
     update_cache:
         description:
             - Whether or not to refresh the master package lists. This can be
               run as part of a package installation or as a separate step.
-        aliases: ['update-cache']
         type: bool
-        default: yes
+        default: true
     upgrade:
         description:
             - Whether or not to upgrade whole system
         type: bool
-        default: no
+        default: false
     upgrade_xbps:
         description:
             - Whether or not to upgrade the xbps package when necessary.
               Before installing new packages,
               xbps requires the user to update the xbps package itself.
-              Thus when this option is set to C(no),
+              Thus when this option is set to C(false),
               upgrades and installations will fail when xbps is not up to date.
         type: bool
-        default: yes
+        default: true
         version_added: '0.2.0'
-    force:
-        description:
-            - This option doesn't have any effect and is deprecated, it will be
-              removed in 3.0.0.
-        type: bool
-        default: no
 '''
 
 EXAMPLES = '''
 - name: Install package foo (automatically updating the xbps package if needed)
-  community.general.xbps: name=foo state=present
+  community.general.xbps:
+    name: foo
+    state: present
 
 - name: Upgrade package foo
-  community.general.xbps: name=foo state=latest update_cache=yes
+  community.general.xbps:
+    name: foo
+    state: latest
+    update_cache: true
 
 - name: Remove packages foo and bar
-  community.general.xbps: name=foo,bar state=absent
+  community.general.xbps:
+    name:
+      - foo
+      - bar
+    state: absent
 
 - name: Recursively remove package foo
-  community.general.xbps: name=foo state=absent recurse=yes
+  community.general.xbps:
+    name: foo
+    state: absent
+    recurse: true
 
 - name: Update package cache
-  community.general.xbps: update_cache=yes
+  community.general.xbps:
+    update_cache: true
 
 - name: Upgrade packages
-  community.general.xbps: upgrade=yes
+  community.general.xbps:
+    upgrade: true
 
 - name: Install a package, failing if the xbps package is out of date
   community.general.xbps:
     name: foo
     state: present
-    upgrade_xbps: no
+    upgrade_xbps: false
 '''
 
 RETURN = '''
@@ -165,7 +173,7 @@ def upgrade(module, xbps_path):
 
     rc, stdout, stderr = module.run_command(cmdneedupgrade, check_rc=False)
     if rc == 0:
-        if(len(stdout.splitlines()) == 0):
+        if len(stdout.splitlines()) == 0:
             module.exit_json(changed=False, msg='Nothing to upgrade')
         elif module.check_mode:
             module.exit_json(changed=True, msg='Would have performed upgrade')
@@ -235,7 +243,9 @@ def install_packages(module, xbps_path, state, packages):
         module.params['upgrade_xbps'] = False
         install_packages(module, xbps_path, state, packages)
     elif rc != 0 and not (state == 'latest' and rc == 17):
-        module.fail_json(msg="failed to install %s" % (package))
+        module.fail_json(msg="failed to install %s packages(s)"
+                         % (len(toInstall)),
+                         packages=toInstall)
 
     module.exit_json(changed=True, msg="installed %s package(s)"
                      % (len(toInstall)),
@@ -288,11 +298,9 @@ def main():
                                                    'latest', 'absent',
                                                    'removed']),
             recurse=dict(default=False, type='bool'),
-            force=dict(default=False, type='bool', removed_in_version='3.0.0', removed_from_collection='community.general'),
             upgrade=dict(default=False, type='bool'),
-            update_cache=dict(default=True, aliases=['update-cache'],
-                              type='bool'),
-            upgrade_xbps=dict(default=True, type='bool')
+            update_cache=dict(default=True, type='bool'),
+            upgrade_xbps=dict(default=True, type='bool'),
         ),
         required_one_of=[['name', 'update_cache', 'upgrade']],
         supports_check_mode=True)

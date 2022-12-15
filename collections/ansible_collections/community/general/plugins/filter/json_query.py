@@ -1,22 +1,111 @@
-# (c) 2015, Filipe Niero Felisbino <filipenf@gmail.com>
-#
-# This file is part of Ansible
-#
-# Ansible is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Ansible is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
+# -*- coding: utf-8 -*-
+# Copyright (c) 2015, Filipe Niero Felisbino <filipenf@gmail.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
+
+DOCUMENTATION = '''
+  name: json_query
+  short_description: Select a single element or a data subset from a complex data structure
+  description:
+    - This filter lets you query a complex JSON structure and iterate over it using a loop structure.
+  positional: expr
+  options:
+    _input:
+      description:
+        - The JSON data to query.
+      type: any
+      required: true
+    expr:
+      description:
+        - The query expression.
+        - See U(http://jmespath.org/examples.html) for examples.
+      type: string
+      required: true
+  requirements:
+    - jmespath
+'''
+
+EXAMPLES = '''
+- name: Define data to work on in the examples below
+  ansible.builtin.set_fact:
+    domain_definition:
+      domain:
+        cluster:
+          - name: cluster1
+          - name: cluster2
+        server:
+          - name: server11
+            cluster: cluster1
+            port: '8080'
+          - name: server12
+            cluster: cluster1
+            port: '8090'
+          - name: server21
+            cluster: cluster2
+            port: '9080'
+          - name: server22
+            cluster: cluster2
+            port: '9090'
+        library:
+          - name: lib1
+            target: cluster1
+          - name: lib2
+            target: cluster2
+
+- name: Display all cluster names
+  ansible.builtin.debug:
+    var: item
+  loop: "{{ domain_definition | community.general.json_query('domain.cluster[*].name') }}"
+
+- name: Display all server names
+  ansible.builtin.debug:
+    var: item
+  loop: "{{ domain_definition | community.general.json_query('domain.server[*].name') }}"
+
+- name: Display all ports from cluster1
+  ansible.builtin.debug:
+    var: item
+  loop: "{{ domain_definition | community.general.json_query(server_name_cluster1_query) }}"
+  vars:
+    server_name_cluster1_query: "domain.server[?cluster=='cluster1'].port"
+
+- name: Display all ports from cluster1 as a string
+  ansible.builtin.debug:
+    msg: "{{ domain_definition | community.general.json_query('domain.server[?cluster==`cluster1`].port') | join(', ') }}"
+
+- name: Display all ports from cluster1
+  ansible.builtin.debug:
+    var: item
+  loop: "{{ domain_definition | community.general.json_query('domain.server[?cluster==''cluster1''].port') }}"
+
+- name: Display all server ports and names from cluster1
+  ansible.builtin.debug:
+    var: item
+  loop: "{{ domain_definition | community.general.json_query(server_name_cluster1_query) }}"
+  vars:
+    server_name_cluster1_query: "domain.server[?cluster=='cluster2'].{name: name, port: port}"
+
+- name: Display all ports from cluster1
+  ansible.builtin.debug:
+    msg: "{{ domain_definition | to_json | from_json | community.general.json_query(server_name_query) }}"
+  vars:
+    server_name_query: "domain.server[?starts_with(name,'server1')].port"
+
+- name: Display all ports from cluster1
+  ansible.builtin.debug:
+    msg: "{{ domain_definition | to_json | from_json | community.general.json_query(server_name_query) }}"
+  vars:
+    server_name_query: "domain.server[?contains(name,'server1')].port"
+'''
+
+RETURN = '''
+  _value:
+    description: The result of the query.
+    type: any
+'''
 
 from ansible.errors import AnsibleError, AnsibleFilterError
 
@@ -35,9 +124,11 @@ def json_query(data, expr):
         raise AnsibleError('You need to install "jmespath" prior to running '
                            'json_query filter')
 
-    # Hack to handle Ansible String Types
+    # Hack to handle Ansible Unsafe text, AnsibleMapping and AnsibleSequence
     # See issue: https://github.com/ansible-collections/community.general/issues/320
     jmespath.functions.REVERSE_TYPES_MAP['string'] = jmespath.functions.REVERSE_TYPES_MAP['string'] + ('AnsibleUnicode', 'AnsibleUnsafeText', )
+    jmespath.functions.REVERSE_TYPES_MAP['array'] = jmespath.functions.REVERSE_TYPES_MAP['array'] + ('AnsibleSequence', )
+    jmespath.functions.REVERSE_TYPES_MAP['object'] = jmespath.functions.REVERSE_TYPES_MAP['object'] + ('AnsibleMapping', )
     try:
         return jmespath.search(expr, data)
     except jmespath.exceptions.JMESPathError as e:

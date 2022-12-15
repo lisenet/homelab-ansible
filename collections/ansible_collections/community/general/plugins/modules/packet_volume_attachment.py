@@ -1,9 +1,10 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2019, Nurfet Becirevic <nurfet.becirevic@gmail.com>
-# Copyright: (c) 2017, Tomas Karasek <tom.to.the.k@gmail.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2019, Nurfet Becirevic <nurfet.becirevic@gmail.com>
+# Copyright (c) 2017, Tomas Karasek <tom.to.the.k@gmail.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
@@ -13,7 +14,7 @@ DOCUMENTATION = '''
 ---
 module: packet_volume_attachment
 
-short_description: Attach/detach a volume to a device in the Packet host.
+short_description: Attach/detach a volume to a device in the Packet host
 
 description:
      - Attach/detach a volume to a device in the Packet host.
@@ -130,7 +131,7 @@ device_id:
 import uuid
 
 from ansible.module_utils.basic import AnsibleModule, env_fallback
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 HAS_PACKET_SDK = True
 
@@ -181,7 +182,6 @@ def do_detach(packet_conn, vol, dev_id=None):
         return (dev_id is None) or (a['device']['id'] == dev_id)
     for a in vol['attachments']:
         if dev_match(a):
-            print(a['href'])
             packet_conn.call_api(a['href'], type="DELETE")
 
 

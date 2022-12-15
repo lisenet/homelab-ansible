@@ -1,9 +1,10 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# (c) 2017, Kairo Araujo <kairo@kairo.eti.br>
-# GNU General Public License v3.0+ (see COPYING or
-# https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2021, Alexei Znamensky (@russoz) <russoz@gmail.com>
+# Copyright (c) 2017, Kairo Araujo <kairo@kairo.eti.br>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 
@@ -13,7 +14,7 @@ DOCUMENTATION = '''
 ---
 author: Kairo Araujo (@kairoaraujo)
 module: mksysb
-short_description: Generates AIX mksysb rootvg backups.
+short_description: Generates AIX mksysb rootvg backups
 description:
   - This module manages a basic AIX mksysb (image) of rootvg.
 options:
@@ -21,32 +22,32 @@ options:
     description:
       - Backup encrypted files.
     type: bool
-    default: "yes"
+    default: true
   backup_dmapi_fs:
     description:
       - Back up DMAPI filesystem files.
     type: bool
-    default: "yes"
+    default: true
   create_map_files:
     description:
       - Creates a new MAP files.
     type: bool
-    default: "no"
+    default: false
   exclude_files:
     description:
       - Excludes files using C(/etc/rootvg.exclude).
     type: bool
-    default: "no"
+    default: false
   exclude_wpar_files:
     description:
       - Excludes WPAR files.
     type: bool
-    default: "no"
+    default: false
   extended_attrs:
     description:
       - Backup extended attributes.
     type: bool
-    default: "yes"
+    default: true
   name:
     type: str
     description:
@@ -56,13 +57,13 @@ options:
     description:
       - Creates a new file data.
     type: bool
-    default: "yes"
+    default: true
   software_packing:
     description:
       - Exclude files from packing option listed in
         C(/etc/exclude_packing.rootvg).
     type: bool
-    default: "no"
+    default: false
   storage_path:
     type: str
     description:
@@ -72,7 +73,7 @@ options:
     description:
       - Creates backup using snapshots.
     type: bool
-    default: "no"
+    default: false
 '''
 
 EXAMPLES = '''
@@ -80,8 +81,8 @@ EXAMPLES = '''
   community.general.mksysb:
     name: myserver
     storage_path: /repository/images
-    exclude_files: yes
-    exclude_wpar_files: yes
+    exclude_files: true
+    exclude_wpar_files: true
 '''
 
 RETURN = '''
@@ -95,13 +96,18 @@ msg:
   type: str
 '''
 
-
-from ansible.module_utils.basic import AnsibleModule
 import os
 
+from ansible_collections.community.general.plugins.module_utils.cmd_runner import CmdRunner, cmd_runner_fmt
+from ansible_collections.community.general.plugins.module_utils.module_helper import ModuleHelper
 
-def main():
-    module = AnsibleModule(
+from ansible_collections.community.general.plugins.module_utils.module_helper import (
+    ArgFormat
+)
+
+
+class MkSysB(ModuleHelper):
+    module = dict(
         argument_spec=dict(
             backup_crypt_files=dict(type='bool', default=True),
             backup_dmapi_fs=dict(type='bool', default=True),
@@ -117,85 +123,44 @@ def main():
         ),
         supports_check_mode=True,
     )
+    command_args_formats = dict(
+        create_map_files=cmd_runner_fmt.as_bool("-m"),
+        use_snapshot=cmd_runner_fmt.as_bool("-T"),
+        exclude_files=cmd_runner_fmt.as_bool("-e"),
+        exclude_wpar_files=cmd_runner_fmt.as_bool("-G"),
+        new_image_data=cmd_runner_fmt.as_bool("-i"),
+        software_packing=cmd_runner_fmt.as_bool_not("-p"),
+        extended_attrs=cmd_runner_fmt.as_bool("-a"),
+        backup_crypt_files=cmd_runner_fmt.as_bool_not("-Z"),
+        backup_dmapi_fs=cmd_runner_fmt.as_bool("-A"),
+        combined_path=cmd_runner_fmt.as_func(cmd_runner_fmt.unpack_args(lambda p, n: ["%s/%s" % (p, n)])),
+    )
 
-    # Command options.
-    map_file_opt = {
-        True: '-m',
-        False: ''
-    }
+    def __init_module__(self):
+        if not os.path.isdir(self.vars.storage_path):
+            self.do_raise("Storage path %s is not valid." % self.vars.storage_path)
 
-    use_snapshot_opt = {
-        True: '-T',
-        False: ''
-    }
+    def __run__(self):
+        def process(rc, out, err):
+            if rc != 0:
+                self.do_raise("mksysb failed.")
+            self.vars.msg = out
 
-    exclude_files_opt = {
-        True: '-e',
-        False: ''
-    }
+        runner = CmdRunner(
+            self.module,
+            ['mksysb', '-X'],
+            self.command_args_formats,
+        )
+        with runner(['create_map_files', 'use_snapshot', 'exclude_files', 'exclude_wpar_files', 'software_packing',
+                     'extended_attrs', 'backup_crypt_files', 'backup_dmapi_fs', 'new_image_data', 'combined_path'],
+                    output_process=process, check_mode_skip=True) as ctx:
+            ctx.run(combined_path=[self.vars.storage_path, self.vars.name])
 
-    exclude_wpar_opt = {
-        True: '-G',
-        False: ''
-    }
+        self.changed = True
 
-    new_image_data_opt = {
-        True: '-i',
-        False: ''
-    }
 
-    soft_packing_opt = {
-        True: '',
-        False: '-p'
-    }
-
-    extend_attr_opt = {
-        True: '',
-        False: '-a'
-    }
-
-    crypt_files_opt = {
-        True: '',
-        False: '-Z'
-    }
-
-    dmapi_fs_opt = {
-        True: '-a',
-        False: ''
-    }
-
-    backup_crypt_files = crypt_files_opt[module.params['backup_crypt_files']]
-    backup_dmapi_fs = dmapi_fs_opt[module.params['backup_dmapi_fs']]
-    create_map_files = map_file_opt[module.params['create_map_files']]
-    exclude_files = exclude_files_opt[module.params['exclude_files']]
-    exclude_wpar_files = exclude_wpar_opt[module.params['exclude_wpar_files']]
-    extended_attrs = extend_attr_opt[module.params['extended_attrs']]
-    name = module.params['name']
-    new_image_data = new_image_data_opt[module.params['new_image_data']]
-    software_packing = soft_packing_opt[module.params['software_packing']]
-    storage_path = module.params['storage_path']
-    use_snapshot = use_snapshot_opt[module.params['use_snapshot']]
-
-    # Validate if storage_path is a valid directory.
-    if os.path.isdir(storage_path):
-        if not module.check_mode:
-            # Generates the mksysb image backup.
-            mksysb_cmd = module.get_bin_path('mksysb', True)
-            rc, mksysb_output, err = module.run_command(
-                "%s -X %s %s %s %s %s %s %s %s %s %s/%s" % (
-                    mksysb_cmd, create_map_files, use_snapshot, exclude_files,
-                    exclude_wpar_files, software_packing, extended_attrs,
-                    backup_crypt_files, backup_dmapi_fs, new_image_data,
-                    storage_path, name))
-            if rc == 0:
-                module.exit_json(changed=True, msg=mksysb_output)
-            else:
-                module.fail_json(msg="mksysb failed.", rc=rc, err=err)
-
-        module.exit_json(changed=True)
-
-    else:
-        module.fail_json(msg="Storage path %s is not valid." % storage_path)
+def main():
+    MkSysB.execute()
 
 
 if __name__ == '__main__':

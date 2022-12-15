@@ -1,7 +1,9 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 #
 # Copyright (c) 2015 CenturyLink
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -9,7 +11,7 @@ __metaclass__ = type
 
 DOCUMENTATION = '''
 module: clc_publicip
-short_description: Add and Delete public ips on servers in CenturyLink Cloud.
+short_description: Add and Delete public ips on servers in CenturyLink Cloud
 description:
   - An Ansible module to add or delete public ip addresses on an existing server or servers in CenturyLink Cloud.
 options:
@@ -23,11 +25,13 @@ options:
     description:
       - A list of ports to expose. This is required when state is 'present'
     type: list
+    elements: int
   server_ids:
     description:
       - A list of servers to create public ips on.
     type: list
-    required: True
+    required: true
+    elements: str
   state:
     description:
       - Determine whether to create or delete public IPs. If present module will not create a second public ip if one
@@ -39,7 +43,7 @@ options:
     description:
       - Whether to wait for the tasks to finish before returning.
     type: bool
-    default: 'yes'
+    default: true
 requirements:
     - python = 2.7
     - requests >= 2.5.0
@@ -62,7 +66,7 @@ EXAMPLES = '''
 
 - name: Add Public IP to Server
   hosts: localhost
-  gather_facts: False
+  gather_facts: false
   connection: local
   tasks:
     - name: Create Public IP For Servers
@@ -82,7 +86,7 @@ EXAMPLES = '''
 
 - name: Delete Public IP from Server
   hosts: localhost
-  gather_facts: False
+  gather_facts: false
   connection: local
   tasks:
     - name: Create Public IP For Servers
@@ -114,7 +118,8 @@ __version__ = '${version}'
 
 import os
 import traceback
-from distutils.version import LooseVersion
+
+from ansible_collections.community.general.plugins.module_utils.version import LooseVersion
 
 REQUESTS_IMP_ERR = None
 try:
@@ -193,9 +198,9 @@ class ClcPublicIp(object):
         :return: argument spec dictionary
         """
         argument_spec = dict(
-            server_ids=dict(type='list', required=True),
+            server_ids=dict(type='list', required=True, elements='str'),
             protocol=dict(default='TCP', choices=['TCP', 'UDP', 'ICMP']),
-            ports=dict(type='list'),
+            ports=dict(type='list', elements='int'),
             wait=dict(type='bool', default=True),
             state=dict(default='present', choices=['present', 'absent']),
         )

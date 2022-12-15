@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
-# Copyright: (c) 2018, Ansible Project # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2018, Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = '''
-    become: dzdo
+    name: dzdo
     short_description: Centrify's Direct Authorize
     description:
         - This become plugins allows your remote/login user to execute commands as another user via the dzdo utility.
-    author: ansible (@core)
+    author: Ansible Core Team
     options:
         become_user:
             description: User you 'become' to execute the task
@@ -53,7 +55,7 @@ DOCUMENTATION = '''
               - name: ANSIBLE_DZDO_FLAGS
         become_pass:
             description: Options to pass to dzdo
-            required: False
+            required: false
             vars:
               - name: ansible_become_password
               - name: ansible_become_pass

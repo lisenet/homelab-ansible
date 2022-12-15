@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# Copyright: Tristan Le Guern <tleguern at bouledef.eu>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright Tristan Le Guern <tleguern at bouledef.eu>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -30,8 +31,11 @@ options:
     description:
       - Restrict results to a specific user ID, which is a concatenation of a user and domain parts.
     type: str
-author: Tristan Le Guern (@Aversiste)
-extends_documentation_fragment: community.general.proxmox.documentation
+author: Tristan Le Guern (@tleguern)
+extends_documentation_fragment:
+  - community.general.proxmox.documentation
+  - community.general.attributes
+  - community.general.attributes.info_module
 '''
 
 EXAMPLES = '''
@@ -154,9 +158,9 @@ proxmox_users:
 '''
 
 
-from ansible.module_utils.basic import AnsibleModule, missing_required_lib
+from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.general.plugins.module_utils.proxmox import (
-    proxmox_auth_argument_spec, ProxmoxAnsible, proxmox_to_ansible_bool, HAS_PROXMOXER, PROXMOXER_IMP_ERR)
+    proxmox_auth_argument_spec, ProxmoxAnsible, proxmox_to_ansible_bool)
 
 
 class ProxmoxUserInfoAnsible(ProxmoxAnsible):
@@ -231,9 +235,6 @@ def main():
     result = dict(
         changed=False
     )
-
-    if not HAS_PROXMOXER:
-        module.fail_json(msg=missing_required_lib('proxmoxer'), exception=PROXMOXER_IMP_ERR)
 
     proxmox = ProxmoxUserInfoAnsible(module)
     domain = module.params['domain']

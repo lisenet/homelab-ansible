@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# Copyright: Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -11,7 +12,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: hipchat
-short_description: Send a message to Hipchat.
+short_description: Send a message to Hipchat
 description:
    - Send a message to a Hipchat room, with options to control the formatting.
 options:
@@ -53,13 +54,13 @@ options:
     description:
       - If true, a notification will be triggered for users in the room.
     type: bool
-    default: 'yes'
+    default: true
   validate_certs:
     description:
-      - If C(no), SSL certificates will not be validated. This should only be used
+      - If C(false), SSL certificates will not be validated. This should only be used
         on personally controlled sites using self-signed certificates.
     type: bool
-    default: 'yes'
+    default: true
   api:
     type: str
     description:
@@ -96,7 +97,7 @@ import traceback
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six.moves.urllib.parse import urlencode
 from ansible.module_utils.six.moves.urllib.request import pathname2url
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 from ansible.module_utils.urls import fetch_url
 
 

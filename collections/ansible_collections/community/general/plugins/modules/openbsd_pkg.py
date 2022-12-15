@@ -1,9 +1,10 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# (c) 2013, Patrik Lundin <patrik@sigterm.se>
+# Copyright (c) 2013, Patrik Lundin <patrik@sigterm.se>
 #
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -23,7 +24,7 @@ options:
     name:
         description:
         - A name or a list of names of the packages.
-        required: yes
+        required: true
         type: list
         elements: str
     state:
@@ -42,13 +43,13 @@ options:
             not already installed.
           - Mutually exclusive with I(snapshot).
         type: bool
-        default: no
+        default: false
     snapshot:
         description:
           - Force C(%c) and C(%m) to expand to C(snapshots), even on a release kernel.
           - Mutually exclusive with I(build).
         type: bool
-        default: no
+        default: false
         version_added: 1.3.0
     ports_dir:
         description:
@@ -62,16 +63,16 @@ options:
             file(s) in the old packages which are annotated with @extra in
             the packaging-list.
         type: bool
-        default: no
+        default: false
     quick:
         description:
           - Replace or delete packages quickly; do not bother with checksums
             before removing normal files.
         type: bool
-        default: no
+        default: false
 notes:
-  - When used with a `loop:` each package will be processed individually,
-    it is much more efficient to pass the list directly to the `name` option.
+  - When used with a C(loop:) each package will be processed individually,
+    it is much more efficient to pass the list directly to the I(name) option.
 '''
 
 EXAMPLES = '''
@@ -94,7 +95,7 @@ EXAMPLES = '''
   community.general.openbsd_pkg:
     name: nmap
     state: present
-    build: yes
+    build: true
 
 - name: Specify a pkg flavour with '--'
   community.general.openbsd_pkg:
@@ -119,13 +120,13 @@ EXAMPLES = '''
 - name: Purge a package and it's configuration files
   community.general.openbsd_pkg:
     name: mpd
-    clean: yes
+    clean: true
     state: absent
 
 - name: Quickly remove a package without checking checksums
   community.general.openbsd_pkg:
     name: qt5
-    quick: yes
+    quick: true
     state: absent
 '''
 
@@ -135,9 +136,9 @@ import re
 import shlex
 import sqlite3
 
-from distutils.version import StrictVersion
-
 from ansible.module_utils.basic import AnsibleModule
+
+from ansible_collections.community.general.plugins.module_utils.version import LooseVersion
 
 
 # Function used for executing commands.
@@ -164,7 +165,7 @@ def get_package_state(names, pkg_spec, module):
         if stdout:
             # If the requested package name is just a stem, like "python", we may
             # find multiple packages with that name.
-            pkg_spec[name]['installed_names'] = [installed_name for installed_name in stdout.splitlines()]
+            pkg_spec[name]['installed_names'] = stdout.splitlines()
             module.debug("get_package_state(): installed_names = %s" % pkg_spec[name]['installed_names'])
             pkg_spec[name]['installed_state'] = True
         else:
@@ -241,11 +242,12 @@ def package_present(names, pkg_spec, module):
                     # "file:/local/package/directory/ is empty" message on stderr
                     # while still installing the package, so we need to look for
                     # for a message like "packagename-1.0: ok" just in case.
-                    match = re.search(r"\W%s-[^:]+: ok\W" % pkg_spec[name]['stem'], pkg_spec[name]['stdout'])
+                    match = re.search(r"\W%s-[^:]+: ok\W" % re.escape(pkg_spec[name]['stem']), pkg_spec[name]['stdout'])
 
                     if match:
                         # It turns out we were able to install the package.
                         module.debug("package_present(): we were able to install package for name '%s'" % name)
+                        pkg_spec[name]['changed'] = True
                     else:
                         # We really did fail, fake the return code.
                         module.debug("package_present(): we really did fail for name '%s'" % name)
@@ -295,7 +297,7 @@ def package_latest(names, pkg_spec, module):
             pkg_spec[name]['changed'] = False
             for installed_name in pkg_spec[name]['installed_names']:
                 module.debug("package_latest(): checking for pre-upgrade package name: %s" % installed_name)
-                match = re.search(r"\W%s->.+: ok\W" % installed_name, pkg_spec[name]['stdout'])
+                match = re.search(r"\W%s->.+: ok\W" % re.escape(installed_name), pkg_spec[name]['stdout'])
                 if match:
                     module.debug("package_latest(): pre-upgrade package name match: %s" % installed_name)
 
@@ -434,7 +436,7 @@ def parse_package_name(names, pkg_spec, module):
         if pkg_spec[name]['branch']:
             branch_release = "6.0"
 
-            if StrictVersion(platform.release()) < StrictVersion(branch_release):
+            if LooseVersion(platform.release()) < LooseVersion(branch_release):
                 module.fail_json(msg="package name using 'branch' syntax requires at least OpenBSD %s: %s" % (branch_release, name))
 
         # Sanity check that there are no trailing dashes in flavor.

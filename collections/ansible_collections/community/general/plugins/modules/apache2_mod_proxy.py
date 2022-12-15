@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# (c) 2016, Olivier Boukili <boukili.olivier@gmail.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2016, Olivier Boukili <boukili.olivier@gmail.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -49,12 +50,12 @@ options:
     description:
       - Use https to access balancer management page.
     type: bool
-    default: 'no'
+    default: false
   validate_certs:
     description:
       - Validate ssl/tls certificates.
     type: bool
-    default: 'yes'
+    default: true
 '''
 
 EXAMPLES = '''
@@ -198,6 +199,10 @@ members:
 import re
 import traceback
 
+from ansible.module_utils.basic import AnsibleModule, missing_required_lib
+from ansible.module_utils.urls import fetch_url
+from ansible.module_utils.six import iteritems
+
 BEAUTIFUL_SOUP_IMP_ERR = None
 try:
     from BeautifulSoup import BeautifulSoup
@@ -257,8 +262,8 @@ class BalancerMember(object):
         else:
             try:
                 soup = BeautifulSoup(balancer_member_page[0])
-            except TypeError:
-                self.module.fail_json(msg="Cannot parse balancer_member_page HTML! " + str(soup))
+            except TypeError as exc:
+                self.module.fail_json(msg="Cannot parse balancer_member_page HTML! " + str(exc))
             else:
                 subsoup = soup.findAll('table')[1].findAll('tr')
                 keys = subsoup[0].findAll('th')
@@ -273,13 +278,8 @@ class BalancerMember(object):
                           'drained': 'Drn',
                           'hot_standby': 'Stby',
                           'ignore_errors': 'Ign'}
-        status = {}
         actual_status = str(self.attributes['Status'])
-        for mode in status_mapping.keys():
-            if re.search(pattern=status_mapping[mode], string=actual_status):
-                status[mode] = True
-            else:
-                status[mode] = False
+        status = dict((mode, patt in actual_status) for mode, patt in iteritems(status_mapping))
         return status
 
     def set_member_status(self, values):
@@ -290,13 +290,10 @@ class BalancerMember(object):
                           'ignore_errors': '&w_status_I'}
 
         request_body = regexp_extraction(self.management_url, EXPRESSION, 1)
-        for k in values_mapping.keys():
-            if values[str(k)]:
-                request_body = request_body + str(values_mapping[k]) + '=1'
-            else:
-                request_body = request_body + str(values_mapping[k]) + '=0'
+        values_url = "".join("{0}={1}".format(url_param, 1 if values[mode] else 0) for mode, url_param in iteritems(values_mapping))
+        request_body = "{0}{1}".format(request_body, values_url)
 
-        response = fetch_url(self.module, self.management_url, data=str(request_body))
+        response = fetch_url(self.module, self.management_url, data=request_body)
         if response[1]['status'] != 200:
             self.module.fail_json(msg="Could not set the member status! " + self.host + " " + response[1]['status'])
 
@@ -309,11 +306,11 @@ class Balancer(object):
 
     def __init__(self, host, suffix, module, members=None, tls=False):
         if tls:
-            self.base_url = str(str('https://') + str(host))
-            self.url = str(str('https://') + str(host) + str(suffix))
+            self.base_url = 'https://' + str(host)
+            self.url = 'https://' + str(host) + str(suffix)
         else:
-            self.base_url = str(str('http://') + str(host))
-            self.url = str(str('http://') + str(host) + str(suffix))
+            self.base_url = 'http://' + str(host)
+            self.url = 'http://' + str(host) + str(suffix)
         self.module = module
         self.page = self.fetch_balancer_page()
         if members is None:
@@ -444,7 +441,5 @@ def main():
             module.fail_json(msg=str(module.params['member_host']) + ' is not a member of the balancer ' + str(module.params['balancer_vhost']) + '!')
 
 
-from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible.module_utils.urls import fetch_url
 if __name__ == '__main__':
     main()

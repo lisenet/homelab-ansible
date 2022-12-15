@@ -1,7 +1,9 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 #
 # Copyright (c) 2015 CenturyLink
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -17,7 +19,7 @@ options:
     description:
       - Target datacenter for the firewall policy
     type: str
-    required: True
+    required: true
   state:
     description:
       - Whether to create or delete the firewall policy
@@ -29,17 +31,20 @@ options:
       - The list  of source addresses for traffic on the originating firewall.
         This is required when state is 'present'
     type: list
+    elements: str
   destination:
     description:
       - The list of destination addresses for traffic on the terminating firewall.
         This is required when state is 'present'
     type: list
+    elements: str
   ports:
     description:
       - The list of ports associated with the policy.
         TCP and UDP can take in single ports or port ranges.
       - "Example: C(['any', 'icmp', 'TCP/123', 'UDP/123', 'TCP/123-456', 'UDP/123-456'])."
     type: list
+    elements: str
   firewall_policy_id:
     description:
       - Id of the firewall policy. This is required to update or delete an existing firewall policy
@@ -48,7 +53,7 @@ options:
     description:
       - CLC alias for the source account
     type: str
-    required: True
+    required: true
   destination_account_alias:
     description:
       - CLC alias for the destination account
@@ -62,8 +67,8 @@ options:
     description:
       - Whether the firewall policy is enabled or disabled
     type: str
-    choices: [True, False]
-    default: True
+    choices: ['True', 'False']
+    default: 'True'
 requirements:
     - python = 2.7
     - requests >= 2.5.0
@@ -85,7 +90,7 @@ EXAMPLES = '''
 ---
 - name: Create Firewall Policy
   hosts: localhost
-  gather_facts: False
+  gather_facts: false
   connection: local
   tasks:
     - name: Create / Verify an Firewall Policy at CenturyLink Cloud
@@ -100,7 +105,7 @@ EXAMPLES = '''
 
 - name: Delete Firewall Policy
   hosts: localhost
-  gather_facts: False
+  gather_facts: false
   connection: local
   tasks:
     - name: Delete an Firewall Policy at CenturyLink Cloud
@@ -158,7 +163,8 @@ import os
 import traceback
 from ansible.module_utils.six.moves.urllib.parse import urlparse
 from time import sleep
-from distutils.version import LooseVersion
+
+from ansible_collections.community.general.plugins.module_utils.version import LooseVersion
 
 REQUESTS_IMP_ERR = None
 try:
@@ -199,8 +205,7 @@ class ClcFirewallPolicy:
             self.module.fail_json(msg=missing_required_lib('clc-sdk'), exception=CLC_IMP_ERR)
         if not REQUESTS_FOUND:
             self.module.fail_json(msg=missing_required_lib('requests'), exception=REQUESTS_IMP_ERR)
-        if requests.__version__ and LooseVersion(
-                requests.__version__) < LooseVersion('2.5.0'):
+        if requests.__version__ and LooseVersion(requests.__version__) < LooseVersion('2.5.0'):
             self.module.fail_json(
                 msg='requests library  version should be >= 2.5.0')
 
@@ -217,9 +222,9 @@ class ClcFirewallPolicy:
             source_account_alias=dict(required=True),
             destination_account_alias=dict(),
             firewall_policy_id=dict(),
-            ports=dict(type='list'),
-            source=dict(type='list'),
-            destination=dict(type='list'),
+            ports=dict(type='list', elements='str'),
+            source=dict(type='list', elements='str'),
+            destination=dict(type='list', elements='str'),
             wait=dict(default=True),   # @FIXME type=bool
             state=dict(default='present', choices=['present', 'absent']),
             enabled=dict(default=True, choices=[True, False])

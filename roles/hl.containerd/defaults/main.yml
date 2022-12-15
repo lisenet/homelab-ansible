@@ -1,0 +1,19 @@
+---
+## Default variables for the role. These variables have the lowest
+## priority of any variables available, and can be easily overridden 
+## by any other variable, including inventory variables.
+
+prerequisites_packages:
+  - yum-utils
+
+packages:
+  - containerd.io-1.6.8-3.1.el{{ ansible_distribution_major_version }}.x86_64
+
+systemd_service: "containerd"
+
+docker_gpg_key_redhat: "https://download.docker.com/linux/centos/gpg"
+docker_repository_redhat: "https://download.docker.com/linux/centos/$releasever/$basearch/stable"
+
+sysctl_config:
+  - name: net.ipv4.ip_forward
+    value: 1

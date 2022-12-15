@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2017, Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2017, Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -11,7 +12,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: logentries_msg
-short_description: Send a message to logentries.
+short_description: Send a message to logentries
 description:
    - Send a message to logentries
 requirements:
@@ -73,7 +74,7 @@ def send_msg(module, token, msg, api, port):
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            token=dict(type='str', required=True),
+            token=dict(type='str', required=True, no_log=True),
             msg=dict(type='str', required=True),
             api=dict(type='str', default="data.logentries.com"),
             port=dict(type='int', default=80)),

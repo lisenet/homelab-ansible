@@ -1,7 +1,9 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 #
 # Copyright (c) 2015 CenturyLink
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -9,7 +11,7 @@ __metaclass__ = type
 
 DOCUMENTATION = '''
 module: clc_aa_policy
-short_description: Create or Delete Anti Affinity Policies at CenturyLink Cloud.
+short_description: Create or Delete Anti Affinity Policies at CenturyLink Cloud
 description:
   - An Ansible module to Create or Delete Anti Affinity Policies at CenturyLink Cloud.
 options:
@@ -17,23 +19,19 @@ options:
     description:
       - The name of the Anti Affinity Policy.
     type: str
-    required: True
+    required: true
   location:
     description:
       - Datacenter in which the policy lives/should live.
     type: str
-    required: True
+    required: true
   state:
     description:
       - Whether to create or delete the policy.
     type: str
-    required: False
+    required: false
     default: present
     choices: ['present','absent']
-  wait:
-    description:
-      - This option does nothing and will be removed in community.general 3.0.0.
-    type: bool
 requirements:
     - python = 2.7
     - requests >= 2.5.0
@@ -57,7 +55,7 @@ EXAMPLES = '''
 ---
 - name: Create AA Policy
   hosts: localhost
-  gather_facts: False
+  gather_facts: false
   connection: local
   tasks:
     - name: Create an Anti Affinity Policy
@@ -73,7 +71,7 @@ EXAMPLES = '''
 
 - name: Delete AA Policy
   hosts: localhost
-  gather_facts: False
+  gather_facts: false
   connection: local
   tasks:
     - name: Delete an Anti Affinity Policy
@@ -123,7 +121,7 @@ __version__ = '${version}'
 import os
 import traceback
 
-from distutils.version import LooseVersion
+from ansible_collections.community.general.plugins.module_utils.version import LooseVersion
 
 REQUESTS_IMP_ERR = None
 try:
@@ -185,7 +183,6 @@ class ClcAntiAffinityPolicy:
         argument_spec = dict(
             name=dict(required=True),
             location=dict(required=True),
-            wait=dict(type='bool', removed_in_version='3.0.0', removed_from_collection='community.general'),  # was Ansible 2.14
             state=dict(default='present', choices=['present', 'absent']),
         )
         return argument_spec

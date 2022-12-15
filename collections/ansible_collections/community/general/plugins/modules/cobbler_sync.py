@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2018, Dag Wieers (dagwieers) <dag@wieers.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2018, Dag Wieers (dagwieers) <dag@wieers.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -35,15 +36,15 @@ options:
     type: str
   use_ssl:
     description:
-    - If C(no), an HTTP connection will be used instead of the default HTTPS connection.
+    - If C(false), an HTTP connection will be used instead of the default HTTPS connection.
     type: bool
-    default: 'yes'
+    default: true
   validate_certs:
     description:
-    - If C(no), SSL certificates will not be validated.
-    - This should only set to C(no) when used on personally controlled sites using self-signed certificates.
+    - If C(false), SSL certificates will not be validated.
+    - This should only set to C(false) when used on personally controlled sites using self-signed certificates.
     type: bool
-    default: 'yes'
+    default: true
 author:
 - Dag Wieers (@dagwieers)
 todo:
@@ -59,7 +60,7 @@ EXAMPLES = r'''
     host: cobbler01
     username: cobbler
     password: MySuperSecureP4sswOrd
-  run_once: yes
+  run_once: true
   delegate_to: localhost
 '''
 
@@ -72,7 +73,7 @@ import ssl
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six.moves import xmlrpc_client
-from ansible.module_utils._text import to_text
+from ansible.module_utils.common.text.converters import to_text
 
 
 def main():
@@ -106,12 +107,14 @@ def main():
 
     ssl_context = None
     if not validate_certs:
-        try:  # Python 2.7.9 and newer
-            ssl_context = ssl.create_unverified_context()
-        except AttributeError:  # Legacy Python that doesn't verify HTTPS certificates by default
-            ssl._create_default_context = ssl._create_unverified_context
-        else:  # Python 2.7.8 and older
-            ssl._create_default_https_context = ssl._create_unverified_https_context
+        try:
+            ssl_context = ssl._create_unverified_context()
+        except AttributeError:
+            # Legacy Python that doesn't verify HTTPS certificates by default
+            pass
+        else:
+            # Handle target environment that doesn't support HTTPS verification
+            ssl._create_default_https_context = ssl._create_unverified_context
 
     url = '{proto}://{host}:{port}/cobbler_api'.format(**module.params)
     if ssl_context:

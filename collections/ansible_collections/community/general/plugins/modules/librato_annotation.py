@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# (C) Seth Edwards, 2014
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) Seth Edwards, 2014
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -11,7 +12,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: librato_annotation
-short_description: create an annotation in librato
+short_description: Create an annotation in librato
 description:
     - Create an annotation event on the given annotation stream :name. If the annotation stream does not exist, it will be created automatically
 author: "Seth Edwards (@Sedward)"
@@ -63,6 +64,7 @@ options:
         required: false
     links:
         type: list
+        elements: dict
         description:
             - See examples
 '''
@@ -148,14 +150,14 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             user=dict(required=True),
-            api_key=dict(required=True),
+            api_key=dict(required=True, no_log=True),
             name=dict(required=False),
             title=dict(required=True),
             source=dict(required=False),
             description=dict(required=False),
             start_time=dict(required=False, default=None, type='int'),
             end_time=dict(required=False, default=None, type='int'),
-            links=dict(type='list')
+            links=dict(type='list', elements='dict')
         )
     )
 

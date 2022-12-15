@@ -1,10 +1,11 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# copyright: (c) 2016, Loic Blot <loic.blot@unix-experience.fr>
+# Copyright (c) 2016, Loic Blot <loic.blot@unix-experience.fr>
 # Sponsored by Infopro Digital. http://www.infopro-digital.com/
 # Sponsored by E.T.A.I. http://www.etai.fr/
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -12,7 +13,7 @@ __metaclass__ = type
 DOCUMENTATION = r'''
 ---
 module: omapi_host
-short_description: Setup OMAPI hosts.
+short_description: Setup OMAPI hosts
 description: Manage OMAPI hosts into compatible DHCPd servers
 requirements:
   - pypureomapi
@@ -63,12 +64,13 @@ options:
         description:
             - Attach a list of OMAPI DHCP statements with host lease (without ending semicolon).
         type: list
+        elements: str
         default: []
     ddns:
         description:
             - Enable dynamic DNS updates for this host.
         type: bool
-        default: no
+        default: false
 
 '''
 EXAMPLES = r'''
@@ -80,7 +82,7 @@ EXAMPLES = r'''
     macaddr: 44:dd:ab:dd:11:44
     name: server01
     ip: 192.168.88.99
-    ddns: yes
+    ddns: true
     statements:
     - filename "pxelinux.0"
     - next-server 1.1.1.1
@@ -139,7 +141,7 @@ except ImportError:
     pureomapi_found = False
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible.module_utils._text import to_bytes, to_native
+from ansible.module_utils.common.text.converters import to_bytes, to_native
 
 
 class OmapiHostManager:
@@ -282,7 +284,7 @@ def main():
             hostname=dict(type='str', aliases=['name']),
             ip=dict(type='str'),
             ddns=dict(type='bool', default=False),
-            statements=dict(type='list', default=[]),
+            statements=dict(type='list', elements='str', default=[]),
         ),
         supports_check_mode=False,
     )

@@ -1,6 +1,8 @@
 #!/usr/bin/python
-# Copyright: Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# -*- coding: utf-8 -*-
+# Copyright Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -8,7 +10,7 @@ __metaclass__ = type
 
 DOCUMENTATION = '''
 module: rax_clb_ssl
-short_description: Manage SSL termination for a Rackspace Cloud Load Balancer.
+short_description: Manage SSL termination for a Rackspace Cloud Load Balancer
 description:
 - Set up, reconfigure, or remove SSL termination for an existing load balancer.
 options:
@@ -238,7 +240,7 @@ def main():
         loadbalancer=dict(required=True),
         state=dict(default='present', choices=['present', 'absent']),
         enabled=dict(type='bool', default=True),
-        private_key=dict(),
+        private_key=dict(no_log=True),
         certificate=dict(),
         intermediate_certificate=dict(),
         secure_port=dict(type='int', default=443),

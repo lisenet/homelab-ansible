@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2015, Linus Unnebäck <linus@folkdatorn.se>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2015, Linus Unnebäck <linus@folkdatorn.se>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -40,6 +41,13 @@ options:
       - Use a specific make binary.
     type: path
     version_added: '0.2.0'
+  jobs:
+    description:
+      - Set the number of make jobs to run concurrently.
+      - Typically if set, this would be the number of processors and/or threads available to the machine.
+      - This is not supported by all make implementations.
+    type: int
+    version_added: 2.0.0
 '''
 
 EXAMPLES = r'''
@@ -51,7 +59,7 @@ EXAMPLES = r'''
   community.general.make:
     chdir: /home/ubuntu/cool-project
     target: install
-  become: yes
+  become: true
 
 - name: Build 'all' target with extra arguments
   community.general.make:
@@ -111,6 +119,7 @@ def main():
             chdir=dict(type='path', required=True),
             file=dict(type='path'),
             make=dict(type='path'),
+            jobs=dict(type='int'),
         ),
         supports_check_mode=True,
     )
@@ -129,14 +138,23 @@ def main():
     else:
         make_parameters = []
 
+    # build command:
+    # handle any make specific arguments included in params
+    base_command = [make_path]
+    if module.params['jobs'] is not None:
+        jobs = str(module.params['jobs'])
+        base_command.extend(["-j", jobs])
     if module.params['file'] is not None:
-        base_command = [make_path, "-f", module.params['file'], make_target]
-    else:
-        base_command = [make_path, make_target]
+        base_command.extend(["-f", module.params['file']])
+
+    # add make target
+    base_command.append(make_target)
+
+    # add makefile parameters
     base_command.extend(make_parameters)
 
     # Check if the target is already up to date
-    rc, out, err = run_command(base_command + ['--question'], module, check_rc=False)
+    rc, out, err = run_command(base_command + ['-q'], module, check_rc=False)
     if module.check_mode:
         # If we've been asked to do a dry run, we only need
         # to report whether or not the target is up to date
@@ -165,7 +183,8 @@ def main():
         target=module.params['target'],
         params=module.params['params'],
         chdir=module.params['chdir'],
-        file=module.params['file']
+        file=module.params['file'],
+        jobs=module.params['jobs'],
     )
 
 

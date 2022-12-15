@@ -1,7 +1,8 @@
 #!/usr/bin/python
-
-# (c) 2013, Paul Durivage <paul.durivage@rackspace.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# -*- coding: utf-8 -*-
+# Copyright (c) 2013, Paul Durivage <paul.durivage@rackspace.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -19,13 +20,14 @@ options:
       - Optionally clear existing metadata when applying metadata to existing containers.
         Selecting this option is only appropriate when setting type=meta
     type: bool
-    default: "no"
+    default: false
   container:
     type: str
     description:
       - The container to use for container or metadata operations.
   meta:
     type: dict
+    default: {}
     description:
       - A hash of items to set as metadata values on a container
   private:
@@ -81,7 +83,7 @@ extends_documentation_fragment:
 EXAMPLES = '''
 - name: "Test Cloud Files Containers"
   hosts: local
-  gather_facts: no
+  gather_facts: false
   tasks:
     - name: "List all containers"
       community.general.rax_files:
@@ -111,22 +113,22 @@ EXAMPLES = '''
     - name: "Make container public"
       community.general.rax_files:
         container: mycontainer
-        public: yes
+        public: true
 
     - name: "Make container public with a 24 hour TTL"
       community.general.rax_files:
         container: mycontainer
-        public: yes
+        public: true
         ttl: 86400
 
     - name: "Make container private"
       community.general.rax_files:
         container: mycontainer
-        private: yes
+        private: true
 
 - name: "Test Cloud Files Containers Metadata Storage"
   hosts: local
-  gather_facts: no
+  gather_facts: false
   tasks:
     - name: "Get mycontainer2 metadata"
       community.general.rax_files:

@@ -1,3 +1,8 @@
+---
+# Copyright (c) Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # This template adds a job for processing code coverage data.
 # It will upload results to Azure Pipelines and codecov.io.
 # Use it from a job stage that completes after all other jobs have completed.
@@ -33,7 +38,7 @@ jobs:
           summaryFileLocation: "$(outputPath)/reports/$(pipelinesCoverage).xml"
         displayName: Publish to Azure Pipelines
         condition: gt(variables.coverageFileCount, 0)
-      - bash: .azure-pipelines/scripts/publish-codecov.sh "$(outputPath)"
+      - bash: .azure-pipelines/scripts/publish-codecov.py "$(outputPath)"
         displayName: Publish to codecov.io
         condition: gt(variables.coverageFileCount, 0)
         continueOnError: true

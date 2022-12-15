@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2017, Kairo Araujo <kairo@kairo.eti.br>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2017, Kairo Araujo <kairo@kairo.eti.br>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 
@@ -23,18 +24,20 @@ options:
     description:
       - Specifies whether the file system is to be processed by the accounting subsystem.
     type: bool
-    default: no
+    default: false
   attributes:
     description:
       - Specifies attributes for files system separated by comma.
     type: list
     elements: str
-    default: agblksize='4096',isnapshot='no'
+    default:
+      - agblksize='4096'
+      - isnapshot='no'
   auto_mount:
     description:
       - File system is automatically mounted at system restart.
     type: bool
-    default: yes
+    default: true
   device:
     description:
       - Logical volume (LV) device name or remote export device to create a NFS file system.
@@ -69,7 +72,7 @@ options:
     description:
       - Removes the mount point directory when used with state C(absent).
     type: bool
-    default: no
+    default: false
   size:
     description:
       - Specifies the file system size.
@@ -105,56 +108,56 @@ EXAMPLES = r'''
 - name: Create filesystem in a previously defined logical volume.
   community.general.aix_filesystem:
     device: testlv
-    community.general.filesystem: /testfs
+    filesystem: /testfs
     state: present
 
 - name: Creating NFS filesystem from nfshost.
   community.general.aix_filesystem:
     device: /home/ftp
     nfs_server: nfshost
-    community.general.filesystem: /home/ftp
+    filesystem: /home/ftp
     state: present
 
 - name: Creating a new file system without a previously logical volume.
   community.general.aix_filesystem:
-    community.general.filesystem: /newfs
+    filesystem: /newfs
     size: 1G
     state: present
     vg: datavg
 
 - name: Unmounting /testfs.
   community.general.aix_filesystem:
-    community.general.filesystem: /testfs
+    filesystem: /testfs
     state: unmounted
 
 - name: Resizing /mksysb to +512M.
   community.general.aix_filesystem:
-    community.general.filesystem: /mksysb
+    filesystem: /mksysb
     size: +512M
     state: present
 
 - name: Resizing /mksysb to 11G.
   community.general.aix_filesystem:
-    community.general.filesystem: /mksysb
+    filesystem: /mksysb
     size: 11G
     state: present
 
 - name: Resizing /mksysb to -2G.
   community.general.aix_filesystem:
-    community.general.filesystem: /mksysb
+    filesystem: /mksysb
     size: -2G
     state: present
 
 - name: Remove NFS filesystem /home/ftp.
   community.general.aix_filesystem:
-    community.general.filesystem: /home/ftp
-    rm_mount_point: yes
+    filesystem: /home/ftp
+    rm_mount_point: true
     state: absent
 
 - name: Remove /newfs.
   community.general.aix_filesystem:
-    community.general.filesystem: /newfs
-    rm_mount_point: yes
+    filesystem: /newfs
+    rm_mount_point: true
     state: absent
 '''
 
@@ -183,7 +186,7 @@ def _fs_exists(module, filesystem):
     :return: True or False.
     """
     lsfs_cmd = module.get_bin_path('lsfs', True)
-    rc, lsfs_out, err = module.run_command("%s -l %s" % (lsfs_cmd, filesystem))
+    rc, lsfs_out, err = module.run_command([lsfs_cmd, "-l", filesystem])
     if rc == 1:
         if re.findall("No record matching", err):
             return False
@@ -206,8 +209,7 @@ def _check_nfs_device(module, nfs_host, device):
     :return: True or False.
     """
     showmount_cmd = module.get_bin_path('showmount', True)
-    rc, showmount_out, err = module.run_command(
-        "%s -a %s" % (showmount_cmd, nfs_host))
+    rc, showmount_out, err = module.run_command([showmount_cmd, "-a", nfs_host])
     if rc != 0:
         module.fail_json(msg="Failed to run showmount. Error message: %s" % err)
     else:
@@ -229,11 +231,11 @@ def _validate_vg(module, vg):
              None (VG does not exist), message.
     """
     lsvg_cmd = module.get_bin_path('lsvg', True)
-    rc, current_active_vgs, err = module.run_command("%s -o" % lsvg_cmd)
+    rc, current_active_vgs, err = module.run_command([lsvg_cmd, "-o"])
     if rc != 0:
         module.fail_json(msg="Failed executing %s command." % lsvg_cmd)
 
-    rc, current_all_vgs, err = module.run_command("%s" % lsvg_cmd)
+    rc, current_all_vgs, err = module.run_command([lsvg_cmd, "%s"])
     if rc != 0:
         module.fail_json(msg="Failed executing %s command." % lsvg_cmd)
 
@@ -253,7 +255,7 @@ def resize_fs(module, filesystem, size):
 
     chfs_cmd = module.get_bin_path('chfs', True)
     if not module.check_mode:
-        rc, chfs_out, err = module.run_command('%s -a size="%s" %s' % (chfs_cmd, size, filesystem))
+        rc, chfs_out, err = module.run_command([chfs_cmd, "-a", "size=%s" % size, filesystem])
 
         if rc == 28:
             changed = False
@@ -338,8 +340,7 @@ def create_fs(
         # Creates a NFS file system.
         mknfsmnt_cmd = module.get_bin_path('mknfsmnt', True)
         if not module.check_mode:
-            rc, mknfsmnt_out, err = module.run_command('%s -f "%s" %s -h "%s" -t "%s" "%s" -w "bg"' % (
-                mknfsmnt_cmd, filesystem, device, nfs_server, permissions, auto_mount))
+            rc, mknfsmnt_out, err = module.run_command([mknfsmnt_cmd, "-f", filesystem, device, "-h", nfs_server, "-t", permissions, auto_mount, "-w", "bg"])
             if rc != 0:
                 module.fail_json(msg="Failed to run mknfsmnt. Error message: %s" % err)
             else:
@@ -357,8 +358,7 @@ def create_fs(
         # Creates a LVM file system.
         crfs_cmd = module.get_bin_path('crfs', True)
         if not module.check_mode:
-            cmd = "%s -v %s -m %s %s %s %s %s %s -p %s %s -a %s" % (
-                crfs_cmd, fs_type, filesystem, vg, device, mount_group, auto_mount, account_subsystem, permissions, size, attributes)
+            cmd = [crfs_cmd, "-v", fs_type, "-m", filesystem, vg, device, mount_group, auto_mount, account_subsystem, "-p", permissions, size, "-a", attributes]
             rc, crfs_out, err = module.run_command(cmd)
 
             if rc == 10:
@@ -392,7 +392,7 @@ def remove_fs(module, filesystem, rm_mount_point):
 
     rmfs_cmd = module.get_bin_path('rmfs', True)
     if not module.check_mode:
-        cmd = "%s -r %s %s" % (rmfs_cmd, rm_mount_point, filesystem)
+        cmd = [rmfs_cmd, "-r", rm_mount_point, filesystem]
         rc, rmfs_out, err = module.run_command(cmd)
         if rc != 0:
             module.fail_json(msg="Failed to run %s. Error message: %s" % (cmd, err))
@@ -415,8 +415,7 @@ def mount_fs(module, filesystem):
     mount_cmd = module.get_bin_path('mount', True)
 
     if not module.check_mode:
-        rc, mount_out, err = module.run_command(
-            "%s %s" % (mount_cmd, filesystem))
+        rc, mount_out, err = module.run_command([mount_cmd, filesystem])
         if rc != 0:
             module.fail_json(msg="Failed to run mount. Error message: %s" % err)
         else:
@@ -436,7 +435,7 @@ def unmount_fs(module, filesystem):
     unmount_cmd = module.get_bin_path('unmount', True)
 
     if not module.check_mode:
-        rc, unmount_out, err = module.run_command("%s %s" % (unmount_cmd, filesystem))
+        rc, unmount_out, err = module.run_command([unmount_cmd, filesystem])
         if rc != 0:
             module.fail_json(msg="Failed to run unmount. Error message: %s" % err)
         else:

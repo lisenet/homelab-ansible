@@ -1,7 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # Copyright (c) 2017, Abhijeet Kasurde (akasurde@redhat.com)
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -10,7 +11,7 @@ DOCUMENTATION = r'''
 ---
 module: ipa_subca
 author: Abhijeet Kasurde (@Akasurde)
-short_description: Manage FreeIPA Lightweight Sub Certificate Authorities.
+short_description: Manage FreeIPA Lightweight Sub Certificate Authorities
 description:
 - Add, modify, enable, disable and delete an IPA Lightweight Sub Certificate Authorities using IPA API.
 options:
@@ -74,10 +75,11 @@ subca:
   type: dict
 '''
 
-from distutils.version import LooseVersion
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.general.plugins.module_utils.ipa import IPAClient, ipa_argument_spec
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
+
+from ansible_collections.community.general.plugins.module_utils.version import LooseVersion
 
 
 class SubCAIPAClient(IPAClient):

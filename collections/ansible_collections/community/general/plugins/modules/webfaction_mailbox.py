@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2015, Quentin Stafford-Fraser and Andy Baker
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2015, Quentin Stafford-Fraser and Andy Baker
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 # Create webfaction mailbox using Ansible and the Webfaction API
 
@@ -29,27 +30,32 @@ options:
         description:
             - The name of the mailbox
         required: true
+        type: str
 
     mailbox_password:
         description:
             - The password for the mailbox
         required: true
+        type: str
 
     state:
         description:
             - Whether the mailbox should exist
         choices: ['present', 'absent']
         default: "present"
+        type: str
 
     login_name:
         description:
             - The webfaction account to use
         required: true
+        type: str
 
     login_password:
         description:
             - The webfaction password to use
         required: true
+        type: str
 '''
 
 EXAMPLES = '''

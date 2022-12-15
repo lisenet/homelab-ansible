@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# (c) 2013, Johan Wiren <johan.wiren.se@gmail.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2013, Johan Wiren <johan.wiren.se@gmail.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -37,7 +38,7 @@ options:
       - Whether to include dependencies or not.
     required: false
     type: bool
-    default: "yes"
+    default: true
   repository:
     type: str
     description:
@@ -49,7 +50,7 @@ options:
       - Install gem in user's local gems cache or for all users
     required: false
     type: bool
-    default: "yes"
+    default: true
   executable:
     type: path
     description:
@@ -62,11 +63,23 @@ options:
       These gems will be independent from the global installed ones.
       Specifying this requires user_install to be false.
     required: false
+  bindir:
+    type: path
+    description:
+    - Install executables into a specific directory.
+    version_added: 3.3.0
+  norc:
+    type: bool
+    default: true
+    description:
+    - Avoid loading any C(.gemrc) file. Ignored for RubyGems prior to 2.5.2.
+    - The default changed from C(false) to C(true) in community.general 6.0.0.
+    version_added: 3.3.0
   env_shebang:
     description:
       - Rewrite the shebang line on installed scripts to use /usr/bin/env.
     required: false
-    default: "no"
+    default: false
     type: bool
   version:
     type: str
@@ -77,13 +90,13 @@ options:
     description:
       - Allow installation of pre-release versions of the gem.
     required: false
-    default: "no"
+    default: false
     type: bool
   include_doc:
     description:
       - Install with or without docs.
     required: false
-    default: "no"
+    default: false
     type: bool
   build_flags:
     type: str
@@ -94,7 +107,7 @@ options:
     description:
       - Force gem to install, bypassing dependency checks.
     required: false
-    default: "no"
+    default: false
     type: bool
 author:
     - "Ansible Core Team"
@@ -134,6 +147,9 @@ def get_rubygems_path(module):
 
 
 def get_rubygems_version(module):
+    if hasattr(get_rubygems_version, "ver"):
+        return get_rubygems_version.ver
+
     cmd = get_rubygems_path(module) + ['--version']
     (rc, out, err) = module.run_command(cmd, check_rc=True)
 
@@ -141,7 +157,10 @@ def get_rubygems_version(module):
     if not match:
         return None
 
-    return tuple(int(x) for x in match.groups())
+    ver = tuple(int(x) for x in match.groups())
+    get_rubygems_version.ver = ver
+
+    return ver
 
 
 def get_rubygems_environ(module):
@@ -154,6 +173,7 @@ def get_installed_versions(module, remote=False):
 
     cmd = get_rubygems_path(module)
     cmd.append('query')
+    cmd.extend(common_opts(module))
     if remote:
         cmd.append('--remote')
         if module.params['repository']:
@@ -188,6 +208,14 @@ def exists(module):
     return False
 
 
+def common_opts(module):
+    opts = []
+    ver = get_rubygems_version(module)
+    if module.params['norc'] and ver and ver >= (2, 5, 2):
+        opts.append('--norc')
+    return opts
+
+
 def uninstall(module):
 
     if module.check_mode:
@@ -195,8 +223,12 @@ def uninstall(module):
     cmd = get_rubygems_path(module)
     environ = get_rubygems_environ(module)
     cmd.append('uninstall')
+    cmd.extend(common_opts(module))
     if module.params['install_dir']:
         cmd.extend(['--install-dir', module.params['install_dir']])
+
+    if module.params['bindir']:
+        cmd.extend(['--bindir', module.params['bindir']])
 
     if module.params['version']:
         cmd.extend(['--version', module.params['version']])
@@ -213,13 +245,10 @@ def install(module):
         return
 
     ver = get_rubygems_version(module)
-    if ver:
-        major = ver[0]
-    else:
-        major = None
 
     cmd = get_rubygems_path(module)
     cmd.append('install')
+    cmd.extend(common_opts(module))
     if module.params['version']:
         cmd.extend(['--version', module.params['version']])
     if module.params['repository']:
@@ -227,7 +256,7 @@ def install(module):
     if not module.params['include_dependencies']:
         cmd.append('--ignore-dependencies')
     else:
-        if major and major < 2:
+        if ver and ver < (2, 0, 0):
             cmd.append('--include-dependencies')
     if module.params['user_install']:
         cmd.append('--user-install')
@@ -235,10 +264,12 @@ def install(module):
         cmd.append('--no-user-install')
     if module.params['install_dir']:
         cmd.extend(['--install-dir', module.params['install_dir']])
+    if module.params['bindir']:
+        cmd.extend(['--bindir', module.params['bindir']])
     if module.params['pre_release']:
         cmd.append('--pre')
     if not module.params['include_doc']:
-        if major and major < 2:
+        if ver and ver < (2, 0, 0):
             cmd.append('--no-rdoc')
             cmd.append('--no-ri')
         else:
@@ -265,6 +296,8 @@ def main():
             state=dict(required=False, default='present', choices=['present', 'absent', 'latest'], type='str'),
             user_install=dict(required=False, default=True, type='bool'),
             install_dir=dict(required=False, type='path'),
+            bindir=dict(type='path'),
+            norc=dict(type='bool', default=True),
             pre_release=dict(required=False, default=False, type='bool'),
             include_doc=dict(required=False, default=False, type='bool'),
             env_shebang=dict(required=False, default=False, type='bool'),

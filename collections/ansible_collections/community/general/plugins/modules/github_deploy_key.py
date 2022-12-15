@@ -1,7 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) Ansible project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -11,7 +13,7 @@ DOCUMENTATION = '''
 ---
 module: github_deploy_key
 author: "Ali (@bincyber)"
-short_description: Manages deploy keys for GitHub repositories.
+short_description: Manages deploy keys for GitHub repositories
 description:
   - "Adds or removes deploy keys for GitHub repositories. Supports authentication using username and password,
   username and password and 2-factor authentication code (OTP), OAuth2 token, or personal access token. Admin
@@ -29,48 +31,56 @@ options:
       - The name of the individual account or organization that owns the GitHub repository.
     required: true
     aliases: [ 'account', 'organization' ]
+    type: str
   repo:
     description:
       - The name of the GitHub repository.
     required: true
     aliases: [ 'repository' ]
+    type: str
   name:
     description:
       - The name for the deploy key.
     required: true
     aliases: [ 'title', 'label' ]
+    type: str
   key:
     description:
       - The SSH public key to add to the repository as a deploy key.
     required: true
+    type: str
   read_only:
     description:
       - If C(true), the deploy key will only be able to read repository contents. Otherwise, the deploy key will be able to read and write.
     type: bool
-    default: 'yes'
+    default: true
   state:
     description:
       - The state of the deploy key.
     default: "present"
     choices: [ "present", "absent" ]
+    type: str
   force:
     description:
       - If C(true), forcefully adds the deploy key by deleting any existing deploy key with the same public key or title.
     type: bool
-    default: 'no'
+    default: false
   username:
     description:
       - The username to authenticate with. Should not be set when using personal access token
+    type: str
   password:
     description:
       - The password to authenticate with. Alternatively, a personal access token can be used instead of I(username) and I(password) combination.
+    type: str
   token:
     description:
       - The OAuth2 token or personal access token to authenticate with. Mutually exclusive with I(password).
+    type: str
   otp:
     description:
       - The 6 digit One Time Password for 2-Factor Authentication. Required together with I(username) and I(password).
-    aliases: ['2fa_token']
+    type: int
 notes:
    - "Refer to GitHub's API documentation here: https://developer.github.com/v3/repos/keys/."
 '''
@@ -82,7 +92,7 @@ EXAMPLES = '''
     repo: "example"
     name: "new-deploy-key"
     key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDAwXxn7kIMNWzcDfou..."
-    read_only: yes
+    read_only: true
     username: "johndoe"
     password: "supersecretpassword"
 
@@ -92,7 +102,7 @@ EXAMPLES = '''
     repository: "example"
     name: "new-deploy-key"
     key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDAwXxn7kIMNWzcDfou..."
-    force: yes
+    force: true
     username: "johndoe"
     password: "supersecretpassword"
     state: absent
@@ -103,7 +113,7 @@ EXAMPLES = '''
     repository: "example"
     name: "new-deploy-key"
     key: "{{ lookup('file', '~/.ssh/github.pub') }}"
-    force: yes
+    force: true
     token: "ABAQDAwXxn7kIMNWzcDfo..."
 
 - name: Re-add a deploy key to a GitHub repository but with a different name
@@ -132,7 +142,7 @@ EXAMPLES = '''
     repo: "example"
     name: "new-deploy-key"
     key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDAwXxn7kIMNWzcDfou..."
-    read_only: yes
+    read_only: true
     username: "janedoe"
     password: "supersecretpassword"
 '''
@@ -282,13 +292,13 @@ def main():
             owner=dict(required=True, type='str', aliases=['account', 'organization']),
             repo=dict(required=True, type='str', aliases=['repository']),
             name=dict(required=True, type='str', aliases=['title', 'label']),
-            key=dict(required=True, type='str'),
+            key=dict(required=True, type='str', no_log=False),
             read_only=dict(required=False, type='bool', default=True),
             state=dict(default='present', choices=['present', 'absent']),
             force=dict(required=False, type='bool', default=False),
             username=dict(required=False, type='str'),
             password=dict(required=False, type='str', no_log=True),
-            otp=dict(required=False, type='int', aliases=['2fa_token'], no_log=True),
+            otp=dict(required=False, type='int', no_log=True),
             token=dict(required=False, type='str', no_log=True)
         ),
         mutually_exclusive=[

@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -11,7 +12,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: dnsmadeeasy
-short_description: Interface with dnsmadeeasy.com (a DNS hosting service).
+short_description: Interface with dnsmadeeasy.com (a DNS hosting service)
 description:
    - >
      Manages DNS records via the v2 REST API of the DNS Made Easy service.  It handles records only; there is no manipulation of domains or
@@ -40,7 +41,7 @@ options:
     description:
       - Decides if the sandbox API should be used. Otherwise (default) the production API of DNS Made Easy is used.
     type: bool
-    default: 'no'
+    default: false
 
   record_name:
     description:
@@ -79,16 +80,16 @@ options:
 
   validate_certs:
     description:
-      - If C(no), SSL certificates will not be validated. This should only be used
+      - If C(false), SSL certificates will not be validated. This should only be used
         on personally controlled sites using self-signed certificates.
     type: bool
-    default: 'yes'
+    default: true
 
   monitor:
     description:
-      - If C(yes), add or change the monitor.  This is applicable only for A records.
+      - If C(true), add or change the monitor.  This is applicable only for A records.
     type: bool
-    default: 'no'
+    default: false
 
   systemDescription:
     description:
@@ -126,7 +127,6 @@ options:
     description:
       - Name or id of the contact list that the monitor will notify.
       - The default C('') means the Account Owner.
-    default: ''
     type: str
 
   httpFqdn:
@@ -146,16 +146,16 @@ options:
 
   failover:
     description:
-      - If C(yes), add or change the failover.  This is applicable only for A records.
+      - If C(true), add or change the failover.  This is applicable only for A records.
     type: bool
-    default: 'no'
+    default: false
 
   autoFailover:
     description:
       - If true, fallback to the primary IP address is manual after a failover.
       - If false, fallback to the primary IP address is automatic after a failover.
     type: bool
-    default: 'no'
+    default: false
 
   ip1:
     description:
@@ -253,7 +253,7 @@ EXAMPLES = '''
     record_name: test
     record_type: A
     record_value: 127.0.0.1
-    failover: True
+    failover: true
     ip1: 127.0.0.2
     ip2: 127.0.0.3
 
@@ -266,7 +266,7 @@ EXAMPLES = '''
     record_name: test
     record_type: A
     record_value: 127.0.0.1
-    failover: True
+    failover: true
     ip1: 127.0.0.2
     ip2: 127.0.0.3
     ip3: 127.0.0.4
@@ -282,7 +282,7 @@ EXAMPLES = '''
     record_name: test
     record_type: A
     record_value: 127.0.0.1
-    monitor: yes
+    monitor: true
     ip1: 127.0.0.2
     protocol: HTTP  # default
     port: 80  # default
@@ -299,7 +299,7 @@ EXAMPLES = '''
     record_name: test
     record_type: A
     record_value: 127.0.0.1
-    monitor: yes
+    monitor: true
     ip1: 127.0.0.2
     protocol: HTTP  # default
     port: 80  # default
@@ -319,10 +319,10 @@ EXAMPLES = '''
     record_name: test
     record_type: A
     record_value: 127.0.0.1
-    failover: True
+    failover: true
     ip1: 127.0.0.2
     ip2: 127.0.0.3
-    monitor: yes
+    monitor: true
     protocol: HTTPS
     port: 443
     maxEmails: 1
@@ -338,7 +338,7 @@ EXAMPLES = '''
     record_name: test
     record_type: A
     record_value: 127.0.0.1
-    failover: no
+    failover: false
 
 - name: Remove a monitor
   community.general.dnsmadeeasy:
@@ -349,7 +349,7 @@ EXAMPLES = '''
     record_name: test
     record_type: A
     record_value: 127.0.0.1
-    monitor: no
+    monitor: false
 '''
 
 # ============================================
@@ -467,6 +467,9 @@ class DME2(object):
             for result in self.all_records:
                 if record_type == "MX":
                     value = record_value.split(" ")[1]
+                # Note that TXT records are surrounded by quotes in the API response.
+                elif record_type == "TXT":
+                    value = '"{0}"'.format(record_value)
                 elif record_type == "SRV":
                     value = record_value.split(" ")[3]
                 else:
@@ -543,7 +546,7 @@ def main():
 
     module = AnsibleModule(
         argument_spec=dict(
-            account_key=dict(required=True),
+            account_key=dict(required=True, no_log=True),
             account_secret=dict(required=True, no_log=True),
             domain=dict(required=True),
             sandbox=dict(default=False, type='bool'),
@@ -620,7 +623,7 @@ def main():
     # Fetch existing monitor if the A record indicates it should exist and build the new monitor
     current_monitor = dict()
     new_monitor = dict()
-    if current_record and current_record['type'] == 'A':
+    if current_record and current_record['type'] == 'A' and current_record.get('monitor'):
         current_monitor = DME.getMonitor(current_record['id'])
 
     # Build the new monitor
@@ -651,7 +654,9 @@ def main():
     record_changed = False
     if current_record:
         for i in new_record:
-            if str(current_record[i]) != str(new_record[i]):
+            # Remove leading and trailing quote character from values because TXT records
+            # are surrounded by quotes.
+            if str(current_record[i]).strip('"') != str(new_record[i]):
                 record_changed = True
         new_record['id'] = str(current_record['id'])
 
@@ -673,8 +678,11 @@ def main():
         # create record and monitor as the record does not exist
         if not current_record:
             record = DME.createRecord(DME.prepareRecord(new_record))
-            monitor = DME.updateMonitor(record['id'], DME.prepareMonitor(new_monitor))
-            module.exit_json(changed=True, result=dict(record=record, monitor=monitor))
+            if new_monitor.get('monitor') and record_type == "A":
+                monitor = DME.updateMonitor(record['id'], DME.prepareMonitor(new_monitor))
+                module.exit_json(changed=True, result=dict(record=record, monitor=monitor))
+            else:
+                module.exit_json(changed=True, result=dict(record=record, monitor=current_monitor))
 
         # update the record
         updated = False

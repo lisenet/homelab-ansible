@@ -1,14 +1,15 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# (c) 2020, Lee Goolsbee <lgoolsbee@atlassian.com>
-# (c) 2020, Michal Middleton <mm.404@icloud.com>
-# (c) 2017, Steve Pletcher <steve@steve-pletcher.com>
-# (c) 2016, René Moser <mail@renemoser.net>
-# (c) 2015, Stefan Berggren <nsg@nsg.cc>
-# (c) 2014, Ramon de la Fuente <ramon@delafuente.nl>
+# Copyright (c) 2020, Lee Goolsbee <lgoolsbee@atlassian.com>
+# Copyright (c) 2020, Michal Middleton <mm.404@icloud.com>
+# Copyright (c) 2017, Steve Pletcher <steve@steve-pletcher.com>
+# Copyright (c) 2016, René Moser <mail@renemoser.net>
+# Copyright (c) 2015, Stefan Berggren <nsg@nsg.cc>
+# Copyright (c) 2014, Ramon de la Fuente <ramon@delafuente.nl>
 #
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -68,7 +69,8 @@ options:
   message_id:
     description:
       - Optional. Message ID to edit, instead of posting a new message.
-        Corresponds to C(ts) in the Slack API (U(https://api.slack.com/messaging/modifying)).
+      - If supplied I(channel_id) must be in form of C(C0xxxxxxx). use C({{ slack_response.channel_id }}) to get I(channel_id) from previous task run.
+      - Corresponds to C(ts) in the Slack API (U(https://api.slack.com/messaging/modifying)).
     type: str
     version_added: 1.2.0
   username:
@@ -103,10 +105,10 @@ options:
       - 'none'
   validate_certs:
     description:
-      - If C(no), SSL certificates will not be validated. This should only be used
+      - If C(false), SSL certificates will not be validated. This should only be used
         on personally controlled sites using self-signed certificates.
     type: bool
-    default: 'yes'
+    default: true
   color:
     type: str
     description:
@@ -116,6 +118,7 @@ options:
     default: 'normal'
   attachments:
     type: list
+    elements: dict
     description:
       - Define a list of attachments. This list mirrors the Slack JSON API.
       - For more information, see U(https://api.slack.com/docs/attachments).
@@ -126,6 +129,21 @@ options:
     type: list
     elements: dict
     version_added: 1.0.0
+  prepend_hash:
+    type: str
+    description:
+      - Setting for automatically prepending a C(#) symbol on the passed in I(channel_id).
+      - The C(auto) method prepends a C(#) unless I(channel_id) starts with one of C(#), C(@), C(C0), C(GF), C(G0), C(CP).
+        These prefixes only cover a small set of the prefixes that should not have a C(#) prepended.
+        Since an exact condition which I(channel_id) values must not have the C(#) prefix is not known,
+        the value C(auto) for this option will be deprecated in the future. It is best to explicitly set
+        I(prepend_hash=always) or I(prepend_hash=never) to obtain the needed behavior.
+    choices:
+      - 'always'
+      - 'never'
+      - 'auto'
+    default: 'auto'
+    version_added: 6.1.0
 """
 
 EXAMPLES = """
@@ -173,10 +191,10 @@ EXAMPLES = """
         fields:
           - title: System A
             value: "load average: 0,74, 0,66, 0,63"
-            short: True
+            short: true
           - title: System B
             value: 'load average: 5,16, 4,64, 2,43'
-            short: True
+            short: true
 
 - name: Use the blocks API
   community.general.slack:
@@ -232,6 +250,8 @@ EXAMPLES = """
 - name: Edit message
   community.general.slack:
     token: thetoken/generatedby/slack
+    # The 'channel' option does not accept the channel name. It must use the 'channel_id',
+    # which can be retrieved for example from 'slack_response' from the previous task.
     channel: "{{ slack_response.channel }}"
     msg: Deployment complete!
     message_id: "{{ slack_response.ts }}"
@@ -263,12 +283,12 @@ def is_valid_hex_color(color_choice):
 
 
 def escape_quotes(text):
-    '''Backslash any quotes within text.'''
+    """Backslash any quotes within text."""
     return "".join(escape_table.get(c, c) for c in text)
 
 
 def recursive_escape_quotes(obj, keys):
-    '''Recursively escape quotes inside supplied keys inside block kit objects'''
+    """Recursively escape quotes inside supplied keys inside block kit objects"""
     if isinstance(obj, dict):
         escaped = {}
         for k, v in obj.items():
@@ -283,8 +303,8 @@ def recursive_escape_quotes(obj, keys):
     return escaped
 
 
-def build_payload_for_slack(module, text, channel, thread_id, username, icon_url, icon_emoji, link_names,
-                            parse, color, attachments, blocks, message_id):
+def build_payload_for_slack(text, channel, thread_id, username, icon_url, icon_emoji, link_names,
+                            parse, color, attachments, blocks, message_id, prepend_hash):
     payload = {}
     if color == "normal" and text is not None:
         payload = dict(text=escape_quotes(text))
@@ -292,10 +312,15 @@ def build_payload_for_slack(module, text, channel, thread_id, username, icon_url
         # With a custom color we have to set the message as attachment, and explicitly turn markdown parsing on for it.
         payload = dict(attachments=[dict(text=escape_quotes(text), color=color, mrkdwn_in=["text"])])
     if channel is not None:
-        if channel.startswith(('#', '@', 'C0')):
-            payload['channel'] = channel
-        else:
+        if prepend_hash == 'auto':
+            if channel.startswith(('#', '@', 'C0', 'GF', 'G0', 'CP')):
+                payload['channel'] = channel
+            else:
+                payload['channel'] = '#' + channel
+        elif prepend_hash == 'always':
             payload['channel'] = '#' + channel
+        elif prepend_hash == 'never':
+            payload['channel'] = channel
     if thread_id is not None:
         payload['thread_ts'] = thread_id
     if username is not None:
@@ -343,9 +368,9 @@ def build_payload_for_slack(module, text, channel, thread_id, username, icon_url
     return payload
 
 
-def get_slack_message(module, domain, token, channel, ts):
+def get_slack_message(module, token, channel, ts):
     headers = {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json; charset=UTF-8',
         'Accept': 'application/json',
         'Authorization': 'Bearer ' + token
     }
@@ -371,7 +396,7 @@ def do_notify_slack(module, domain, token, payload):
     use_webapi = False
     if token.count('/') >= 2:
         # New style webhook token
-        slack_uri = SLACK_INCOMING_WEBHOOK % (token)
+        slack_uri = SLACK_INCOMING_WEBHOOK % token
     elif re.match(r'^xox[abp]-\S+$', token):
         slack_uri = SLACK_UPDATEMESSAGE_WEBAPI if 'ts' in payload else SLACK_POSTMESSAGE_WEBAPI
         use_webapi = True
@@ -382,7 +407,7 @@ def do_notify_slack(module, domain, token, payload):
         slack_uri = OLD_SLACK_INCOMING_WEBHOOK % (domain, token)
 
     headers = {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json; charset=UTF-8',
         'Accept': 'application/json',
     }
     if use_webapi:
@@ -395,7 +420,7 @@ def do_notify_slack(module, domain, token, payload):
         if use_webapi:
             obscured_incoming_webhook = slack_uri
         else:
-            obscured_incoming_webhook = SLACK_INCOMING_WEBHOOK % ('[obscured]')
+            obscured_incoming_webhook = SLACK_INCOMING_WEBHOOK % '[obscured]'
         module.fail_json(msg=" failed to send %s to %s: %s" % (data, obscured_incoming_webhook, info['msg']))
 
     # each API requires different handling
@@ -408,21 +433,22 @@ def do_notify_slack(module, domain, token, payload):
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            domain=dict(type='str', required=False, default=None),
+            domain=dict(type='str'),
             token=dict(type='str', required=True, no_log=True),
-            msg=dict(type='str', required=False, default=None),
-            channel=dict(type='str', default=None),
-            thread_id=dict(type='str', default=None),
+            msg=dict(type='str'),
+            channel=dict(type='str'),
+            thread_id=dict(type='str'),
             username=dict(type='str', default='Ansible'),
             icon_url=dict(type='str', default='https://www.ansible.com/favicon.ico'),
-            icon_emoji=dict(type='str', default=None),
+            icon_emoji=dict(type='str'),
             link_names=dict(type='int', default=1, choices=[0, 1]),
-            parse=dict(type='str', default=None, choices=['none', 'full']),
+            parse=dict(type='str', choices=['none', 'full']),
             validate_certs=dict(default=True, type='bool'),
             color=dict(type='str', default='normal'),
-            attachments=dict(type='list', required=False, default=None),
+            attachments=dict(type='list', elements='dict'),
             blocks=dict(type='list', elements='dict'),
-            message_id=dict(type='str', default=None),
+            message_id=dict(type='str'),
+            prepend_hash=dict(type='str', default='auto', choices=['always', 'never', 'auto']),
         ),
         supports_check_mode=True,
     )
@@ -441,6 +467,7 @@ def main():
     attachments = module.params['attachments']
     blocks = module.params['blocks']
     message_id = module.params['message_id']
+    prepend_hash = module.params['prepend_hash']
 
     color_choices = ['normal', 'good', 'warning', 'danger']
     if color not in color_choices and not is_valid_hex_color(color):
@@ -452,7 +479,7 @@ def main():
     # if updating an existing message, we can check if there's anything to update
     if message_id is not None:
         changed = False
-        msg = get_slack_message(module, domain, token, channel, message_id)
+        msg = get_slack_message(module, token, channel, message_id)
         for key in ('icon_url', 'icon_emoji', 'link_names', 'color', 'attachments', 'blocks'):
             if msg.get(key) != module.params.get(key):
                 changed = True
@@ -464,8 +491,8 @@ def main():
     elif module.check_mode:
         module.exit_json(changed=changed)
 
-    payload = build_payload_for_slack(module, text, channel, thread_id, username, icon_url, icon_emoji, link_names,
-                                      parse, color, attachments, blocks, message_id)
+    payload = build_payload_for_slack(text, channel, thread_id, username, icon_url, icon_emoji, link_names,
+                                      parse, color, attachments, blocks, message_id, prepend_hash)
     slack_response = do_notify_slack(module, domain, token, payload)
 
     if 'ok' in slack_response:

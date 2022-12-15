@@ -1,14 +1,15 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Benjamin Jolivot <bjolivot@gmail.com>
+# Copyright (c) Benjamin Jolivot <bjolivot@gmail.com>
 # Inspired by slack module :
-#    # (c) 2017, Steve Pletcher <steve@steve-pletcher.com>
-#    # (c) 2016, René Moser <mail@renemoser.net>
-#    # (c) 2015, Stefan Berggren <nsg@nsg.cc>
-#    # (c) 2014, Ramon de la Fuente <ramon@delafuente.nl>)
+#    # Copyright (c) 2017, Steve Pletcher <steve@steve-pletcher.com>
+#    # Copyright (c) 2016, René Moser <mail@renemoser.net>
+#    # Copyright (c) 2015, Stefan Berggren <nsg@nsg.cc>
+#    # Copyright (c) 2014, Ramon de la Fuente <ramon@delafuente.nl>)
 #
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -38,7 +39,15 @@ options:
     type: str
     description:
       - Text to send. Note that the module does not handle escaping characters.
-    required: true
+      - Required when I(attachments) is not set.
+  attachments:
+    type: list
+    elements: dict
+    description:
+      - Define a list of attachments.
+      - For more information, see U(https://developers.mattermost.com/integrate/admin-guide/admin-message-attachments/).
+      - Required when I(text) is not set.
+    version_added: 4.3.0
   channel:
     type: str
     description:
@@ -55,9 +64,9 @@ options:
     default: https://www.ansible.com/favicon.ico
   validate_certs:
     description:
-      - If C(no), SSL certificates will not be validated. This should only be used
+      - If C(false), SSL certificates will not be validated. This should only be used
         on personally controlled sites using self-signed certificates.
-    default: yes
+    default: true
     type: bool
 '''
 
@@ -76,6 +85,22 @@ EXAMPLES = """
     channel: notifications
     username: 'Ansible on {{ inventory_hostname }}'
     icon_url: http://www.example.com/some-image-file.png
+
+- name: Send attachments message via Mattermost
+  community.general.mattermost:
+    url: http://mattermost.example.com
+    api_key: my_api_key
+    attachments:
+      - text: Display my system load on host A and B
+        color: '#ff00dd'
+        title: System load
+        fields:
+          - title: System A
+            value: "load average: 0,74, 0,66, 0,63"
+            short: true
+          - title: System B
+            value: 'load average: 5,16, 4,64, 2,43'
+            short: true
 """
 
 RETURN = '''
@@ -99,12 +124,16 @@ def main():
         argument_spec=dict(
             url=dict(type='str', required=True),
             api_key=dict(type='str', required=True, no_log=True),
-            text=dict(type='str', required=True),
+            text=dict(type='str'),
             channel=dict(type='str', default=None),
             username=dict(type='str', default='Ansible'),
             icon_url=dict(type='str', default='https://www.ansible.com/favicon.ico'),
             validate_certs=dict(default=True, type='bool'),
-        )
+            attachments=dict(type='list', elements='dict'),
+        ),
+        required_one_of=[
+            ('text', 'attachments'),
+        ],
     )
     # init return dict
     result = dict(changed=False, msg="OK")
@@ -115,7 +144,7 @@ def main():
 
     # define payload
     payload = {}
-    for param in ['text', 'channel', 'username', 'icon_url']:
+    for param in ['text', 'channel', 'username', 'icon_url', 'attachments']:
         if module.params[param] is not None:
             payload[param] = module.params[param]
 

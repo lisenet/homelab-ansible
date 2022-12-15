@@ -1,12 +1,14 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
-# (c) 2016, Marcin Skarbek <github@skarbek.name>
-# (c) 2016, Andreas Olsson <andreas@arrakis.se>
-# (c) 2017, Loic Blot <loic.blot@unix-experience.fr>
+# Copyright (c) 2016, Marcin Skarbek <github@skarbek.name>
+# Copyright (c) 2016, Andreas Olsson <andreas@arrakis.se>
+# Copyright (c) 2017, Loic Blot <loic.blot@unix-experience.fr>
 #
 # This module was ported from https://github.com/mskarbek/ansible-nsupdate
 #
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -16,7 +18,7 @@ DOCUMENTATION = '''
 ---
 module: nsupdate
 
-short_description: Manage DNS records.
+short_description: Manage DNS records
 description:
     - Create, update and remove DNS records using DDNS updates
 requirements:
@@ -28,51 +30,64 @@ options:
             - Manage DNS record.
         choices: ['present', 'absent']
         default: 'present'
+        type: str
     server:
         description:
             - Apply DNS modification on this server, specified by IPv4 or IPv6 address.
         required: true
+        type: str
     port:
         description:
             - Use this TCP port when connecting to C(server).
         default: 53
+        type: int
     key_name:
         description:
             - Use TSIG key name to authenticate against DNS C(server)
+        type: str
     key_secret:
         description:
             - Use TSIG key secret, associated with C(key_name), to authenticate against C(server)
+        type: str
     key_algorithm:
         description:
             - Specify key algorithm used by C(key_secret).
         choices: ['HMAC-MD5.SIG-ALG.REG.INT', 'hmac-md5', 'hmac-sha1', 'hmac-sha224', 'hmac-sha256', 'hmac-sha384',
                   'hmac-sha512']
         default: 'hmac-md5'
+        type: str
     zone:
         description:
             - DNS record will be modified on this C(zone).
             - When omitted DNS will be queried to attempt finding the correct zone.
             - Starting with Ansible 2.7 this parameter is optional.
+        type: str
     record:
         description:
             - Sets the DNS record to modify. When zone is omitted this has to be absolute (ending with a dot).
         required: true
+        type: str
     type:
         description:
             - Sets the record type.
         default: 'A'
+        type: str
     ttl:
         description:
             - Sets the record TTL.
         default: 3600
+        type: int
     value:
         description:
             - Sets the record value.
+        type: list
+        elements: str
     protocol:
         description:
             - Sets the transport protocol (TCP or UDP). TCP is the recommended and a more robust option.
         default: 'tcp'
         choices: ['tcp', 'udp']
+        type: str
 '''
 
 EXAMPLES = '''
@@ -185,7 +200,7 @@ except ImportError:
     HAVE_DNSPYTHON = False
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 class RecordManager(object):
@@ -324,7 +339,31 @@ class RecordManager(object):
 
     def modify_record(self):
         update = dns.update.Update(self.zone, keyring=self.keyring, keyalgorithm=self.algorithm)
-        update.delete(self.module.params['record'], self.module.params['type'])
+
+        if self.module.params['type'].upper() == 'NS':
+            # When modifying a NS record, Bind9 silently refuses to delete all the NS entries for a zone:
+            # > 09-May-2022 18:00:50.352 client @0x7fe7dd1f9568 192.168.1.3#45458/key rndc_ddns_ansible:
+            # > updating zone 'lab/IN': attempt to delete all SOA or NS records ignored
+            # https://gitlab.isc.org/isc-projects/bind9/-/blob/v9_18/lib/ns/update.c#L3304
+            # Let's perform dns inserts and updates first, deletes after.
+            query = dns.message.make_query(self.module.params['record'], self.module.params['type'])
+            if self.keyring:
+                query.use_tsig(keyring=self.keyring, algorithm=self.algorithm)
+
+            try:
+                if self.module.params['protocol'] == 'tcp':
+                    lookup = dns.query.tcp(query, self.module.params['server'], timeout=10, port=self.module.params['port'])
+                else:
+                    lookup = dns.query.udp(query, self.module.params['server'], timeout=10, port=self.module.params['port'])
+            except (dns.tsig.PeerBadKey, dns.tsig.PeerBadSignature) as e:
+                self.module.fail_json(msg='TSIG update error (%s): %s' % (e.__class__.__name__, to_native(e)))
+            except (socket_error, dns.exception.Timeout) as e:
+                self.module.fail_json(msg='DNS server error: (%s): %s' % (e.__class__.__name__, to_native(e)))
+
+            entries_to_remove = [n.to_text() for n in lookup.answer[0].items if n.to_text() not in self.value]
+        else:
+            update.delete(self.module.params['record'], self.module.params['type'])
+
         for entry in self.value:
             try:
                 update.add(self.module.params['record'],
@@ -335,6 +374,11 @@ class RecordManager(object):
                 self.module.fail_json(msg='value needed when state=present')
             except dns.exception.SyntaxError:
                 self.module.fail_json(msg='Invalid/malformed value')
+
+        if self.module.params['type'].upper() == 'NS':
+            for entry in entries_to_remove:
+                update.delete(self.module.params['record'], self.module.params['type'], entry)
+
         response = self.__do_update(update)
 
         return dns.message.Message.rcode(response)
@@ -412,7 +456,10 @@ class RecordManager(object):
         if lookup.rcode() != dns.rcode.NOERROR:
             self.module.fail_json(msg='Failed to lookup TTL of existing matching record.')
 
-        current_ttl = lookup.answer[0].ttl
+        if self.module.params['type'] == 'NS':
+            current_ttl = lookup.answer[0].ttl if lookup.answer else lookup.authority[0].ttl
+        else:
+            current_ttl = lookup.answer[0].ttl
         return current_ttl != self.module.params['ttl']
 
 
@@ -432,7 +479,7 @@ def main():
             record=dict(required=True, type='str'),
             type=dict(required=False, default='A', type='str'),
             ttl=dict(required=False, default=3600, type='int'),
-            value=dict(required=False, default=None, type='list'),
+            value=dict(required=False, default=None, type='list', elements='str'),
             protocol=dict(required=False, default='tcp', choices=['tcp', 'udp'], type='str')
         ),
         supports_check_mode=True

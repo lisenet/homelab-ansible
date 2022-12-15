@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 #
-# (c) 2020, SCC France, Eric Belhomme <ebelhomme@fr.scc.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2020, SCC France, Eric Belhomme <ebelhomme@fr.scc.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -10,7 +11,7 @@ DOCUMENTATION = '''
     author:
     - Eric Belhomme (@eric-belhomme) <ebelhomme@fr.scc.com>
     version_added: '0.2.0'
-    lookup: etcd3
+    name: etcd3
     short_description: Get key values from etcd3 server
     description:
     - Retrieves key values and/or key prefixes from etcd3 server using its native gRPC API.
@@ -23,12 +24,12 @@ DOCUMENTATION = '''
             - The list of keys (or key prefixes) to look up on the etcd3 server.
             type: list
             elements: str
-            required: True
+            required: true
         prefix:
             description:
             - Look for key or prefix key.
             type: bool
-            default: False
+            default: false
         endpoints:
             description:
             - Counterpart of C(ETCDCTL_ENDPOINTS) environment variable.
@@ -93,7 +94,7 @@ DOCUMENTATION = '''
       environment variable and keep I(endpoints), I(host), and I(port) unused.
     seealso:
     - module: community.general.etcd3
-    - ref: etcd_lookup
+    - ref: ansible_collections.community.general.etcd_lookup
       description: The etcd v2 lookup.
 
     requirements:
@@ -138,7 +139,7 @@ import re
 from ansible.plugins.lookup import LookupBase
 from ansible.utils.display import Display
 from ansible.module_utils.basic import missing_required_lib
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 from ansible.plugins.lookup import LookupBase
 from ansible.errors import AnsibleError, AnsibleLookupError
 

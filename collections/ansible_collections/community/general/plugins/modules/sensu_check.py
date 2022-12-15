@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# (c) 2014, Anders Ingemann <aim@secoya.dk>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2014, Anders Ingemann <aim@secoya.dk>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -42,22 +43,22 @@ options:
       - Create a backup file (if yes), including the timestamp information so
       - you can get the original file back if you somehow clobbered it incorrectly.
     type: bool
-    default: 'no'
+    default: false
   command:
     type: str
     description:
       - Path to the sensu check to run (not required when I(state=absent))
   handlers:
     type: list
+    elements: str
     description:
       - List of handlers to notify when the check fails
-    default: []
   subscribers:
     type: list
+    elements: str
     description:
       - List of subscribers/channels this check should run for
       - See sensu_subscribers to subscribe a machine to a channel
-    default: []
   interval:
     type: int
     description:
@@ -86,15 +87,14 @@ options:
       - When to enable handling of check failures
   dependencies:
     type: list
+    elements: str
     description:
-      - Other checks this check depends on, if dependencies fail,
-      - handling of this check will be disabled
-    default: []
+      - Other checks this check depends on, if dependencies fail handling of this check will be disabled
   metric:
     description:
       - Whether the check is a metric
     type: bool
-    default: 'no'
+    default: false
   standalone:
     description:
       - Whether the check should be scheduled by the sensu client or server
@@ -135,7 +135,6 @@ options:
     description:
       - A hash/dictionary of custom parameters for mixing to the configuration.
       - You can't rewrite others module parameters using this
-    default: {}
   source:
     type: str
     description:
@@ -150,7 +149,7 @@ EXAMPLES = '''
   community.general.sensu_check:
     name: cpu_load
     command: /etc/sensu/plugins/system/cpu-mpstat-metrics.rb
-    metric: yes
+    metric: true
     handlers: relay
     subscribers: common
     interval: 60
@@ -177,7 +176,7 @@ import json
 import traceback
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 def sensu_check(module, path, name, state='present', backup=False):
@@ -325,18 +324,18 @@ def main():
     arg_spec = {'name': {'type': 'str', 'required': True},
                 'path': {'type': 'str', 'default': '/etc/sensu/conf.d/checks.json'},
                 'state': {'type': 'str', 'default': 'present', 'choices': ['present', 'absent']},
-                'backup': {'type': 'bool', 'default': 'no'},
+                'backup': {'type': 'bool', 'default': False},
                 'command': {'type': 'str'},
-                'handlers': {'type': 'list'},
-                'subscribers': {'type': 'list'},
+                'handlers': {'type': 'list', 'elements': 'str'},
+                'subscribers': {'type': 'list', 'elements': 'str'},
                 'interval': {'type': 'int'},
                 'timeout': {'type': 'int'},
                 'ttl': {'type': 'int'},
                 'handle': {'type': 'bool'},
                 'subdue_begin': {'type': 'str'},
                 'subdue_end': {'type': 'str'},
-                'dependencies': {'type': 'list'},
-                'metric': {'type': 'bool', 'default': 'no'},
+                'dependencies': {'type': 'list', 'elements': 'str'},
+                'metric': {'type': 'bool', 'default': False},
                 'standalone': {'type': 'bool'},
                 'publish': {'type': 'bool'},
                 'occurrences': {'type': 'int'},

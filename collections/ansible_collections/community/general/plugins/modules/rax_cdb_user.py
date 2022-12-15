@@ -1,6 +1,8 @@
 #!/usr/bin/python
-# Copyright: Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# -*- coding: utf-8 -*-
+# Copyright Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -9,7 +11,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: rax_cdb_user
-short_description: create / delete a Rackspace Cloud Database
+short_description: Create / delete a Rackspace Cloud Database
 description:
   - create / delete a database in the Cloud Databases.
 options:
@@ -17,19 +19,20 @@ options:
     type: str
     description:
       - The databases server UUID
-    required: yes
+    required: true
   db_username:
     type: str
     description:
       - Name of the database user
-    required: yes
+    required: true
   db_password:
     type: str
     description:
       - Database user password
-    required: yes
+    required: true
   databases:
     type: list
+    elements: str
     description:
       - Name of the databases that the user can access
     default: []
@@ -76,7 +79,7 @@ except ImportError:
     HAS_PYRAX = False
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_text
+from ansible.module_utils.common.text.converters import to_text
 from ansible_collections.community.general.plugins.module_utils.rax import rax_argument_spec, rax_required_together, rax_to_dict, setup_rax_module
 
 
@@ -189,7 +192,7 @@ def main():
             cdb_id=dict(type='str', required=True),
             db_username=dict(type='str', required=True),
             db_password=dict(type='str', required=True, no_log=True),
-            databases=dict(type='list', default=[]),
+            databases=dict(type='list', elements='str', default=[]),
             host=dict(type='str', default='%'),
             state=dict(default='present', choices=['present', 'absent'])
         )

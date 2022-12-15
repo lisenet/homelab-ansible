@@ -1,6 +1,8 @@
-# (c) 2012, Michael DeHaan, <michael.dehaan@gmail.com>
-# (c) 2017 Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# -*- coding: utf-8 -*-
+# Copyright (c) 2012, Michael DeHaan, <michael.dehaan@gmail.com>
+# Copyright (c) 2017 Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 # Make coding more python3-ish
 from __future__ import (absolute_import, division, print_function)
@@ -8,7 +10,7 @@ __metaclass__ = type
 
 DOCUMENTATION = '''
     author: Unknown (!UNKNOWN)
-    callback: say
+    name: say
     type: notification
     requirements:
       - whitelisting in configuration
@@ -20,11 +22,11 @@ DOCUMENTATION = '''
       - In 2.8, this callback has been renamed from C(osx_say) into M(community.general.say).
 '''
 
-import distutils.spawn
 import platform
 import subprocess
 import os
 
+from ansible.module_utils.common.process import get_bin_path
 from ansible.plugins.callback import CallbackBase
 
 
@@ -46,21 +48,24 @@ class CallbackModule(CallbackBase):
         self.HAPPY_VOICE = None
         self.LASER_VOICE = None
 
-        self.synthesizer = distutils.spawn.find_executable('say')
-        if not self.synthesizer:
-            self.synthesizer = distutils.spawn.find_executable('espeak')
-            if self.synthesizer:
+        try:
+            self.synthesizer = get_bin_path('say')
+            if platform.system() != 'Darwin':
+                # 'say' binary available, it might be GNUstep tool which doesn't support 'voice' parameter
+                self._display.warning("'say' executable found but system is '%s': ignoring voice parameter" % platform.system())
+            else:
+                self.FAILED_VOICE = 'Zarvox'
+                self.REGULAR_VOICE = 'Trinoids'
+                self.HAPPY_VOICE = 'Cellos'
+                self.LASER_VOICE = 'Princess'
+        except ValueError:
+            try:
+                self.synthesizer = get_bin_path('espeak')
                 self.FAILED_VOICE = 'klatt'
                 self.HAPPY_VOICE = 'f5'
                 self.LASER_VOICE = 'whisper'
-        elif platform.system() != 'Darwin':
-            # 'say' binary available, it might be GNUstep tool which doesn't support 'voice' parameter
-            self._display.warning("'say' executable found but system is '%s': ignoring voice parameter" % platform.system())
-        else:
-            self.FAILED_VOICE = 'Zarvox'
-            self.REGULAR_VOICE = 'Trinoids'
-            self.HAPPY_VOICE = 'Cellos'
-            self.LASER_VOICE = 'Princess'
+            except ValueError:
+                self.synthesizer = None
 
         # plugin disable itself if say is not present
         # ansible will not call any callback if disabled is set to True

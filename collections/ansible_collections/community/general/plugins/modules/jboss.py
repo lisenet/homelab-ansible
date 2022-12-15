@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# (c) 2013, Jeroen Hoekx <jeroen.hoekx@dsquare.be>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2013, Jeroen Hoekx <jeroen.hoekx@dsquare.be>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -72,7 +73,6 @@ EXAMPLES = r"""
 RETURN = r""" # """
 
 import os
-import shutil
 import time
 from ansible.module_utils.basic import AnsibleModule
 
@@ -142,7 +142,7 @@ def main():
             # Clean up old failed deployment
             os.remove(os.path.join(deploy_path, "%s.failed" % deployment))
 
-        shutil.copyfile(src, os.path.join(deploy_path, deployment))
+        module.preserved_copy(src, os.path.join(deploy_path, deployment))
         while not deployed:
             deployed = is_deployed(deploy_path, deployment)
             if is_failed(deploy_path, deployment):
@@ -153,7 +153,7 @@ def main():
     if state == 'present' and deployed:
         if module.sha1(src) != module.sha1(os.path.join(deploy_path, deployment)):
             os.remove(os.path.join(deploy_path, "%s.deployed" % deployment))
-            shutil.copyfile(src, os.path.join(deploy_path, deployment))
+            module.preserved_copy(src, os.path.join(deploy_path, deployment))
             deployed = False
             while not deployed:
                 deployed = is_deployed(deploy_path, deployment)

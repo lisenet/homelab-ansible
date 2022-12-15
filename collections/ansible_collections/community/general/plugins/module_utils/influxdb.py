@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2017, Ansible Project
-# Simplified BSD License (see licenses/simplified_bsd.txt or https://opensource.org/licenses/BSD-2-Clause)
+# Copyright (c) 2017, Ansible Project
+# Simplified BSD License (see LICENSES/BSD-2-Clause.txt or https://opensource.org/licenses/BSD-2-Clause)
+# SPDX-License-Identifier: BSD-2-Clause
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -9,7 +10,8 @@ __metaclass__ = type
 import traceback
 
 from ansible.module_utils.basic import missing_required_lib
-from distutils.version import LooseVersion
+
+from ansible_collections.community.general.plugins.module_utils.version import LooseVersion
 
 REQUESTS_IMP_ERR = None
 try:

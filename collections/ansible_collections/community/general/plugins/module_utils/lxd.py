@@ -1,32 +1,26 @@
 # -*- coding: utf-8 -*-
 
-# (c) 2016, Hiroaki Nakamura <hnakamur@gmail.com>
-#
-# This code is part of Ansible, but is an independent component.
-# This particular file snippet, and this file snippet only, is BSD licensed.
-# Modules you write using this snippet, which is embedded dynamically by Ansible
-# still belong to the author of the module, and may assign their own license
-# to the complete work.
-#
-# Simplified BSD License (see licenses/simplified_bsd.txt or https://opensource.org/licenses/BSD-2-Clause)
+# Copyright (c) 2016, Hiroaki Nakamura <hnakamur@gmail.com>
+# Simplified BSD License (see LICENSES/BSD-2-Clause.txt or https://opensource.org/licenses/BSD-2-Clause)
+# SPDX-License-Identifier: BSD-2-Clause
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 
+import os
 import socket
 import ssl
+import json
 
 from ansible.module_utils.urls import generic_urlparse
 from ansible.module_utils.six.moves.urllib.parse import urlparse
 from ansible.module_utils.six.moves import http_client
-from ansible.module_utils._text import to_text
+from ansible.module_utils.common.text.converters import to_text
 
 # httplib/http.client connection using unix domain socket
 HTTPConnection = http_client.HTTPConnection
 HTTPSConnection = http_client.HTTPSConnection
-
-import json
 
 
 class UnixHTTPConnection(HTTPConnection):
@@ -75,11 +69,14 @@ class LXDClient(object):
         else:
             raise LXDClientException('URL scheme must be unix: or https:')
 
-    def do(self, method, url, body_json=None, ok_error_codes=None, timeout=None):
+    def do(self, method, url, body_json=None, ok_error_codes=None, timeout=None, wait_for_container=None):
         resp_json = self._send_request(method, url, body_json=body_json, ok_error_codes=ok_error_codes, timeout=timeout)
         if resp_json['type'] == 'async':
             url = '{0}/wait'.format(resp_json['operation'])
             resp_json = self._send_request('GET', url)
+            if wait_for_container:
+                while resp_json['metadata']['status'] == 'Running':
+                    resp_json = self._send_request('GET', url)
             if resp_json['metadata']['status'] != 'Success':
                 self._raise_err_from_json(resp_json)
         return resp_json
@@ -127,3 +124,11 @@ class LXDClient(object):
         if err is None:
             err = resp_json.get('error', None)
         return err
+
+
+def default_key_file():
+    return os.path.expanduser('~/.config/lxc/client.key')
+
+
+def default_cert_file():
+    return os.path.expanduser('~/.config/lxc/client.crt')

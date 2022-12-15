@@ -1,5 +1,7 @@
+# -*- coding: utf-8 -*-
 # Copyright (c) 2017 Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
@@ -7,7 +9,6 @@ __metaclass__ = type
 DOCUMENTATION = '''
     author: Unknown (!UNKNOWN)
     name: virtualbox
-    plugin_type: inventory
     short_description: virtualbox inventory source
     description:
         - Get inventory hosts from the local virtualbox installation.
@@ -19,12 +20,12 @@ DOCUMENTATION = '''
     options:
         plugin:
             description: token that ensures this is a source file for the 'virtualbox' plugin
-            required: True
+            required: true
             choices: ['virtualbox', 'community.general.virtualbox']
         running_only:
             description: toggles showing all vms vs only those currently running
             type: boolean
-            default: False
+            default: false
         settings_password_file:
             description: provide a file containing the settings password (equivalent to --settingspwfile)
         network_info_path:
@@ -57,7 +58,7 @@ import os
 from subprocess import Popen, PIPE
 
 from ansible.errors import AnsibleParserError
-from ansible.module_utils._text import to_bytes, to_native, to_text
+from ansible.module_utils.common.text.converters import to_bytes, to_native, to_text
 from ansible.module_utils.common._collections_compat import MutableMapping
 from ansible.plugins.inventory import BaseInventoryPlugin, Constructable, Cacheable
 from ansible.module_utils.common.process import get_bin_path
@@ -185,10 +186,13 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
             else:
                 # found vars, accumulate in hostvars for clean inventory set
                 pref_k = 'vbox_' + k.strip().replace(' ', '_')
-                if k.startswith(' '):
-                    if prevkey not in hostvars[current_host]:
+                leading_spaces = len(k) - len(k.lstrip(' '))
+                if 0 < leading_spaces <= 2:
+                    if prevkey not in hostvars[current_host] or not isinstance(hostvars[current_host][prevkey], dict):
                         hostvars[current_host][prevkey] = {}
                     hostvars[current_host][prevkey][pref_k] = v
+                elif leading_spaces > 2:
+                    continue
                 else:
                     if v != '':
                         hostvars[current_host][pref_k] = v
@@ -217,7 +221,7 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
                     yield host not in v
             yield True
 
-        return all([found_host for found_host in find_host(host, inventory)])
+        return all(find_host(host, inventory))
 
     def verify_file(self, path):
 

@@ -1,6 +1,8 @@
 #!/usr/bin/python
-# Copyright: Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# -*- coding: utf-8 -*-
+# Copyright Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -11,7 +13,7 @@ DOCUMENTATION = '''
 module: rax_facts
 short_description: Gather facts for Rackspace Cloud Servers
 description:
-     - Gather facts for Rackspace Cloud Servers.
+  - Gather facts for Rackspace Cloud Servers.
 options:
   address:
     type: str
@@ -28,14 +30,17 @@ options:
       - Server name to retrieve facts for
 author: "Matt Martz (@sivel)"
 extends_documentation_fragment:
-- community.general.rackspace.openstack
+  - community.general.rackspace.openstack
+  - community.general.attributes
+  - community.general.attributes.facts
+  - community.general.attributes.facts_module
 
 '''
 
 EXAMPLES = '''
 - name: Gather info about servers
   hosts: all
-  gather_facts: False
+  gather_facts: false
   tasks:
     - name: Get facts about servers
       local_action:
@@ -124,6 +129,7 @@ def main():
         required_together=rax_required_together(),
         mutually_exclusive=[['address', 'id', 'name']],
         required_one_of=[['address', 'id', 'name']],
+        supports_check_mode=True,
     )
 
     if not HAS_PYRAX:

@@ -1,7 +1,9 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
-# Copyright: (c) 2018, Johannes Brunswicker <johannes.brunswicker@gmail.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2018, Johannes Brunswicker <johannes.brunswicker@gmail.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 
@@ -14,7 +16,7 @@ module: utm_proxy_location
 author:
     - Johannes Brunswicker (@MatrixCrawler)
 
-short_description: create, update or destroy reverse_proxy location entry in Sophos UTM
+short_description: Create, update or destroy reverse_proxy location entry in Sophos UTM
 
 description:
     - Create, update or destroy a reverse_proxy location entry in SOPHOS UTM.
@@ -40,11 +42,13 @@ options:
           - A list of allowed networks
         type: list
         elements: str
-        default: REF_NetworkAny
+        default:
+          - REF_NetworkAny
     auth_profile:
         type: str
         description:
           - The reference name of the auth profile
+        default: ''
     backend:
         type: list
         elements: str
@@ -55,10 +59,12 @@ options:
         type: str
         description:
           - The path of the backend
+        default: ''
     comment:
         type: str
         description:
           - The optional comment string
+        default: ''
     denied_networks:
         type: list
         elements: str
@@ -69,7 +75,7 @@ options:
         description:
           - Activate hot standby mode
         type: bool
-        default: False
+        default: false
     path:
         type: str
         description:
@@ -79,7 +85,7 @@ options:
         description:
           - Whether the location is active or not
         type: bool
-        default: True
+        default: true
     stickysession_id:
         type: str
         description:
@@ -89,12 +95,12 @@ options:
         description:
           - Enable the stickysession
         type: bool
-        default: False
+        default: false
     websocket_passthrough:
         description:
           - Enable the websocket passthrough
         type: bool
-        default: False
+        default: false
 
 extends_documentation_fragment:
 - community.general.utm
@@ -178,7 +184,7 @@ result:
 """
 
 from ansible_collections.community.general.plugins.module_utils.utm_utils import UTM, UTMModule
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 def main():

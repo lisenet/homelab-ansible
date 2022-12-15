@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# Copyright: Ansible Team
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright Ansible Team
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -18,44 +19,53 @@ options:
     token:
         description:
             - GitHub Personal Access Token for authenticating. Mutually exclusive with C(password).
+        type: str
     user:
         description:
             - The GitHub account that owns the repository
+        type: str
         required: true
     password:
         description:
             - The GitHub account password for the user. Mutually exclusive with C(token).
+        type: str
     repo:
         description:
             - Repository name
+        type: str
         required: true
     action:
         description:
             - Action to perform
+        type: str
         required: true
         choices: [ 'latest_release', 'create_release' ]
     tag:
         description:
             - Tag name when creating a release. Required when using action is set to C(create_release).
+        type: str
     target:
         description:
             - Target of release when creating a release
+        type: str
     name:
         description:
             - Name of release when creating a release
+        type: str
     body:
         description:
             - Description of the release when creating a release
+        type: str
     draft:
         description:
             - Sets if the release is a draft or not. (boolean)
-        type: 'bool'
-        default: 'no'
+        type: bool
+        default: false
     prerelease:
         description:
             - Sets if the release is a prerelease or not. (boolean)
         type: bool
-        default: 'no'
+        default: false
 
 author:
     - "Adrian Moisey (@adrianmoisey)"
@@ -126,7 +136,7 @@ except ImportError:
     HAS_GITHUB_API = False
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 def main():

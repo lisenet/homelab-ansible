@@ -1,31 +1,11 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2017 John Kwiatkoski (@JayKayy) <jkwiat40@gmail.com>
-# Copyright: (c) 2018 Alexander Bethke (@oolongbrothers) <oolongbrothers@gmx.net>
-# Copyright: (c) 2017 Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
-
-
-# ATTENTION CONTRIBUTORS!
-#
-# TL;DR: Run this module's integration tests manually before opening a pull request
-#
-# Long explanation:
-# The integration tests for this module are currently NOT run on the Ansible project's continuous
-# delivery pipeline. So please: When you make changes to this module, make sure that you run the
-# included integration tests manually for both Python 2 and Python 3:
-#
-#   Python 2:
-#       ansible-test integration -v --docker fedora28 --docker-privileged --allow-unsupported --python 2.7 flatpak_remote
-#   Python 3:
-#       ansible-test integration -v --docker fedora28 --docker-privileged --allow-unsupported --python 3.6 flatpak_remote
-#
-# Because of external dependencies, the current integration tests are somewhat too slow and brittle
-# to be included right now. I have plans to rewrite the integration tests based on a local flatpak
-# repository so that they can be included into the normal CI pipeline.
-# //oolongbrothers
-
+# Copyright (c) 2017 John Kwiatkoski (@JayKayy) <jkwiat40@gmail.com>
+# Copyright (c) 2018 Alexander Bethke (@oolongbrothers) <oolongbrothers@gmx.net>
+# Copyright (c) 2017 Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
@@ -140,12 +120,12 @@ stdout:
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_bytes, to_native
+from ansible.module_utils.common.text.converters import to_bytes, to_native
 
 
 def add_remote(module, binary, name, flatpakrepo_url, method):
     """Add a new remote."""
-    global result
+    global result  # pylint: disable=global-variable-not-assigned
     command = [binary, "remote-add", "--{0}".format(method), name, flatpakrepo_url]
     _flatpak_command(module, module.check_mode, command)
     result['changed'] = True
@@ -153,7 +133,7 @@ def add_remote(module, binary, name, flatpakrepo_url, method):
 
 def remove_remote(module, binary, name, method):
     """Remove an existing remote."""
-    global result
+    global result  # pylint: disable=global-variable-not-assigned
     command = [binary, "remote-delete", "--{0}".format(method), "--force", name]
     _flatpak_command(module, module.check_mode, command)
     result['changed'] = True
@@ -174,7 +154,7 @@ def remote_exists(module, binary, name, method):
 
 
 def _flatpak_command(module, noop, command):
-    global result
+    global result  # pylint: disable=global-variable-not-assigned
     result['command'] = ' '.join(command)
     if noop:
         result['rc'] = 0

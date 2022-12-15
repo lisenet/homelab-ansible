@@ -4,8 +4,8 @@
 # Copyright (C) 2018 IBM CORPORATION
 # Author(s): Tzur Eliyahu <tzure@il.ibm.com>
 #
-# GNU General Public License v3.0+ (see COPYING or
-# https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -13,7 +13,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
 ---
 module: ibm_sa_vol_map
-short_description: Handles volume mapping on IBM Spectrum Accelerate Family storage systems.
+short_description: Handles volume mapping on IBM Spectrum Accelerate Family storage systems
 
 description:
     - "This module maps volumes to or unmaps them from the hosts on
@@ -24,29 +24,35 @@ options:
         description:
             - Volume name.
         required: true
+        type: str
     state:
         default: "present"
         choices: [ "present", "absent" ]
         description:
             - When the state is present the volume is mapped.
                 When the state is absent, the volume is meant to be unmapped.
+        type: str
 
     cluster:
         description:
             - Maps the volume to a cluster.
         required: false
+        type: str
     host:
         description:
             - Maps the volume to a host.
         required: false
+        type: str
     lun:
         description:
             - The LUN identifier.
         required: false
+        type: str
     override:
         description:
             - Overrides the existing volume mapping.
         required: false
+        type: str
 
 extends_documentation_fragment:
 - community.general.ibm_storage

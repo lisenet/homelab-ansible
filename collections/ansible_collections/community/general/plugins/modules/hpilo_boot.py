@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 # Copyright 2012 Dag Wieers <dag@wieers.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -20,48 +21,55 @@ description:
 options:
   host:
     description:
-    - The HP iLO hostname/address that is linked to the physical system.
+      - The HP iLO hostname/address that is linked to the physical system.
+    type: str
     required: true
   login:
     description:
-    - The login name to authenticate to the HP iLO interface.
+      - The login name to authenticate to the HP iLO interface.
     default: Administrator
+    type: str
   password:
     description:
-    - The password to authenticate to the HP iLO interface.
+      - The password to authenticate to the HP iLO interface.
     default: admin
+    type: str
   media:
     description:
-    - The boot media to boot the system from
+      - The boot media to boot the system from
     choices: [ "cdrom", "floppy", "rbsu", "hdd", "network", "normal", "usb" ]
+    type: str
   image:
     description:
-    - The URL of a cdrom, floppy or usb boot media image.
-      protocol://username:password@hostname:port/filename
-    - protocol is either 'http' or 'https'
-    - username:password is optional
-    - port is optional
+      - The URL of a cdrom, floppy or usb boot media image.
+        protocol://username:password@hostname:port/filename
+      - protocol is either 'http' or 'https'
+      - username:password is optional
+      - port is optional
+    type: str
   state:
     description:
-    - The state of the boot media.
-    - "no_boot: Do not boot from the device"
-    - "boot_once: Boot from the device once and then notthereafter"
-    - "boot_always: Boot from the device each time the server is rebooted"
-    - "connect: Connect the virtual media device and set to boot_always"
-    - "disconnect: Disconnects the virtual media device and set to no_boot"
-    - "poweroff: Power off the server"
+      - The state of the boot media.
+      - "no_boot: Do not boot from the device"
+      - "boot_once: Boot from the device once and then notthereafter"
+      - "boot_always: Boot from the device each time the server is rebooted"
+      - "connect: Connect the virtual media device and set to boot_always"
+      - "disconnect: Disconnects the virtual media device and set to no_boot"
+      - "poweroff: Power off the server"
     default: boot_once
+    type: str
     choices: [ "boot_always", "boot_once", "connect", "disconnect", "no_boot", "poweroff" ]
   force:
     description:
     - Whether to force a reboot (even when the system is already booted).
     - As a safeguard, without force, hpilo_boot will refuse to reboot a server that is already running.
-    default: no
+    default: false
     type: bool
   ssl_version:
     description:
       - Change the ssl_version used.
     default: TLSv1
+    type: str
     choices: [ "SSLv3", "SSLv23", "TLSv1", "TLSv1_1", "TLSv1_2" ]
 requirements:
 - python-hpilo

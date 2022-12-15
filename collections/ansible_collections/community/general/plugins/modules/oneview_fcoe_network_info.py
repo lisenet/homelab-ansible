@@ -1,6 +1,8 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 # Copyright (c) 2016-2017 Hewlett Packard Enterprise Development LP
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
@@ -23,9 +25,12 @@ options:
     name:
       description:
         - FCoE Network name.
+      type: str
 extends_documentation_fragment:
-- community.general.oneview
-- community.general.oneview.factsparams
+  - community.general.oneview
+  - community.general.oneview.factsparams
+  - community.general.attributes
+  - community.general.attributes.info_module
 
 '''
 
@@ -36,7 +41,8 @@ EXAMPLES = '''
   delegate_to: localhost
   register: result
 
-- ansible.builtin.debug:
+- name: Print fetched information about FCoE Networks
+  ansible.builtin.debug:
     msg: "{{ result.fcoe_networks }}"
 
 - name: Gather paginated, filtered and sorted information about FCoE Networks
@@ -50,7 +56,8 @@ EXAMPLES = '''
   delegate_to: localhost
   register: result
 
-- ansible.builtin.debug:
+- name: Print fetched information about paginated, filtered and sorted list of FCoE Networks
+  ansible.builtin.debug:
     msg: "{{ result.fcoe_networks }}"
 
 - name: Gather information about a FCoE Network by name
@@ -60,7 +67,8 @@ EXAMPLES = '''
   delegate_to: localhost
   register: result
 
-- ansible.builtin.debug:
+- name: Print fetched information about FCoE Network found by name
+  ansible.builtin.debug:
     msg: "{{ result.fcoe_networks }}"
 '''
 
@@ -81,12 +89,10 @@ class FcoeNetworkInfoModule(OneViewModuleBase):
             params=dict(type='dict'),
         )
 
-        super(FcoeNetworkInfoModule, self).__init__(additional_arg_spec=argument_spec)
-        self.is_old_facts = self.module._name in ('oneview_fcoe_network_facts', 'community.general.oneview_fcoe_network_facts')
-        if self.is_old_facts:
-            self.module.deprecate("The 'oneview_fcoe_network_facts' module has been renamed to 'oneview_fcoe_network_info', "
-                                  "and the renamed one no longer returns ansible_facts",
-                                  version='3.0.0', collection_name='community.general')  # was Ansible 2.13
+        super(FcoeNetworkInfoModule, self).__init__(
+            additional_arg_spec=argument_spec,
+            supports_check_mode=True,
+        )
 
     def execute_module(self):
 
@@ -95,11 +101,7 @@ class FcoeNetworkInfoModule(OneViewModuleBase):
         else:
             fcoe_networks = self.oneview_client.fcoe_networks.get_all(**self.facts_params)
 
-        if self.is_old_facts:
-            return dict(changed=False,
-                        ansible_facts=dict(fcoe_networks=fcoe_networks))
-        else:
-            return dict(changed=False, fcoe_networks=fcoe_networks)
+        return dict(changed=False, fcoe_networks=fcoe_networks)
 
 
 def main():

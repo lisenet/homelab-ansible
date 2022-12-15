@@ -1,7 +1,9 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 #
-# Copyright: Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -11,7 +13,7 @@ DOCUMENTATION = '''
 ---
 module: lldp
 requirements: [ lldpctl ]
-short_description: get details reported by lldp
+short_description: Get details reported by lldp
 description:
   - Reads data out of lldpctl
 options: {}
@@ -41,7 +43,7 @@ from ansible.module_utils.basic import AnsibleModule
 
 
 def gather_lldp(module):
-    cmd = ['lldpctl', '-f', 'keyvalue']
+    cmd = [module.get_bin_path('lldpctl'), '-f', 'keyvalue']
     rc, output, err = module.run_command(cmd)
     if output:
         output_dict = {}

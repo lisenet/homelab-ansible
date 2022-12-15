@@ -1,9 +1,10 @@
 #!/usr/bin/python
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 
-# Copyright: (c) 2016, Adfinis SyGroup AG
+# Copyright (c) 2016, Adfinis SyGroup AG
 # Tobias Rueetschi <tobias.ruetschi@adfinis-sygroup.ch>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -44,11 +45,13 @@ options:
             - define the whole ldap position of the group, e.g.
               C(cn=g123m-1A,cn=classes,cn=schueler,cn=groups,ou=schule,dc=example,dc=com).
         type: str
+        default: ''
     ou:
         required: false
         description:
             - LDAP OU, e.g. school for LDAP OU C(ou=school,dc=example,dc=com).
         type: str
+        default: ''
     subpath:
         required: false
         description:
@@ -95,8 +98,7 @@ def main():
         argument_spec=dict(
             name=dict(required=True,
                       type='str'),
-            description=dict(default=None,
-                             type='str'),
+            description=dict(type='str'),
             position=dict(default='',
                           type='str'),
             ou=dict(default='',

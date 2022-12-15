@@ -1,7 +1,9 @@
+# -*- coding: utf-8 -*-
 # Based on the buildah connection plugin
 # Copyright (c) 2017 Ansible Project
 #               2018 Kushal Das
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 #
 #
 # Written by: Kushal Das (https://github.com/kushaldas)
@@ -11,7 +13,7 @@ __metaclass__ = type
 
 
 DOCUMENTATION = '''
-    connection: qubes
+    name: qubes
     short_description: Interact with an existing QubesOS AppVM
 
     description:
@@ -37,15 +39,9 @@ DOCUMENTATION = '''
 #            - name: hosts
 '''
 
-import shlex
-import shutil
-
-import os
-import base64
 import subprocess
 
-import ansible.constants as C
-from ansible.module_utils._text import to_bytes, to_native
+from ansible.module_utils.common.text.converters import to_bytes
 from ansible.plugins.connection import ConnectionBase, ensure_connect
 from ansible.errors import AnsibleConnectionFailure
 from ansible.utils.display import Display

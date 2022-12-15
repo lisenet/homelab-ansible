@@ -50,7 +50,7 @@ options:
         with subsequent runs.
       - Has no effect on Solaris systems.
     type: str
-    default: 0
+    default: '0'
   passno:
     description:
       - Passno (see fstab(5)).
@@ -59,7 +59,7 @@ options:
         with subsequent runs.
       - Deprecated on Solaris systems.
     type: str
-    default: 0
+    default: '0'
   state:
     description:
       - If C(mounted), the device will be actively mounted and appropriately
@@ -172,7 +172,7 @@ EXAMPLES = r'''
   ansible.posix.mount:
     src: 192.168.1.100:/nfs/ssd/shared_data
     path: /mnt/shared_data
-    opts: rw,sync,hard,intr
+    opts: rw,sync,hard
     state: mounted
     fstype: nfs
 
@@ -180,7 +180,7 @@ EXAMPLES = r'''
   ansible.posix.mount:
     src: 192.168.1.100:/nfs/ssd/shared_data
     path: /mnt/shared_data
-    opts: rw,sync,hard,intr
+    opts: rw,sync,hard
     boot: no
     state: mounted
     fstype: nfs
@@ -254,6 +254,10 @@ def _set_mount_save_old(module, args):
             '%(src)s - %(name)s %(fstype)s %(passno)s %(boot)s %(opts)s\n')
 
     for line in open(args['fstab'], 'r').readlines():
+        # Append newline if the line in fstab does not finished with newline.
+        if not line.endswith('\n'):
+            line += '\n'
+
         old_lines.append(line)
 
         if not line.strip():
@@ -663,12 +667,12 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             boot=dict(type='bool', default=True),
-            dump=dict(type='str'),
+            dump=dict(type='str', default='0'),
             fstab=dict(type='str'),
             fstype=dict(type='str'),
             path=dict(type='path', required=True, aliases=['name']),
             opts=dict(type='str'),
-            passno=dict(type='str', no_log=False),
+            passno=dict(type='str', no_log=False, default='0'),
             src=dict(type='path'),
             backup=dict(type='bool', default=False),
             state=dict(type='str', required=True, choices=['absent', 'mounted', 'present', 'unmounted', 'remounted']),

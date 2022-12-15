@@ -1,7 +1,12 @@
+---
 ####################################################################
 # WARNING: These are designed specifically for Ansible tests       #
 # and should not be used as examples of how to write Ansible roles #
 ####################################################################
+
+# Copyright (c) Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 # Exit when Suse because it causes CI problems
 - meta: end_play
@@ -10,6 +15,10 @@
 # To avoid hangings on service start/stop postgres during CI runs:
 - meta: end_play
   when: ansible_facts.distribution == 'CentOS' and ansible_facts.distribution_major_version == '8'
+
+# Temporary disable Fedora 34
+- meta: end_play
+  when: ansible_facts.distribution == 'Fedora' and ansible_facts.distribution_major_version == '34'
 
 - name: python 2
   set_fact:
@@ -95,8 +104,16 @@
   command: /sbin/service postgresql initdb
   when: ansible_os_family == "RedHat" and ansible_service_mgr != "systemd"
 
+- name: Initialize postgres (Archlinux)
+  command: su - postgres -c "initdb --locale en_US.UTF-8 -D '/var/lib/postgres/data'"
+  when: ansible_os_family == "Archlinux"
+
+- name: Initialize postgres (Alpine)
+  command: su - postgres -c "initdb --locale en_US.UTF-8 -D '/var/lib/postgresql/data'"
+  when: ansible_os_family == "Alpine"
+
 - name: Initialize postgres (Debian)
-  shell: . /usr/share/postgresql-common/maintscripts-functions && set_system_locale && /usr/bin/pg_createcluster -u postgres {{ pg_ver }} main
+  shell: . /usr/share/postgresql-common/maintscripts-functions && set_system_locale && /usr/bin/pg_createcluster -u postgres {{ pg_ver }} main
   args:
     creates: /etc/postgresql/{{ pg_ver }}/
   when: ansible_os_family == 'Debian'
@@ -153,8 +170,6 @@
 
   - name: Reinstall internationalization files
     shell: yum -y reinstall glibc-common || yum -y install glibc-common
-    args:
-      warn: false
     when: locale_present is failed
 
   - name: Generate locale (RedHat)
@@ -240,8 +255,3 @@
 - name: Print PostgreSQL server version
   debug:
     msg: '{{ postgres_version_resp.stdout }}'
-
-- import_tasks: ssl.yml
-  when:
-  - ansible_os_family == 'Debian'
-  - postgres_version_resp.stdout is version('9.4', '>=')

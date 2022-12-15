@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2020, René Moser <mail@renemoser.net>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
@@ -46,6 +47,11 @@ def multiply(factors):
 
 def to_time_unit(human_time, unit='ms', **kwargs):
     ''' Return a time unit from a human readable string '''
+
+    # No need to handle 0
+    if human_time == "0":
+        return 0
+
     unit_to_short_form = UNIT_TO_SHORT_FORM
     unit_factors = UNIT_FACTORS
 

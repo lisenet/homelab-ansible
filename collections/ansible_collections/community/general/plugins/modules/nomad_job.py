@@ -1,8 +1,9 @@
 #!/usr/bin/python
-# coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
-# (c) 2020, FERREIRA Christophe <christophe.ferreira@cnaf.fr>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2020, FERREIRA Christophe <christophe.ferreira@cnaf.fr>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -84,7 +85,7 @@ EXAMPLES = '''
 import json
 
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 import_nomad = None
 try:
@@ -102,14 +103,14 @@ def run():
             use_ssl=dict(type='bool', default=True),
             timeout=dict(type='int', default=5),
             validate_certs=dict(type='bool', default=True),
-            client_cert=dict(type='path', default=None),
-            client_key=dict(type='path', default=None),
-            namespace=dict(type='str', default=None),
-            name=dict(type='str', default=None),
+            client_cert=dict(type='path'),
+            client_key=dict(type='path'),
+            namespace=dict(type='str'),
+            name=dict(type='str'),
             content_format=dict(choices=['hcl', 'json'], default='hcl'),
-            content=dict(type='str', default=None),
+            content=dict(type='str'),
             force_start=dict(type='bool', default=False),
-            token=dict(type='str', default=None, no_log=True)
+            token=dict(type='str', no_log=True)
         ),
         supports_check_mode=True,
         mutually_exclusive=[

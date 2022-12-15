@@ -1,3 +1,8 @@
+---
+# Copyright (c) Ansible Project
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 - name: get the default python version
   command: "{{ ansible_python_interpreter }} -V"
   register: default_python_version
@@ -35,6 +40,11 @@
   package:
     name: mercurial
   when: ansible_facts.pkg_mgr in ['pkgng', 'community.general.pkgng']
+
+- name: install mercurial (zypper)
+  package:
+    name: mercurial
+  when: ansible_facts.pkg_mgr in ['zypper', 'community.general.zypper']
 
 - name: preserve the updated python
   command: cp -av "{{ which_python.stdout }}" "{{ which_python.stdout }}.updated"

@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2012, Dag Wieers (@dagwieers) <dag@wieers.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2012, Dag Wieers (@dagwieers) <dag@wieers.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -39,6 +40,7 @@ options:
     - The email-address(es) the mail is being sent to.
     - This is a list, which may contain address and phrase portions.
     type: list
+    elements: str
     default: root
     aliases: [ recipients ]
   cc:
@@ -46,15 +48,19 @@ options:
     - The email-address(es) the mail is being copied to.
     - This is a list, which may contain address and phrase portions.
     type: list
+    elements: str
+    default: []
   bcc:
     description:
     - The email-address(es) the mail is being 'blind' copied to.
     - This is a list, which may contain address and phrase portions.
     type: list
+    elements: str
+    default: []
   subject:
     description:
     - The subject of the email being sent.
-    required: yes
+    required: true
     type: str
     aliases: [ msg ]
   body:
@@ -85,12 +91,14 @@ options:
     - A list of pathnames of files to attach to the message.
     - Attached files will have their content-type set to C(application/octet-stream).
     type: list
+    elements: path
     default: []
   headers:
     description:
     - A list of headers which should be added to the message.
     - Each individual header is specified as C(header=value) (see example below).
     type: list
+    elements: str
     default: []
   charset:
     description:
@@ -120,6 +128,11 @@ options:
     - Sets the timeout in seconds for connection attempts.
     type: int
     default: 20
+  ehlohost:
+    description:
+    - Allows for manual specification of host for EHLO.
+    type: str
+    version_added: 3.8.0
 '''
 
 EXAMPLES = r'''
@@ -184,6 +197,16 @@ EXAMPLES = r'''
     subject: Ansible-report
     body: System {{ ansible_hostname }} has been successfully provisioned.
     secure: starttls
+
+- name: Sending an e-mail using StartTLS, remote server, custom EHLO
+  community.general.mail:
+    host: some.smtp.host.tld
+    port: 25
+    ehlohost: my-resolvable-hostname.tld
+    to: John Smith <john.smith@example.com>
+    subject: Ansible-report
+    body: System {{ ansible_hostname }} has been successfully provisioned.
+    secure: starttls
 '''
 
 import os
@@ -199,7 +222,7 @@ from email.header import Header
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import PY3
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 def main():
@@ -210,14 +233,15 @@ def main():
             password=dict(type='str', no_log=True),
             host=dict(type='str', default='localhost'),
             port=dict(type='int', default=25),
+            ehlohost=dict(type='str', default=None),
             sender=dict(type='str', default='root', aliases=['from']),
-            to=dict(type='list', default=['root'], aliases=['recipients']),
-            cc=dict(type='list', default=[]),
-            bcc=dict(type='list', default=[]),
+            to=dict(type='list', elements='str', default=['root'], aliases=['recipients']),
+            cc=dict(type='list', elements='str', default=[]),
+            bcc=dict(type='list', elements='str', default=[]),
             subject=dict(type='str', required=True, aliases=['msg']),
             body=dict(type='str'),
-            attach=dict(type='list', default=[]),
-            headers=dict(type='list', default=[]),
+            attach=dict(type='list', elements='path', default=[]),
+            headers=dict(type='list', elements='str', default=[]),
             charset=dict(type='str', default='utf-8'),
             subtype=dict(type='str', default='plain', choices=['html', 'plain']),
             secure=dict(type='str', default='try', choices=['always', 'never', 'starttls', 'try']),
@@ -230,6 +254,7 @@ def main():
     password = module.params.get('password')
     host = module.params.get('host')
     port = module.params.get('port')
+    local_hostname = module.params.get('ehlohost')
     sender = module.params.get('sender')
     recipients = module.params.get('to')
     copies = module.params.get('cc')
@@ -254,9 +279,9 @@ def main():
         if secure != 'never':
             try:
                 if PY3:
-                    smtp = smtplib.SMTP_SSL(host=host, port=port, timeout=timeout)
+                    smtp = smtplib.SMTP_SSL(host=host, port=port, local_hostname=local_hostname, timeout=timeout)
                 else:
-                    smtp = smtplib.SMTP_SSL(timeout=timeout)
+                    smtp = smtplib.SMTP_SSL(local_hostname=local_hostname, timeout=timeout)
                 code, smtpmessage = smtp.connect(host, port)
                 secure_state = True
             except ssl.SSLError as e:
@@ -268,9 +293,9 @@ def main():
 
         if not secure_state:
             if PY3:
-                smtp = smtplib.SMTP(host=host, port=port, timeout=timeout)
+                smtp = smtplib.SMTP(host=host, port=port, local_hostname=local_hostname, timeout=timeout)
             else:
-                smtp = smtplib.SMTP(timeout=timeout)
+                smtp = smtplib.SMTP(local_hostname=local_hostname, timeout=timeout)
             code, smtpmessage = smtp.connect(host, port)
 
     except smtplib.SMTPException as e:

@@ -1,29 +1,13 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+# Copyright (c) 2017, Milan Ilic <milani@nordeus.com>
+# Copyright (c) 2019, Jan Meerkamp <meerkamp@dvv.de>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 # Make coding more python3-ish
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
-
-"""
-(c) 2017, Milan Ilic <milani@nordeus.com>
-(c) 2019, Jan Meerkamp <meerkamp@dvv.de>
-
-This file is part of Ansible
-
-Ansible is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-Ansible is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
-"""
 
 DOCUMENTATION = '''
 ---
@@ -65,13 +49,14 @@ options:
   vm_start_on_hold:
     description:
       - Set to true to put vm on hold while creating
-    default: False
+    default: false
     type: bool
   instance_ids:
     description:
       - A list of instance ids used for states':' C(absent), C(running), C(rebooted), C(poweredoff)
     aliases: ['ids']
     type: list
+    elements: int
   state:
     description:
       - C(present) - create instances from a template specified with C(template_id)/C(template_name).
@@ -85,7 +70,7 @@ options:
   hard:
     description:
       - Reboot, power-off or terminate instances C(hard)
-    default: no
+    default: false
     type: bool
   wait:
     description:
@@ -94,7 +79,7 @@ options:
       - doesn't mean that you will be able to SSH on that machine only that
       - boot process have started on that instance, see 'wait_for' example for
       - details.
-    default: yes
+    default: true
     type: bool
   wait_timeout:
     description:
@@ -120,6 +105,7 @@ options:
       - C(state) of instances with these labels.
     default: []
     type: list
+    elements: str
   count_attributes:
     description:
       - A dictionary of key/value attributes that can only be used with
@@ -134,6 +120,7 @@ options:
       - This can be expressed in multiple ways and is shown in the EXAMPLES
       - section.
     type: list
+    elements: str
   count:
     description:
       - Number of instances to launch
@@ -168,6 +155,7 @@ options:
       - NOTE':' If The Template hats Multiple Disks the Order of the Sizes is
       - matched against the order specified in C(template_id)/C(template_name).
     type: list
+    elements: str
   cpu:
     description:
       - Percentage of CPU divided by 100 required for the new instance. Half a
@@ -182,6 +170,7 @@ options:
       - A list of dictionaries with network parameters. See examples for more details.
     default: []
     type: list
+    elements: dict
   disk_saveas:
     description:
       - Creates an image from a VM disk.
@@ -194,7 +183,7 @@ options:
   persistent:
     description:
       - Create a private persistent copy of the template plus any image defined in DISK, and instantiate that copy.
-    default: NO
+    default: false
     type: bool
     version_added: '0.2.0'
   datastore_id:
@@ -243,7 +232,7 @@ EXAMPLES = '''
 - name: Deploy a new VM  as persistent
   community.general.one_vm:
     template_id: 90
-    persistent: yes
+    persistent: true
 
 - name: Change VM's permissions to 640
   community.general.one_vm:
@@ -747,11 +736,20 @@ def get_vm_info(client, vm):
     if 'NIC' in vm.TEMPLATE:
         if isinstance(vm.TEMPLATE['NIC'], list):
             for nic in vm.TEMPLATE['NIC']:
-                networks_info.append({'ip': nic['IP'], 'mac': nic['MAC'], 'name': nic['NETWORK'], 'security_groups': nic['SECURITY_GROUPS']})
+                networks_info.append({
+                    'ip': nic.get('IP', ''),
+                    'mac': nic.get('MAC', ''),
+                    'name': nic.get('NETWORK', ''),
+                    'security_groups': nic.get('SECURITY_GROUPS', '')
+                })
         else:
-            networks_info.append(
-                {'ip': vm.TEMPLATE['NIC']['IP'], 'mac': vm.TEMPLATE['NIC']['MAC'],
-                    'name': vm.TEMPLATE['NIC']['NETWORK'], 'security_groups': vm.TEMPLATE['NIC']['SECURITY_GROUPS']})
+            networks_info.append({
+                'ip': vm.TEMPLATE['NIC'].get('IP', ''),
+                'mac': vm.TEMPLATE['NIC'].get('MAC', ''),
+                'name': vm.TEMPLATE['NIC'].get('NETWORK', ''),
+                'security_groups':
+                    vm.TEMPLATE['NIC'].get('SECURITY_GROUPS', '')
+            })
     import time
 
     current_time = time.localtime()
@@ -972,7 +970,7 @@ def get_vm_labels_and_attributes_dict(client, vm_id):
         if key != 'LABELS':
             attrs_dict[key] = value
         else:
-            if key is not None:
+            if key is not None and value is not None:
                 labels_list = value.split(',')
 
     return labels_list, attrs_dict
@@ -1246,6 +1244,11 @@ def resume_vm(module, client, vm):
     vm = client.vm.info(vm.ID)
     changed = False
 
+    state = vm.STATE
+    if state in [VM_STATES.index('HOLD')]:
+        changed = release_vm(module, client, vm)
+        return changed
+
     lcm_state = vm.LCM_STATE
     if lcm_state == LCM_STATES.index('SHUTDOWN_POWEROFF'):
         module.fail_json(msg="Cannot perform action 'resume' because this action is not available " +
@@ -1264,6 +1267,23 @@ def resume_vms(module, client, vms):
 
     for vm in vms:
         changed = resume_vm(module, client, vm) or changed
+
+    return changed
+
+
+def release_vm(module, client, vm):
+    vm = client.vm.info(vm.ID)
+    changed = False
+
+    state = vm.STATE
+    if state != VM_STATES.index('HOLD'):
+        module.fail_json(msg="Cannot perform action 'release' because this action is not available " +
+                         "because VM is not in state 'HOLD'.")
+    else:
+        changed = True
+
+    if changed and not module.check_mode:
+        client.vm.action('release', vm.ID)
 
     return changed
 
@@ -1349,7 +1369,7 @@ def main():
         "api_url": {"required": False, "type": "str"},
         "api_username": {"required": False, "type": "str"},
         "api_password": {"required": False, "type": "str", "no_log": True},
-        "instance_ids": {"required": False, "aliases": ['ids'], "type": "list"},
+        "instance_ids": {"required": False, "aliases": ['ids'], "type": "list", "elements": "int"},
         "template_name": {"required": False, "type": "str"},
         "template_id": {"required": False, "type": "int"},
         "vm_start_on_hold": {"default": False, "type": "bool"},
@@ -1367,16 +1387,16 @@ def main():
         "memory": {"required": False, "type": "str"},
         "cpu": {"required": False, "type": "float"},
         "vcpu": {"required": False, "type": "int"},
-        "disk_size": {"required": False, "type": "list"},
+        "disk_size": {"required": False, "type": "list", "elements": "str"},
         "datastore_name": {"required": False, "type": "str"},
         "datastore_id": {"required": False, "type": "int"},
-        "networks": {"default": [], "type": "list"},
+        "networks": {"default": [], "type": "list", "elements": "dict"},
         "count": {"default": 1, "type": "int"},
         "exact_count": {"required": False, "type": "int"},
         "attributes": {"default": {}, "type": "dict"},
         "count_attributes": {"required": False, "type": "dict"},
-        "labels": {"default": [], "type": "list"},
-        "count_labels": {"required": False, "type": "list"},
+        "labels": {"default": [], "type": "list", "elements": "str"},
+        "count_labels": {"required": False, "type": "list", "elements": "str"},
         "disk_saveas": {"type": "dict"},
         "persistent": {"default": False, "type": "bool"}
     }

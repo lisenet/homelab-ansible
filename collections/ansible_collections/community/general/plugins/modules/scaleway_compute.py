@@ -1,11 +1,13 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 #
 # Scaleway Compute management module
 #
 # Copyright (C) 2018 Online SAS.
 # https://www.scaleway.com
 #
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
 
@@ -15,7 +17,7 @@ DOCUMENTATION = '''
 ---
 module: scaleway_compute
 short_description: Scaleway compute management module
-author: Remy Leone (@sieben)
+author: Remy Leone (@remyleone)
 description:
     - "This module manages compute instances on Scaleway."
 extends_documentation_fragment:
@@ -53,8 +55,15 @@ options:
   organization:
     type: str
     description:
-      - Organization identifier
-    required: true
+      - Organization identifier.
+      - Exactly one of I(project) and I(organization) must be specified.
+
+  project:
+    type: str
+    description:
+      - Project identifier.
+      - Exactly one of I(project) and I(organization) must be specified.
+    version_added: 4.3.0
 
   state:
     type: str
@@ -70,6 +79,7 @@ options:
 
   tags:
     type: list
+    elements: str
     description:
     - List of tags to apply to the instance (5 max)
     required: false
@@ -85,6 +95,10 @@ options:
       - EMEA-NL-EVS
       - par1
       - EMEA-FR-PAR1
+      - par2
+      - EMEA-FR-PAR2
+      - waw1
+      - EMEA-PL-WAW1
 
   commercial_type:
     type: str
@@ -96,7 +110,7 @@ options:
     description:
     - Wait for the instance to reach its desired state before returning.
     type: bool
-    default: 'no'
+    default: false
 
   wait_timeout:
     type: int
@@ -126,7 +140,7 @@ EXAMPLES = '''
     name: foobar
     state: present
     image: 89ee4018-f8c3-4dc4-a6b5-bca14f985ebe
-    organization: 951df375-e094-4d26-97c1-ba548eeb9c42
+    project: 951df375-e094-4d26-97c1-ba548eeb9c42
     region: ams1
     commercial_type: VC1S
     tags:
@@ -138,7 +152,7 @@ EXAMPLES = '''
     name: foobar
     state: present
     image: 89ee4018-f8c3-4dc4-a6b5-bca14f985ebe
-    organization: 951df375-e094-4d26-97c1-ba548eeb9c42
+    project: 951df375-e094-4d26-97c1-ba548eeb9c42
     region: ams1
     commercial_type: VC1S
     security_group: 4a31b633-118e-4900-bd52-facf1085fc8d
@@ -151,7 +165,7 @@ EXAMPLES = '''
     name: foobar
     state: absent
     image: 89ee4018-f8c3-4dc4-a6b5-bca14f985ebe
-    organization: 951df375-e094-4d26-97c1-ba548eeb9c42
+    project: 951df375-e094-4d26-97c1-ba548eeb9c42
     region: ams1
     commercial_type: VC1S
 '''
@@ -263,9 +277,14 @@ def create_server(compute_api, server):
             "commercial_type": server["commercial_type"],
             "image": server["image"],
             "dynamic_ip_required": server["dynamic_ip_required"],
-            "name": server["name"],
-            "organization": server["organization"]
+            "name": server["name"]
             }
+
+    if server["project"]:
+        data["project"] = server["project"]
+
+    if server["organization"]:
+        data["organization"] = server["organization"]
 
     if server["security_group"]:
         data["security_group"] = server["security_group"]
@@ -622,6 +641,7 @@ def core(module):
         "enable_ipv6": module.params["enable_ipv6"],
         "tags": module.params["tags"],
         "organization": module.params["organization"],
+        "project": module.params["project"],
         "security_group": module.params["security_group"]
     }
     module.params['api_url'] = SCALEWAY_LOCATION[region]["api_endpoint"]
@@ -648,8 +668,9 @@ def main():
         enable_ipv6=dict(default=False, type="bool"),
         public_ip=dict(default="absent"),
         state=dict(choices=list(state_strategy.keys()), default='present'),
-        tags=dict(type="list", default=[]),
-        organization=dict(required=True),
+        tags=dict(type="list", elements="str", default=[]),
+        organization=dict(),
+        project=dict(),
         wait=dict(type="bool", default=False),
         wait_timeout=dict(type="int", default=300),
         wait_sleep_time=dict(type="int", default=3),
@@ -658,6 +679,12 @@ def main():
     module = AnsibleModule(
         argument_spec=argument_spec,
         supports_check_mode=True,
+        mutually_exclusive=[
+            ('organization', 'project'),
+        ],
+        required_one_of=[
+            ('organization', 'project'),
+        ],
     )
 
     core(module)
