@@ -46,3 +46,6 @@ admin
 pxe
 kvm
 k8s
+
+[openvas]
+10.11.1.40
