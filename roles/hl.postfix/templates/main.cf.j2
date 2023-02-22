@@ -747,3 +747,25 @@ smtp_sasl_password_maps = hash:/etc/postfix/{{ sasl_auth_file }}
 smtp_sasl_security_options = noanonymous
 smtp_use_tls = yes
 disable_vrfy_command = yes
+
+# Hardening
+lmtp_tls_mandatory_protocols = TLSv1.2, TLSv1.3
+lmtp_tls_protocols = TLSv1.2, TLSv1.3
+smtp_tls_mandatory_protocols = TLSv1.2, TLSv1.3
+smtp_tls_protocols = TLSv1.2, TLSv1.3
+smtpd_tls_mandatory_protocols = TLSv1.2, TLSv1.3
+smtpd_tls_protocols = TLSv1.2, TLSv1.3
+
+lmtp_tls_ciphers = high
+lmtp_tls_mandatory_ciphers = high
+smtp_tls_ciphers = high
+smtp_tls_mandatory_ciphers = high
+smtpd_tls_ciphers = high
+smtpd_tls_mandatory_ciphers = high
+
+lmtp_tls_exclude_ciphers = CAMELLIA, DH, ECDH
+lmtp_tls_mandatory_exclude_ciphers = CAMELLIA, DH, ECDH
+smtp_tls_exclude_ciphers = CAMELLIA, DH, ECDH
+smtp_tls_mandatory_exclude_ciphers = CAMELLIA, DH, ECDH
+smtpd_tls_exclude_ciphers = CAMELLIA, DH, ECDH
+smtpd_tls_mandatory_exclude_ciphers = CAMELLIA, DH, ECDH
