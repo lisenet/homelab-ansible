@@ -74,7 +74,6 @@
     remote_src: yes
     owner: root
     group: root
-    creates: "/usr/local/bin/{{ haproxy_exporter_binary }}"
     extra_opts:
       - "--strip-components"
       - "1"
