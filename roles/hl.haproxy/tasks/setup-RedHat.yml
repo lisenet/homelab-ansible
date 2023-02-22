@@ -22,6 +22,13 @@
     setype: http_cache_port_t
     state: present
 
+- name: RedHat | Copy HAProxy Certificate File
+  template:
+    src: "files/haproxy.pem"
+    dest: "/etc/pki/tls/certs/haproxy.pem"
+    mode: 0600
+  notify: restart haproxy
+
 - name: RedHat | Copy HAProxy Configuration File
   template:
     src: "{{ haproxy_config_file }}.j2"
