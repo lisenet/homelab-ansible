@@ -42,6 +42,6 @@ haproxy_stats_password: "haproxy"
 # haproxy exporter variables
 prometheus_user: "prometheus"
 haproxy_exporter_port: "9101"
-haproxy_exporter_url: "https://github.com/prometheus/haproxy_exporter/releases/download/v0.13.0/haproxy_exporter-0.13.0.linux-amd64.tar.gz"
+haproxy_exporter_url: "https://github.com/prometheus/haproxy_exporter/releases/download/v0.15.0/haproxy_exporter-0.15.0.linux-amd64.tar.gz"
 haproxy_exporter_binary: "haproxy_exporter"
 haproxy_exporter_systemd_service: "haproxy_exporter.service"
