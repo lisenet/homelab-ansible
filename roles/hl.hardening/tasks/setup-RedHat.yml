@@ -167,12 +167,14 @@
   yum:
     name: firewalld
     state: installed
+  when: "'k8s_node' not in group_names"
 
 - name: RedHat | Enable Firewalld Service
   service:
     name: firewalld
     state: restarted
     enabled: yes
+  when: "'k8s_node' not in group_names"
 
 - name: RedHat | Disable Cockpit Service in Firewalld
   firewalld:
@@ -180,6 +182,7 @@
     service: cockpit
     permanent: yes
     state: disabled
+  when: "'k8s_node' not in group_names"
 
 # Because of Systemd, we need to use permissions of 0640, so that
 # the group ssh_keys can read the generated ssh private keys for
