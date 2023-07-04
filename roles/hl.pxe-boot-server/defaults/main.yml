@@ -120,8 +120,8 @@ pxe_boot_media:
       - initrd.img
       - vmlinuz
   - name: "rocky8"
-    iso_url: "https://download.rockylinux.org/pub/rocky/8/isos/x86_64/Rocky-8.7-x86_64-dvd1.iso"
-    iso_sha256: "4827dce1c58560d3ca470a5053e8d86ba059cbb77cfca3b5f6a5863d2aac5b84"
+    iso_url: "https://download.rockylinux.org/pub/rocky/8/isos/x86_64/Rocky-8.8-x86_64-dvd1.iso"
+    iso_sha256: "7b8bdfe189cf24ae5c2d6a88f7a0b5f3012d23f9332c47943d538b4bc03a3704"
     source_directory: "{{ ftp_directory }}/pxe/{{ networkboot_directory_rocky8 }}/"
     netboot_directory: "{{ tftp_directory }}/networkboot/{{ networkboot_directory_rocky8 }}/"
     setype: "public_content_t"
@@ -130,8 +130,8 @@ pxe_boot_media:
       - initrd.img
       - vmlinuz
   - name: "rocky9"
-    iso_url: "https://download.rockylinux.org/pub/rocky/9/isos/x86_64/Rocky-9.0-x86_64-dvd.iso"
-    iso_sha256: "55dbf904b35969be9f6d96f042b7470d1a3cb5c953bba47ab8f79740560d8a8d"
+    iso_url: "https://download.rockylinux.org/pub/rocky/9/isos/x86_64/Rocky-9.2-x86_64-dvd.iso"
+    iso_sha256: "cd43bb2671472471b1fc0a7a30113dfc9a56831516c46f4dbd12fb43bb4286d2"
     source_directory: "{{ ftp_directory }}/pxe/{{ networkboot_directory_rocky9 }}/"
     netboot_directory: "{{ tftp_directory }}/networkboot/{{ networkboot_directory_rocky9 }}/"
     setype: "public_content_t"
@@ -142,9 +142,9 @@ pxe_boot_media:
 
 # These are used for Packer
 packer_media:
-  - iso_url: "https://download.rockylinux.org/pub/rocky/9/isos/x86_64/Rocky-9.0-x86_64-boot.iso"
-    iso_sha256: "fc6b306b9fc8d327d7545373ce88c48bd1f7e84d29548814a91e84676b7d26e4"
-  - iso_url: "https://download.rockylinux.org/pub/rocky/8/isos/x86_64/Rocky-8.7-x86_64-boot.iso"
-    iso_sha256: "94402815f251d982e748dc3466517db13fa5f9ea58fad491dcbd2cc821a360a2"
+  - iso_url: "https://download.rockylinux.org/pub/rocky/9/isos/x86_64/Rocky-9.2-x86_64-boot.iso"
+    iso_sha256: "11e42da96a7b336de04e60d05e54a22999c4d7f3e92c19ebf31f9c71298f5b42"
+  - iso_url: "https://download.rockylinux.org/pub/rocky/8/isos/x86_64/Rocky-8.8-x86_64-boot.iso"
+    iso_sha256: "96c9d96c33ebacc8e909dcf8abf067b6bb30588c0c940a9c21bb9b83f3c99868"
   - iso_url: "https://mirror.ox.ac.uk/sites/mirror.centos.org/7.9.2009/isos/x86_64/CentOS-7-x86_64-Minimal-2009.iso"
     iso_sha256: "07b94e6b1a0b0260b94c83d6bb76b26bf7a310dc78d7a9c7432809fb9bc6194a"
