@@ -1,9 +1,5 @@
 ---
 # Inspired by: https://www.lisenet.com/2017/centos-7-server-hardening-guide/
-- name: RedHat | Check System Requirements
-  fail:
-    msg: "The server is not a RedHat 8 server"
-  when: ansible_distribution_major_version != "8"
 
 #
 # SELinux
@@ -62,6 +58,7 @@
     state: stopped
     enabled: no
   loop: "{{ services_to_disable }}"
+  ignore_errors: yes
 
 - name: RedHat | Install Malware Scanners
   package: 
