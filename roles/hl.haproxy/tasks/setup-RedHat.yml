@@ -22,6 +22,14 @@
     setype: http_cache_port_t
     state: present
 
+- name: RedHat | Generate Diffie-Hellman Key
+  community.crypto.openssl_dhparam:
+    path: "{{ haproxy_dh_key }}"
+    size: 2048
+    owner: 0
+    group: 0
+    mode: "0644"
+
 - name: RedHat | Copy HAProxy Certificate File
   template:
     src: "files/haproxy.pem"

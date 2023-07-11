@@ -22,6 +22,7 @@ global
     # utilise system-wide crypto-policies
     ssl-default-bind-ciphers PROFILE=SYSTEM
     ssl-default-server-ciphers PROFILE=SYSTEM
+    ssl-dh-param-file {{ haproxy_dh_key }}
 
 defaults
     mode    http
