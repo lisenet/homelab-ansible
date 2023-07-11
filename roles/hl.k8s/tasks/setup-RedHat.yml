@@ -12,6 +12,11 @@
     - swap
     - none
 
+- name: RedHat | Add the br_netfilter module
+  community.general.modprobe:
+    name: br_netfilter
+    state: present
+
 - name: RedHat | Configure Sysctl Values
   sysctl:
     name: "{{ item.name }}"
@@ -19,12 +24,12 @@
     state: present
   loop: "{{ sysctl_config }}"
 
-- name: RedHat | Remove firewalld/nftables from RHEL 8
+- name: RedHat | Remove firewalld/nftables from RHEL 8 and 9
   package:
     name: "{{ item }}"
     state: absent
   loop: "{{ packages_to_remove }}"
-  when: ansible_distribution_major_version == "8"
+  when: (ansible_distribution_major_version == "8") or (ansible_distribution_major_version == "9")
 
 - name: RedHat | Add Kubernetes Repository Sources
   yum_repository:
@@ -35,7 +40,7 @@
     gpgcheck: yes
     gpgkey: "{{ k8s_gpg_key_redhat }}"
     enabled: yes
-    exclude: kubelet,kubeadm,kubectl
+    #exclude: kubelet,kubeadm,kubectl
     skip_if_unavailable: yes
 
 - name: RedHat | Install Dependencies
@@ -78,8 +83,10 @@
     mode: 0644
     force: yes
 
-- name: RedHat | modprobe ip_tables
-  command: modprobe ip_tables
+- name: RedHat | Add the ip_tables module
+  community.general.modprobe:
+    name: ip_tables
+    state: present
 
 #
 # Legacy configuration
