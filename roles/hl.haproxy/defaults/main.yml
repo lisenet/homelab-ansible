@@ -10,6 +10,7 @@ haproxy_socket: "/var/lib/haproxy/stats"
 haproxy_chroot: "/var/lib/haproxy"
 haproxy_user: "haproxy"
 haproxy_group: "haproxy"
+haproxy_dh_key: "/etc/haproxy/dhparams.pem"
 
 haproxy_stats_port: "8080"
 
