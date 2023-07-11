@@ -46,8 +46,13 @@
 - name: RedHat | Generate Containerd Config
   shell: containerd config default > /etc/{{ systemd_service }}/config.toml
   become: yes
-  args: 
-    creates: /etc/{{ systemd_service }}/config.toml
+
+- name: RedHat | Enable Systemd cgroup driver for Containerd Runtime
+  ansible.builtin.lineinfile:
+    path: /etc/{{ systemd_service }}/config.toml
+    search_string: "SystemdCgroup = false"
+    line: "            SystemdCgroup = true"
+  become: yes
 
 - name: RedHat | Start and Enable Service {{ systemd_service }}
   service:
