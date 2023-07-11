@@ -26,9 +26,13 @@
     notify:
     - restart sshd
 
+  - name: RedHat | Check Services
+    ansible.builtin.service_facts:
+
   - name: RedHat | Enable Service {{ firewall_port }} in Firewalld
     firewalld:
       immediate: yes
       service: "{{ firewall_port }}"
       permanent: yes
       state: enabled
+    when: "'firewalld.service' in ansible_facts.services"

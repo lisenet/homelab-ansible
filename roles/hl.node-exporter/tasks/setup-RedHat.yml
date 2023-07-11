@@ -22,12 +22,16 @@
     groups: "{{ prometheus_user }}"
     shell: "/sbin/nologin"
 
+- name: RedHat | Check Services
+  ansible.builtin.service_facts:
+
 - name: RedHat | Enable Service {{ node_exporter_port }} in Firewalld
   firewalld:
     immediate: yes
     port: "{{ node_exporter_port }}/tcp"
     permanent: yes
     state: enabled
+  when: "'firewalld.service' in ansible_facts.services"
 
 - name: RedHat | Unarchive a file that needs to be downloaded
   unarchive:
