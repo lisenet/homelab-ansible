@@ -36,3 +36,4 @@
       permanent: yes
       state: enabled
     when: "'firewalld.service' in ansible_facts.services"
+    ignore_errors: yes
