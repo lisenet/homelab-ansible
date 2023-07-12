@@ -11,7 +11,7 @@ Ansible infrastructure for my homelab.
 
 ## Install Ansible
 
-Install `python3` packages. Choose `apt` for Debiad based systems, or `yum` for Red Hat based systems.
+Install `python3` packages. Choose `apt` for Debian based systems, or `yum` for Red Hat based systems.
 
 ```bash
 sudo apt install -y python3 python3-pip
