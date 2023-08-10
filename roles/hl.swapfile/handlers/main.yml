@@ -1,0 +1,3 @@
+---
+- name: make swap filesystem
+  command: mkswap "{{ swap_file }}"

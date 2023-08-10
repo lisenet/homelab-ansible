@@ -5,13 +5,8 @@
     regexp: "^SELINUX="
     line: SELINUX=disabled
   become: true
-  register: selinuxdisabled
-
-- name: Reboot the machine after disabling SELinux
-  ansible.builtin.reboot:
-    reboot_timeout: 600
-  become: true
-  when: selinuxdisabled is changed
+  notify:
+    - reboot system # Reboot the machine after disabling SELinux
 
 - name: Configure Sysctl Values
   sysctl:

@@ -3,8 +3,12 @@
   command: dd if=/dev/zero of="{{ swap_file }}" bs=1M count="{{ swap_size }}"
   args:
     creates: "{{ swap_file }}"
-  register: swapfile_create 
-  
+  notify:
+    - make swap filesystem
+
+- name: RedHat | Flush Handlers
+  ansible.builtin.meta: flush_handlers
+
 - name: RedHat | Set Swap File Permissions
   file:
     path: "{{ swap_file }}"
@@ -12,10 +16,6 @@
     owner: root
     group: root
     mode: 0600
-
-- name: RedHat | Make Swap Filesystem
-  command: mkswap "{{ swap_file }}"
-  when: swapfile_create is changed
 
 - name: RedHat | Add Swap to /etc/fstab
   mount:
