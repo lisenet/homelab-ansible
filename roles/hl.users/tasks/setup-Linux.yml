@@ -15,6 +15,7 @@
         password: "{{ user_password | password_hash('sha512') }}"
         update_password: always
       loop: "{{ users }}"
+      no_log: true
 
     - name: RedHat | Configure sudo Rules
       lineinfile:
@@ -37,6 +38,7 @@
         password: "{{ user_password | password_hash('sha512') }}"
         update_password: always
       loop: "{{ users }}"
+      no_log: true
 
     - name: Debian | Configure sudo Rules
       lineinfile:
