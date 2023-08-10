@@ -21,12 +21,11 @@
       
 - name: RedHat | Ensure GPG check Enabled for Local Packages (Yum)
   ini_file:
-    dest: "{{ item }}"
+    dest: "/etc/yum.conf"
     section: main
     option: localpkg_gpgcheck
     value: "1"
     create: True
-  with_items: "/etc/yum.conf"
   when: ansible_distribution == "RedHat" or ansible_distribution == "CentOS"
 
 - name: RedHat | Lock Kernel Version from Automatic Upgrades
