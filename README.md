@@ -57,6 +57,34 @@ ansible-galaxy collection install ansible.posix -p ./collections
 ansible-galaxy collection install community.general -p ./collections
 ```
 
+### Ansible-lint and pre-commit
+
+Ansible Lint is a command-line tool for linting playbooks, roles and collection.
+
+Install packages:
+
+```bash
+pip3 install ansible-lint yamllint pre-commit
+```
+
+To use Ansible-lint with pre-commit, use the following command to create a pre-commit configuration file:
+
+```bash
+cat <<EOF > .pre-commit-config.yaml
+- repo: https://github.com/ansible/ansible-lint
+  rev: v5.4.0
+  hooks:
+    - id: ansible-lint
+      files: \.(yaml|yml)$
+EOF
+```
+
+Enable pre-commit for your git repository:
+
+```bash
+pre-commit install
+```
+
 ## Passwordless SSH Authentication
 
 Servers built with Kickstart/Packer have root SSH keys pre-configured. If that is not the case, then see below.
