@@ -20,11 +20,12 @@
     insertafter: '\[main\]'
       
 - name: RedHat | Ensure GPG check Enabled for Local Packages (Yum)
-  ini_file:
+  community.general.ini_file:
     dest: "/etc/yum.conf"
     section: main
     option: localpkg_gpgcheck
     value: "1"
+    mode: "0644"
     create: True
   when: ansible_distribution == "RedHat" or ansible_distribution == "CentOS"
 
@@ -80,6 +81,7 @@
     dest: "/etc/modprobe.d/ansible-hardening.conf"
     regexp: '{{ item }}'
     line: "install {{ item }} /bin/true"
+    mode: "0644"
   loop: "{{ modules_to_disable }}"
 
 #
@@ -108,6 +110,7 @@
     dest: "/etc/login.defs"
     regexp: "^#?PASS_MIN_DAYS"
     line: "PASS_MIN_DAYS   {{ password_mindays_login_defs }}"
+    mode: "0644"
 
 - name: RedHat | Set Interactive Session Timeout
   lineinfile:
@@ -115,7 +118,8 @@
     dest: "/etc/profile"
     regexp: "^#?TMOUT"
     line: "readonly TMOUT={{ accounts_tmout }}"
-  
+    mode: "0644"
+
 - name: RedHat | Set accounts logon fail delay
   lineinfile:
     dest: "/etc/login.defs"

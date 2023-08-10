@@ -120,6 +120,7 @@
       ansible.builtin.copy:
         content: "{{ join_master_command.stdout_lines[0] }}"
         dest: "../{{ k8s_token_file_master }}"
+        mode: "0755"
       delegate_to: localhost
 
     - name: RedHat | Generate Node Join Command
@@ -131,6 +132,7 @@
       ansible.builtin.copy:
         content: "{{ join_node_command.stdout_lines[0] }}"
         dest: "../{{ k8s_token_file_node }}"
+        mode: "0755"
       delegate_to: localhost
   when: "'k8s_first_control_plane' in group_names"
 

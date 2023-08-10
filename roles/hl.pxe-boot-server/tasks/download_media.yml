@@ -21,6 +21,8 @@
     setype: "{{ outer_item.setype }}"
     force: yes
     remote_src: yes
+    mode: "0444"
+    directory_mode: "0555"
 
 - name: RedHat | Run restorecon on {{ outer_item.source_directory }}
   command: restorecon -Rv "{{ outer_item.source_directory }}"
@@ -32,6 +34,8 @@
     dest: "{{ outer_item.netboot_directory }}"
     force: yes
     remote_src: yes
+    mode: "0644"
+    directory_mode: "0755"
   loop: "{{ outer_item.pxeboot_files }}"
 
 - name: RedHat | Unmount {{ outer_item.name }} ISO

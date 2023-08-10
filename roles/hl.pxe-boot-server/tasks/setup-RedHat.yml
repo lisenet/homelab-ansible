@@ -110,6 +110,8 @@
     src: "/usr/share/syslinux/"
     dest: "{{ tftp_directory }}/"
     remote_src: yes
+    mode: "0644"
+    directory_mode: "0755"
 
 #
 # Configure NFS server
