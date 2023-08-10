@@ -194,7 +194,8 @@
   shell: df /root --output\=avail|tail -n1
   register: root_freespace
       
-- fail:
+- name: RedHat | Fail if not Enough Free Disk Space in /root
+  fail:
     msg: /root does not have the minimum space required to continue (40GB needed for DVD ISO files)
   when: root_freespace.stdout|float is lt 4000000
 
@@ -247,8 +248,9 @@
 - name: RedHat | Check /var free space
   shell: df /var --output\=avail|tail -n1
   register: var_freespace
-      
-- fail:
+
+- name: RedHat | Fail if not Enough Free Disk Space in /var
+  fail:
     msg: /var does not have the minimum space required to continue (3GB needed for Packer ISO files)
   when: var_freespace.stdout|float is lt 3000000
 
