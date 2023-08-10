@@ -117,7 +117,10 @@
 
     - name: RedHat | Copy Master Join Command to Local File
       become: false
-      local_action: copy content="{{ join_master_command.stdout_lines[0] }}" dest="../{{ k8s_token_file_master }}"
+      ansible.builtin.copy:
+        content: "{{ join_master_command.stdout_lines[0] }}"
+        dest: "../{{ k8s_token_file_master }}"
+      delegate_to: localhost
 
     - name: RedHat | Generate Node Join Command
       command: kubeadm token create --print-join-command
@@ -125,7 +128,10 @@
 
     - name: RedHat | Copy Node Join Command to Local File
       become: false
-      local_action: copy content="{{ join_node_command.stdout_lines[0] }}" dest="../{{ k8s_token_file_node }}"
+      ansible.builtin.copy:
+        content: "{{ join_node_command.stdout_lines[0] }}"
+        dest: "../{{ k8s_token_file_node }}"
+      delegate_to: localhost
   when: "'k8s_first_control_plane' in group_names"
 
 - name: RedHat | Configure Other Control Planes
