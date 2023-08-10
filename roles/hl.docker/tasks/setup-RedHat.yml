@@ -45,5 +45,7 @@
   notify:
   - restart docker
 
-- name: RedHat | systemctl restart {{ systemd_service }}
-  command: systemctl restart {{ systemd_service }}
+- name: RedHat | Systemd Restart {{ systemd_service }}
+  ansible.builtin.systemd:
+    name: "{{ systemd_service }}"
+    state: restarted

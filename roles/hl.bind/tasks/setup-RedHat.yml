@@ -147,8 +147,9 @@
     group: root
     mode: 0644
 
-- name: RedHat | systemctl daemon-reload
-  command: systemctl daemon-reload 
+- name: RedHat | Force Systemd to Reread Configs
+  ansible.builtin.systemd:
+    daemon_reload: true
 
 - name: RedHat | Start and Enable Service {{ bind_exporter_systemd_service }}
   service:

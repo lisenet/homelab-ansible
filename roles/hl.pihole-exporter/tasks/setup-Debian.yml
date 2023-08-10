@@ -42,8 +42,9 @@
     group: root
     mode: 0644
 
-- name: Debian | systemctl daemon-reload
-  command: systemctl daemon-reload 
+- name: RedHat | Force Systemd to Reread Configs
+  ansible.builtin.systemd:
+    daemon_reload: true
 
 - name: Debian | Start and Enable Service {{ pihole_exporter_systemd_service }}
   service:
