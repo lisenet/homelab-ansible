@@ -1,6 +1,6 @@
 ---
 - name: RedHat | Create Swap File {{ swap_file }}
-  command: dd if=/dev/zero of="{{ swap_file }}" bs=1M count="{{ swap_size }}"
+  command: "dd if=/dev/zero of={{ swap_file }} bs=1M count={{ swap_size }}"
   args:
     creates: "{{ swap_file }}"
   notify:
@@ -29,6 +29,8 @@
 
 - name: RedHat | swapon -a
   command: swapon -a
+  register: swapon_output # Registers the command output.
+  changed_when: swapon_output.rc != 0 # Uses the return code to define when the task has changed.
 
 - name: RedHat | Set Sysctl vm.swappiness to {{ sysctl_swappiness }}
   sysctl:

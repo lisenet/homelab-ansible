@@ -14,6 +14,8 @@
 - name: RedHat | Destroy (stop) Default Network
   command: virsh net-destroy default
   ignore_errors: yes
+  register: virsh_output # Registers the command output.
+  changed_when: virsh_output.rc != 0 # Uses the return code to define when the task has changed.
   notify:
   - restart libvirtd
 

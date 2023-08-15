@@ -40,6 +40,8 @@
 
 - name: RedHat | postmap /etc/postfix/{{ sasl_auth_file }}
   command: postmap /etc/postfix/{{ sasl_auth_file }}
+  register: postmap_output # Registers the command output.
+  changed_when: postmap_output.rc != 0 # Uses the return code to define when the task has changed.
 
 - name: RedHat | Start and Enable Service {{ systemd_service }}
   service:

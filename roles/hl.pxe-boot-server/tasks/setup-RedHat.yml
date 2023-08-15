@@ -195,7 +195,8 @@
 - name: RedHat | Check /root free space
   shell: df /root --output\=avail|tail -n1
   register: root_freespace
-      
+  changed_when: root_freespace.rc != 0 # Uses the return code to define when the task has changed.
+
 - name: RedHat | Fail if not Enough Free Disk Space in /root
   fail:
     msg: /root does not have the minimum space required to continue (40GB needed for DVD ISO files)
@@ -250,6 +251,7 @@
 - name: RedHat | Check /var free space
   shell: df /var --output\=avail|tail -n1
   register: var_freespace
+  changed_when: var_freespace.rc != 0 # Uses the return code to define when the task has changed.
 
 - name: RedHat | Fail if not Enough Free Disk Space in /var
   fail:

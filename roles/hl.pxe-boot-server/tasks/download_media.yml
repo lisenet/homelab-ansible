@@ -26,6 +26,8 @@
 
 - name: RedHat | Run restorecon on {{ outer_item.source_directory }}
   command: restorecon -Rv "{{ outer_item.source_directory }}"
+  register: restorecon_output # Registers the command output.
+  changed_when: restorecon_output.rc != 0 # Uses the return code to define when the task has changed.
 
 - name: RedHat | Copy {{ outer_item.name }} pxeboot Files to TFTP networkboot Directory {{ outer_item.netboot_directory }}
   ignore_errors: true

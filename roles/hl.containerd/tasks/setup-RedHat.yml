@@ -46,6 +46,8 @@
 - name: RedHat | Generate Containerd Config
   shell: containerd config default > /etc/{{ systemd_service }}/config.toml
   become: yes
+  register: containerd_output # Registers the command output.
+  changed_when: containerd_output.rc != 0 # Uses the return code to define when the task has changed.
 
 - name: RedHat | Enable Systemd cgroup driver for Containerd Runtime
   ansible.builtin.lineinfile:
