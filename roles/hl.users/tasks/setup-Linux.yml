@@ -24,7 +24,7 @@
         regexp: "^%{{ sudo_group_redhat }}"
         line: "%{{ sudo_group_redhat }} ALL=(ALL) NOPASSWD: ALL"
         validate: "/usr/sbin/visudo -cf %s"
-  when: (ansible_os_family == 'RedHat') or (ansible_os_family == 'Rocky')
+  when: ansible_os_family == 'RedHat'
 
 - name: Linux | Create Users
   remote_user: root
