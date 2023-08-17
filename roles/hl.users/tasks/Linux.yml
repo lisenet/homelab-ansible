@@ -6,7 +6,7 @@
 - name: Linux | Create Users
   remote_user: root
   block:
-    - name: RedHat | Create Users
+    - name: Linux | Create Users
       user:
         state: present
         name: "{{ item.name }}"
@@ -17,7 +17,7 @@
       loop: "{{ users }}"
       no_log: true
 
-    - name: RedHat | Configure sudo Rules
+    - name: Linux | Configure sudo Rules
       lineinfile:
         state: present
         path: "/etc/sudoers"
@@ -29,7 +29,7 @@
 - name: Linux | Create Users
   remote_user: root
   block:
-    - name: Debian | Create Users
+    - name: Linux | Create Users
       user:
         state: present
         name: "{{ item.name }}"
@@ -40,7 +40,7 @@
       loop: "{{ users }}"
       no_log: true
 
-    - name: Debian | Configure sudo Rules
+    - name: Linux | Configure sudo Rules
       lineinfile:
         state: present
         path: "/etc/sudoers"
@@ -49,7 +49,7 @@
         validate: "/usr/sbin/visudo -cf %s"
   when: ansible_os_family == 'Debian'
 
-- name: Debian | Set root User Password
+- name: Linux | Set root User Password
   user:
     state: present
     name: root

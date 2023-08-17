@@ -1,12 +1,12 @@
 ---
-- name: RedHat | Download {{ outer_item.name }} ISO with check (sha256) - this will take time
+- name: download_media | Download {{ outer_item.name }} ISO with check (sha256) - this will take time
   get_url:
     url: "{{ outer_item.iso_url }}"
     dest: "/root/{{ outer_item.name }}.iso"
     mode: 0644
     checksum: "sha256:{{ outer_item.iso_sha256 }}"
 
-- name: RedHat | Mount {{ outer_item.name }} ISO read-only
+- name: download_media | Mount {{ outer_item.name }} ISO read-only
   ansible.posix.mount:
     path: "/mnt"
     src: "/root/{{ outer_item.name }}.iso"
@@ -14,7 +14,7 @@
     opts: ro,noauto
     state: mounted
 
-- name: RedHat | Copy {{ outer_item.name }} Files to FTP/NFS Directory {{ outer_item.source_directory }}
+- name: download_media | Copy {{ outer_item.name }} Files to FTP/NFS Directory {{ outer_item.source_directory }}
   copy:
     src: "/mnt/"
     dest: "{{ outer_item.source_directory }}"
@@ -24,12 +24,12 @@
     mode: "0444"
     directory_mode: "0555"
 
-- name: RedHat | Run restorecon on {{ outer_item.source_directory }}
+- name: download_media | Run restorecon on {{ outer_item.source_directory }}
   command: restorecon -Rv "{{ outer_item.source_directory }}"
   register: restorecon_output # Registers the command output.
   changed_when: restorecon_output.rc != 0 # Uses the return code to define when the task has changed.
 
-- name: RedHat | Copy {{ outer_item.name }} pxeboot Files to TFTP networkboot Directory {{ outer_item.netboot_directory }}
+- name: download_media | Copy {{ outer_item.name }} pxeboot Files to TFTP networkboot Directory {{ outer_item.netboot_directory }}
   ignore_errors: true
   copy:
     src: "{{ outer_item.mounted_src }}/{{ item }}"
@@ -40,14 +40,14 @@
     directory_mode: "0755"
   loop: "{{ outer_item.pxeboot_files }}"
 
-- name: RedHat | Unmount {{ outer_item.name }} ISO
+- name: download_media | Unmount {{ outer_item.name }} ISO
   ansible.posix.mount:
     path: "/mnt"
     state: unmounted
 
 # Use the kernel and initrd files from the Bionic netboot.tar.gz archive,
 # as I'm not sure the casper files are compatible with preseed/kickstart.
-- name: RedHat | Download Ubuntu 18.04 netboot.tar.gz Archive Files
+- name: download_media | Download Ubuntu 18.04 netboot.tar.gz Archive Files
   get_url:
     url: "{{ item }}"
     dest: "{{ outer_item.netboot_directory }}"
@@ -57,7 +57,7 @@
     - "{{ ubuntu_netboot_initrd }}"
   when: (outer_item.name == 'ubuntu1804server') or (outer_item.name == 'ubuntu1804desktop')
 
-- name: RedHat | Download Ubuntu 20.04 netboot.tar.gz Archive Files
+- name: download_media | Download Ubuntu 20.04 netboot.tar.gz Archive Files
   get_url:
     url: "{{ item }}"
     dest: "{{ outer_item.netboot_directory }}"

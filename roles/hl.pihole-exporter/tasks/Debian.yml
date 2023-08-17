@@ -42,7 +42,7 @@
     group: root
     mode: 0644
 
-- name: RedHat | Force Systemd to Reread Configs
+- name: Debian | Force Systemd to Reread Configs
   ansible.builtin.systemd:
     daemon_reload: true
 

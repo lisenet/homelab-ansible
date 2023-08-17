@@ -92,7 +92,7 @@
 # Legacy configuration
 # Configure firewall on RHEL 7
 #
-- name: Configure firewalld on RHEL 7
+- name: RedHat | Configure firewalld on RHEL 7
   block:
   - name: RedHat | Open K8s firewall ports for master
     firewalld:
