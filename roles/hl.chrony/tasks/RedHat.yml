@@ -1,41 +1,41 @@
 ---
 - name: RedHat | Install Packages
-  package: 
+  ansible.builtin.package:
     name: "{{ item }}"
     state: present
   loop: "{{ packages }}"
 
-- name: RedHat | Enable Service {{ firewall_port }} in Firewalld
-  firewalld:
-    immediate: yes
+- name: RedHat | Enable Service in Firewalld {{ firewall_port }}
+  ansible.posix.firewalld:
+    immediate: true
     service: "{{ firewall_port }}"
-    permanent: yes
+    permanent: true
     state: enabled
 
-- name: RedHat | Copy {{ chrony_conf_file }} Configuration File
-  template: 
+- name: RedHat | Copy Configuration File {{ chrony_conf_file }}
+  ansible.builtin.template:
     src: "{{ chrony_conf_file }}.peer1.j2"
     dest: "/etc/{{ chrony_conf_file }}"
     owner: root
     group: root
-    mode: 0644
+    mode: "0644"
   notify:
-    - restart chrony
+    - Restart chrony
   when: "'dns1' in group_names"
 
-- name: RedHat | Copy {{ chrony_conf_file }} Configuration File
-  template: 
+- name: RedHat | Copy Configuration File {{ chrony_conf_file }}
+  ansible.builtin.template:
     src: "{{ chrony_conf_file }}.peer2.j2"
     dest: "/etc/{{ chrony_conf_file }}"
     owner: root
     group: root
-    mode: 0644
+    mode: "0644"
   notify:
-    - restart chrony
+    - Restart chrony
   when: "'dns2' in group_names"
 
 - name: RedHat | Start and Enable Service {{ systemd_service }}
-  service:
+  ansible.builtin.service:
     name: "{{ systemd_service }}"
     state: started
-    enabled: yes
+    enabled: true

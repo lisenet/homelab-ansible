@@ -5,7 +5,7 @@
 # SELinux
 #
 - name: RedHat | Enable SELinux
-  selinux:
+  ansible.posix.selinux:
     policy: targeted
     state: enforcing
 
@@ -13,12 +13,12 @@
 # YUM
 #
 - name: RedHat | Ensure YUM Removes Previous Package Versions
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: "/etc/yum.conf"
     regexp: ^#?clean_requirements_on_remove
     line: clean_requirements_on_remove=1
     insertafter: '\[main\]'
-      
+
 - name: RedHat | Ensure GPG check Enabled for Local Packages (Yum)
   community.general.ini_file:
     dest: "/etc/yum.conf"
@@ -26,11 +26,11 @@
     option: localpkg_gpgcheck
     value: "1"
     mode: "0644"
-    create: True
+    create: true
   when: ansible_distribution == "RedHat" or ansible_distribution == "CentOS"
 
 - name: RedHat | Lock Kernel Version from Automatic Upgrades
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: "/etc/yum.conf"
     regexp: "^exclude=kernel"
     line: "exclude=kernel*"
@@ -39,7 +39,7 @@
 # Install EPEL release
 #
 - name: RedHat | Install epel-release Package
-  package:
+  ansible.builtin.package:
     name: epel-release
     state: present
 
@@ -47,27 +47,28 @@
 # Remove packages that you do not require on a server
 #
 - name: RedHat | Remove Packages
-  package: 
+  ansible.builtin.package:
     name: "{{ item }}"
     state: absent
   loop: "{{ packages_to_remove }}"
 
 - name: RedHat | Disable Services
-  service: 
+  ansible.builtin.service:
     name: "{{ item }}"
     state: stopped
-    enabled: no
+    enabled: false
   loop: "{{ services_to_disable }}"
-  ignore_errors: yes
+  ignore_errors: true
+  register: ignore_errors_register
 
 - name: RedHat | Install Malware Scanners
-  package: 
+  ansible.builtin.package:
     name: "{{ item }}"
     state: present
   loop: "{{ malware_scanners_to_install }}"
 
 - name: RedHat | Install USBGuard on Virtual Servers
-  package: 
+  ansible.builtin.package:
     name: usbguard
     state: present
   when: "'virtual' in group_names"
@@ -76,8 +77,8 @@
 # Disable uncommon network protocols and bluetooth
 #
 - name: RedHat | Ensure unnecessary kernel modules are disabled
-  lineinfile:
-    create: yes
+  ansible.builtin.lineinfile:
+    create: true
     dest: "/etc/modprobe.d/ansible-hardening.conf"
     regexp: '{{ item }}'
     line: "install {{ item }} /bin/true"
@@ -88,58 +89,58 @@
 # Access Control
 #
 - name: RedHat | Prevent Log In to Accounts With Empty Password - system-auth
-  replace:
+  ansible.builtin.replace:
     dest: "/etc/pam.d/system-auth"
     regexp: 'nullok'
 
 - name: RedHat | Prevent Log In to Accounts With Empty Password - password-auth
-  replace:
+  ansible.builtin.replace:
     dest: "/etc/pam.d/password-auth"
     regexp: 'nullok'
 
 - name: RedHat | Set Password Minimum Length in login.defs
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: "/etc/login.defs"
     regexp: "^PASS_MIN_LEN *[0-9]*"
     state: present
     line: "PASS_MIN_LEN    {{ password_minlen_login_defs }}"
 
 - name: RedHat | Set Password Minimum Age
-  lineinfile:
-    create: yes
+  ansible.builtin.lineinfile:
+    create: true
     dest: "/etc/login.defs"
     regexp: "^#?PASS_MIN_DAYS"
     line: "PASS_MIN_DAYS   {{ password_mindays_login_defs }}"
     mode: "0644"
 
 - name: RedHat | Set Interactive Session Timeout
-  lineinfile:
-    create: yes
+  ansible.builtin.lineinfile:
+    create: true
     dest: "/etc/profile"
     regexp: "^#?TMOUT"
     line: "readonly TMOUT={{ accounts_tmout }}"
     mode: "0644"
 
 - name: RedHat | Set accounts logon fail delay
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: "/etc/login.defs"
     regexp: "^FAIL_DELAY"
     line: "FAIL_DELAY {{ accounts_fail_delay }}"
 
 - name: RedHat | Log failed login attempts
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: "/etc/login.defs"
     regexp: "^FAILLOG_ENAB"
     line: "FAILLOG_ENAB yes"
 
 - name: RedHat | Ensure Home Directories are Created for New Users
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: "/etc/login.defs"
     regexp: "^CREATE_HOME"
     line: "CREATE_HOME yes"
 
 - name: RedHat | Limit the Number of Concurrent Login Sessions Allowed Per User
-  lineinfile:
+  ansible.builtin.lineinfile:
     state: present
     dest: "/etc/security/limits.conf"
     insertbefore: "^# End of file"
@@ -150,37 +151,37 @@
 # Install Sysstat to collect performance activity
 #
 - name: RedHat | Install Sysstat Package
-  package:
+  ansible.builtin.package:
     name: sysstat
     state: present
 
 - name: RedHat | Enable Sysstat Service
-  service:
+  ansible.builtin.service:
     name: sysstat
     state: started
-    enabled: yes
+    enabled: true
 
 #
 # Enable Firewalld
 #
 - name: RedHat | Install Firewalld Package
-  yum:
+  ansible.builtin.yum:
     name: firewalld
     state: installed
   when: "'k8s_node' not in group_names"
 
 - name: RedHat | Enable Firewalld Service
-  service:
+  ansible.builtin.service:
     name: firewalld
     state: restarted
-    enabled: yes
+    enabled: true
   when: "'k8s_node' not in group_names"
 
 - name: RedHat | Disable Cockpit Service in Firewalld
-  firewalld:
-    immediate: yes
+  ansible.posix.firewalld:
+    immediate: true
     service: cockpit
-    permanent: yes
+    permanent: true
     state: disabled
   when: "'k8s_node' not in group_names"
 
@@ -188,9 +189,9 @@
 # the group ssh_keys can read the generated ssh private keys for
 # access to the system.
 - name: RedHat | Ensure permission 0640 on /etc/ssh/*_key
-  file:
+  ansible.builtin.file:
     path: "/etc/ssh/{{ item }}"
-    mode: 0640
+    mode: "0640"
   loop:
     - "ssh_host_ecdsa_key"
     - "ssh_host_ed25519_key"
@@ -200,7 +201,7 @@
 # Install Lynis auditing software
 #
 - name: RedHat | Install Lynis Package
-  package:
+  ansible.builtin.package:
     name: lynis
     state: present
 
@@ -208,21 +209,21 @@
 # Install process accounting software
 #
 - name: RedHat | Install Psacct Package
-  package:
+  ansible.builtin.package:
     name: psacct
     state: present
 
 - name: RedHat | Enable Psacct Service
-  service:
+  ansible.builtin.service:
     name: psacct
     state: started
-    enabled: yes
+    enabled: true
 
 #
 # Disable core dumps
 #
 - name: RedHat | Disable Core Dumps
-  lineinfile:
+  ansible.builtin.lineinfile:
     state: present
     dest: "/etc/security/limits.conf"
     insertbefore: "^# End of file"
@@ -233,11 +234,11 @@
 # Restrict programs from dangerous execution patterns
 #
 - name: RedHat | Restrict Programs from Dangerous Execution Patterns
-  sysctl:
+  ansible.posix.sysctl:
     name: "{{ item.name }}"
     value: "{{ item.value }}"
     state: present
-    reload: yes
+    reload: true
   loop:
     - name: fs.suid_dumpable
       value: 0
@@ -268,11 +269,11 @@
 # IPv4 and IPv6 kernel networking values
 #
 - name: RedHat | Set Sysctl Values
-  sysctl:
+  ansible.posix.sysctl:
     name: "{{ item.name }}"
     value: "{{ item.value }}"
     state: present
-    reload: yes
+    reload: true
   loop:
     - name: net.core.bpf_jit_harden
       value: 2
@@ -321,7 +322,7 @@
 # Configure history file size
 #
 - name: RedHat | Configure History File Size
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: "/etc/profile"
     regexp: "^HISTSIZE"
     line: "HISTSIZE={{ history_file_size }}"
@@ -330,7 +331,7 @@
 # Harden /proc
 #
 - name: RedHat | Set Option hidepid for /proc Filesystem
-  mount:
+  ansible.posix.mount:
     path: /proc
     src: proc
     fstype: proc
@@ -338,47 +339,47 @@
     state: mounted
 
 - name: RedHat | Disable CTRL-ALT-DEL
-  systemd:
+  ansible.builtin.systemd:
     name: ctrl-alt-del.target
-    masked: yes
-    daemon_reload: yes
+    masked: true
+    daemon_reload: true
   when: ansible_service_mgr == "systemd"
 
 #
 # Configure security limits
 #
 - name: RedHat | Create limits.d Directory
-  file:
+  ansible.builtin.file:
     path: "/etc/security/limits.d"
     state: directory
     owner: root
     group: root
-    mode: 0755
+    mode: "0755"
 
 - name: RedHat | Create Security Limits Hardening File
-  template:
+  ansible.builtin.template:
     src: "hardening-limits.conf.j2"
     dest: "/etc/security/limits.d/hardening.conf"
     owner: root
     group: root
-    mode: 0644
+    mode: "0644"
 
 #
 # Disable direct root login
 #
 - name: RedHat | Create Securetty
-  template:
+  ansible.builtin.template:
     src: "securetty.j2"
     dest: /etc/securetty
     owner: root
     group: root
-    mode: 0400
+    mode: "0400"
 
 #
 # Harden cron directory permissions
 #
 - name: RedHat | Find cron Files and Directories
-  find:
+  ansible.builtin.find:
     paths:
       - /etc
     patterns:
@@ -394,7 +395,7 @@
   register: cron_directories
 
 - name: RedHat | Ensure Permissions on cron Files and Directories are Hardened
-  file:
+  ansible.builtin.file:
     path: "{{ item.path }}"
     owner: root
     group: root
@@ -403,17 +404,17 @@
 
 #
 # Harden /home/* directory permissions
-# 
+#
 - name: RedHat | Get All Home Directories in /home
-  find:
+  ansible.builtin.find:
     paths: /home/
     recurse: false
     file_type: directory
   register: home_directories
 
 - name: RedHat | Set Ownership of /home Directories to 0700
-  file:
+  ansible.builtin.file:
     path: "{{ item.path }}"
     state: directory
-    mode: 0700
+    mode: "0700"
   loop: "{{ home_directories.files }}"

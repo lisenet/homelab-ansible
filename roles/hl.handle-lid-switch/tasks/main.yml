@@ -1,4 +1,4 @@
 ---
 - name: Include playbook
-  include: RedHat.yml
+  ansible.builtin.include: RedHat.yml
   when: ansible_os_family == 'RedHat'

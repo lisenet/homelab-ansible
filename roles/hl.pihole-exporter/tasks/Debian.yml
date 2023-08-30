@@ -1,6 +1,6 @@
 ---
 - name: Debian | Install Packages
-  package:
+  ansible.builtin.package:
     name: "{{ item }}"
     state: present
   loop: "{{ packages }}"
@@ -9,24 +9,24 @@
 # Configure Pi-hole Exporter systemd service
 #
 - name: Debian | Create System Group {{ prometheus_user }}
-  group:
+  ansible.builtin.group:
     state: present
-    system: yes
+    system: true
     name: "{{ prometheus_user }}"
 
 - name: Debian | Create System User {{ prometheus_user }}
-  user:
+  ansible.builtin.user:
     state: present
-    system: yes
+    system: true
     name: "{{ prometheus_user }}"
     groups: "{{ prometheus_user }}"
     shell: "/sbin/nologin"
 
 - name: Debian | Unarchive a file that needs to be downloaded
-  unarchive:
+  ansible.builtin.unarchive:
     src: "{{ pihole_exporter_url }}"
     dest: "/usr/local/bin"
-    remote_src: yes
+    remote_src: true
     owner: root
     group: root
     creates: "/usr/local/bin/{{ pihole_exporter_binary }}"
@@ -34,20 +34,20 @@
       - "--strip-components"
       - "1"
 
-- name: Debian | Copy {{ pihole_exporter_systemd_service }} Systemd File
-  template: 
+- name: Debian | Copy Systemd File {{ pihole_exporter_systemd_service }}
+  ansible.builtin.template:
     src: "{{ pihole_exporter_systemd_service }}.j2"
     dest: "/etc/systemd/system/{{ pihole_exporter_systemd_service }}"
     owner: root
     group: root
-    mode: 0644
+    mode: "0644"
 
 - name: Debian | Force Systemd to Reread Configs
   ansible.builtin.systemd:
     daemon_reload: true
 
 - name: Debian | Start and Enable Service {{ pihole_exporter_systemd_service }}
-  service:
+  ansible.builtin.service:
     name: "{{ pihole_exporter_systemd_service }}"
     state: started
-    enabled: yes
+    enabled: true

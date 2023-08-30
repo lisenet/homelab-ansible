@@ -1,6 +1,5 @@
 ---
-- name: restart chrony
-  service: 
+- name: Restart chrony
+  ansible.builtin.service:
     name: "{{ systemd_service }}"
     state: restarted
-

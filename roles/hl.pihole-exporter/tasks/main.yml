@@ -1,4 +1,4 @@
 ---
 - name: Include playbook
-  include: Debian.yml
+  ansible.builtin.include: Debian.yml
   when: ansible_os_family == 'Debian'

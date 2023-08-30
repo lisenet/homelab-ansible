@@ -1,12 +1,12 @@
 ---
-- name: download_media | Download {{ outer_item.name }} ISO with check (sha256) - this will take time
-  get_url:
+- name: download_media | Download ISO with check (sha256) - this will take time {{ outer_item.name }}
+  ansible.builtin.get_url:
     url: "{{ outer_item.iso_url }}"
     dest: "/root/{{ outer_item.name }}.iso"
-    mode: 0644
+    mode: "0644"
     checksum: "sha256:{{ outer_item.iso_sha256 }}"
 
-- name: download_media | Mount {{ outer_item.name }} ISO read-only
+- name: download_media | Mount ISO read-only {{ outer_item.name }}
   ansible.posix.mount:
     path: "/mnt"
     src: "/root/{{ outer_item.name }}.iso"
@@ -14,33 +14,34 @@
     opts: ro,noauto
     state: mounted
 
-- name: download_media | Copy {{ outer_item.name }} Files to FTP/NFS Directory {{ outer_item.source_directory }}
-  copy:
+- name: download_media | Copy Files to FTP/NFS Directory {{ outer_item.source_directory }}
+  ansible.builtin.copy:
     src: "/mnt/"
     dest: "{{ outer_item.source_directory }}"
     setype: "{{ outer_item.setype }}"
-    force: yes
-    remote_src: yes
+    force: true
+    remote_src: true
     mode: "0444"
     directory_mode: "0555"
 
 - name: download_media | Run restorecon on {{ outer_item.source_directory }}
-  command: restorecon -Rv "{{ outer_item.source_directory }}"
+  ansible.builtin.command: restorecon -Rv "{{ outer_item.source_directory }}"
   register: restorecon_output # Registers the command output.
   changed_when: restorecon_output.rc != 0 # Uses the return code to define when the task has changed.
 
-- name: download_media | Copy {{ outer_item.name }} pxeboot Files to TFTP networkboot Directory {{ outer_item.netboot_directory }}
-  ignore_errors: true
-  copy:
+- name: download_media | Copy pxeboot Files to TFTP networkboot Directory {{ outer_item.netboot_directory }}
+  ansible.builtin.copy:
     src: "{{ outer_item.mounted_src }}/{{ item }}"
     dest: "{{ outer_item.netboot_directory }}"
-    force: yes
-    remote_src: yes
+    force: true
+    remote_src: true
     mode: "0644"
     directory_mode: "0755"
   loop: "{{ outer_item.pxeboot_files }}"
+  ignore_errors: true
+  register: ignore_errors_register
 
-- name: download_media | Unmount {{ outer_item.name }} ISO
+- name: download_media | Unmount ISO {{ outer_item.name }}
   ansible.posix.mount:
     path: "/mnt"
     state: unmounted
@@ -48,20 +49,20 @@
 # Use the kernel and initrd files from the Bionic netboot.tar.gz archive,
 # as I'm not sure the casper files are compatible with preseed/kickstart.
 - name: download_media | Download Ubuntu 18.04 netboot.tar.gz Archive Files
-  get_url:
+  ansible.builtin.get_url:
     url: "{{ item }}"
     dest: "{{ outer_item.netboot_directory }}"
-    mode: 0644
+    mode: "0644"
   loop:
     - "{{ ubuntu_netboot_linux }}"
     - "{{ ubuntu_netboot_initrd }}"
   when: (outer_item.name == 'ubuntu1804server') or (outer_item.name == 'ubuntu1804desktop')
 
 - name: download_media | Download Ubuntu 20.04 netboot.tar.gz Archive Files
-  get_url:
+  ansible.builtin.get_url:
     url: "{{ item }}"
     dest: "{{ outer_item.netboot_directory }}"
-    mode: 0644
+    mode: "0644"
   loop:
     - "{{ ubuntu_2004_netboot_linux }}"
     - "{{ ubuntu_2004_netboot_initrd }}"

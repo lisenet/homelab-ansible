@@ -3,18 +3,18 @@
   vars:
     - sshd_subsystem: "/usr/lib/openssh/sftp-server"
   block:
-  - name: Debian | Install Packages
-    package:
-      name: "{{ item }}"
-      state: present
-    loop: "{{ packages }}"
+    - name: Debian | Install Packages
+      ansible.builtin.package:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ packages }}"
 
-  - name: Debian | Copy {{ sshd_config_file }} Configuration File
-    template:
-      src: "{{ sshd_config_file }}.j2"
-      dest: "/etc/ssh/{{ sshd_config_file }}"
-      owner: root
-      group: root
-      mode: 0600
-    notify:
-    - restart sshd
+    - name: Debian | Copy Configuration File {{ sshd_config_file }}
+      ansible.builtin.template:
+        src: "{{ sshd_config_file }}.j2"
+        dest: "/etc/ssh/{{ sshd_config_file }}"
+        owner: root
+        group: root
+        mode: "0600"
+      notify:
+        - Restart sshd

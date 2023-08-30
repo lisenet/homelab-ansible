@@ -1,11 +1,12 @@
 ---
 - name: RedHat | Create Static VPN Route
   become: true
-  template:
+  ansible.builtin.template:
     src: "{{ network_template }}"
     dest: "/etc/sysconfig/network-scripts/route-br0"
     owner: root
     group: root
-    mode: 0644
-  ignore_errors: yes
+    mode: "0644"
   when: "'kvm' in group_names"
+  ignore_errors: true
+  register: ignore_errors_register

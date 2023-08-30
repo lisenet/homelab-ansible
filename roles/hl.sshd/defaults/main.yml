@@ -1,6 +1,6 @@
 ---
 ## Default variables for the role. These variables have the lowest
-## priority of any variables available, and can be easily overridden 
+## priority of any variables available, and can be easily overridden
 ## by any other variable, including inventory variables.
 
 packages:
@@ -41,4 +41,3 @@ sshd_pubkey_authentication: "yes"
 sshd_tcp_keep_alive: "yes"
 sshd_use_dns: "no"
 sshd_x11_forwarding: "no"
-

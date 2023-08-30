@@ -1,6 +1,6 @@
 ---
 ## Default variables for the role. These variables have the lowest
-## priority of any variables available, and can be easily overridden 
+## priority of any variables available, and can be easily overridden
 ## by any other variable, including inventory variables.
 
 packages:
@@ -16,4 +16,4 @@ sasl_auth_file: "sasl_passwd"
 smtp_host: "defined in defaults/secure.yml as smtp_host"
 smtp_port: "defined in defaults/secure.yml as smtp_port"
 smtp_username: "defined in defaults/secure.yml as smtp_username"
-smtp_password:  "defined in defaults/secure.yml as smtp_password"
+smtp_password: "defined in defaults/secure.yml as smtp_password"

@@ -1,6 +1,6 @@
 ---
 - name: RedHat | Disable sleep on Laptop Lid Close
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: "{{ systemd_file }}"
     state: present
     regexp: "^HandleLidSwitch="

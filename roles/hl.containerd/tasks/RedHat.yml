@@ -1,29 +1,29 @@
 ---
 - name: RedHat | Configure Sysctl Values
-  sysctl:
+  ansible.posix.sysctl:
     name: "{{ item.name }}"
     value: "{{ item.value }}"
     state: present
   loop: "{{ sysctl_config }}"
 
 - name: RedHat | Install Prerequisites Packages
-  package: 
+  ansible.builtin.package:
     name: "{{ item }}"
     state: present
   loop: "{{ prerequisites_packages }}"
 
 - name: RedHat | Add Docker Repository Sources
-  yum_repository:
+  ansible.builtin.yum_repository:
     file: "docker-ce-stable"
     name: "docker-ce-stable"
     description: "Docker CE Stable - $basearch"
     baseurl: "{{ docker_repository_redhat }}"
-    gpgcheck: yes
+    gpgcheck: true
     gpgkey: "{{ docker_gpg_key_redhat }}"
-    enabled: yes
+    enabled: true
 
 - name: RedHat | Remove Docker Packages
-  package: 
+  ansible.builtin.package:
     name: "{{ item }}"
     state: absent
   loop:
@@ -31,21 +31,21 @@
     - docker-ce-cli
 
 - name: RedHat | Install Packages
-  package: 
+  ansible.builtin.package:
     name: "{{ item }}"
     state: present
-    allow_downgrade: yes
+    allow_downgrade: true
   loop: "{{ packages }}"
 
-- name: RedHat | Create {{ systemd_service }} Directory
-  file:
+- name: RedHat | Create Directory {{ systemd_service }}
+  ansible.builtin.file:
     path: /etc/{{ systemd_service }}
     state: directory
-    mode: 0755
+    mode: "0755"
 
 - name: RedHat | Generate Containerd Config
-  shell: containerd config default > /etc/{{ systemd_service }}/config.toml
-  become: yes
+  ansible.builtin.shell: containerd config default > /etc/{{ systemd_service }}/config.toml
+  become: true
   register: containerd_output # Registers the command output.
   changed_when: containerd_output.rc != 0 # Uses the return code to define when the task has changed.
 
@@ -54,13 +54,13 @@
     path: /etc/{{ systemd_service }}/config.toml
     search_string: "SystemdCgroup = false"
     line: "            SystemdCgroup = true"
-  become: yes
+  become: true
 
 - name: RedHat | Start and Enable Service {{ systemd_service }}
-  service:
+  ansible.builtin.service:
     name: "{{ systemd_service }}"
     state: started
-    enabled: yes
+    enabled: true
 
 - name: RedHat | Systemd Restart {{ systemd_service }}
   ansible.builtin.systemd:

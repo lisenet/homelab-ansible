@@ -1,9 +1,9 @@
 ---
-- name: RedHat | Copy {{ resolv_config_file }} Configuration File
-  template:
+- name: RedHat | Copy Configuration File {{ resolv_config_file }}
+  ansible.builtin.template:
     src: "{{ resolv_config_file }}.j2"
     dest: "/etc/{{ resolv_config_file }}"
     owner: root
     group: root
-    mode: 0644
-    force: yes
+    mode: "0644"
+    force: true

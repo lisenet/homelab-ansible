@@ -1,13 +1,14 @@
 ---
 - name: Linux | Include Secure Vars
-  include_vars:
+  ansible.builtin.include_vars:
     file: ../defaults/secure.yml
 
 - name: Linux | Create Users
   remote_user: root
+  when: ansible_os_family == 'RedHat'
   block:
     - name: Linux | Create Users
-      user:
+      ansible.builtin.user:
         state: present
         name: "{{ item.name }}"
         groups: "{{ sudo_group_redhat }}"
@@ -18,19 +19,19 @@
       no_log: true
 
     - name: Linux | Configure sudo Rules
-      lineinfile:
+      ansible.builtin.lineinfile:
         state: present
         path: "/etc/sudoers"
         regexp: "^%{{ sudo_group_redhat }}"
         line: "%{{ sudo_group_redhat }} ALL=(ALL) NOPASSWD: ALL"
         validate: "/usr/sbin/visudo -cf %s"
-  when: ansible_os_family == 'RedHat'
 
 - name: Linux | Create Users
   remote_user: root
+  when: ansible_os_family == 'Debian'
   block:
     - name: Linux | Create Users
-      user:
+      ansible.builtin.user:
         state: present
         name: "{{ item.name }}"
         groups: "{{ sudo_group_debian }}"
@@ -41,16 +42,15 @@
       no_log: true
 
     - name: Linux | Configure sudo Rules
-      lineinfile:
+      ansible.builtin.lineinfile:
         state: present
         path: "/etc/sudoers"
         regexp: "^%{{ sudo_group_debian }}"
         line: "%{{ sudo_group_debian }} ALL=(ALL) NOPASSWD: ALL"
         validate: "/usr/sbin/visudo -cf %s"
-  when: ansible_os_family == 'Debian'
 
 - name: Linux | Set root User Password
-  user:
+  ansible.builtin.user:
     state: present
     name: root
     password: "{{ user_password | password_hash('sha512') }}"
@@ -58,7 +58,7 @@
 
 - name: Linux | Create Authorised Keys
   remote_user: root
-  authorized_key:
+  ansible.posix.authorized_key:
     state: present
     user: "{{ item.name }}"
     key: "{{ lookup('file', 'files/id_rsa_' + item.name + '.pub') }}"
@@ -66,7 +66,7 @@
 
 - name: Linux | Create Authorised Keys for root
   remote_user: root
-  authorized_key:
+  ansible.posix.authorized_key:
     state: present
     user: root
     key: "{{ lookup('file', 'files/id_rsa_' + 'root' + '.pub') }}"
