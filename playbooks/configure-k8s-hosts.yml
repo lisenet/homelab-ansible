@@ -2,14 +2,14 @@
 - name: Create Users
   hosts: k8s
   remote_user: root
-  gather_facts: yes
+  gather_facts: true
   roles:
     - hl.users
 
 - name: Configure Kubernetes Hosts
   hosts: k8s
   become: true
-  gather_facts: yes
+  gather_facts: true
   roles:
     - hl.sshd
     - hl.resolvconf

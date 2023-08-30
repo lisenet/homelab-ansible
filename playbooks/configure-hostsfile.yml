@@ -2,8 +2,7 @@
 - name: Configure Hosts File
   hosts: admin,pxe,kvm,k8s
   become: true
-  gather_facts: yes
+  gather_facts: true
   roles:
     - hl.hostsfile
 ...
-

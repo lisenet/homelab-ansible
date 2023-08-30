@@ -2,14 +2,14 @@
 - name: Create Users
   hosts: kvm
   remote_user: root
-  gather_facts: yes
+  gather_facts: true
   roles:
     - hl.users
 
 - name: Configure KVM Hosts
   hosts: kvm
   become: true
-  gather_facts: yes
+  gather_facts: true
   roles:
     - hl.sshd
     - hl.resolvconf
@@ -24,15 +24,14 @@
   vars:
     sysctl_values:
       - name: net.ipv4.ip_forward
-        value: 1 
+        value: 1
       - name: vm.swappiness
         value: 1
   tasks:
     - name: Configure Sysctl Values
-      sysctl:
+      ansible.posix.sysctl:
         name: "{{ item.name }}"
         value: "{{ item.value }}"
         state: present
       loop: "{{ sysctl_values }}"
 ...
-
