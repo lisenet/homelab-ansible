@@ -2,14 +2,14 @@
 - name: Create Users
   hosts: openvas
   remote_user: root
-  gather_facts: yes
+  gather_facts: true
   roles:
     - hl.users
 
 - name: Configure OpenVAS Host
   hosts: openvas
   become: true
-  gather_facts: yes
+  gather_facts: true
   roles:
     - hl.sshd
     - hl.resolvconf

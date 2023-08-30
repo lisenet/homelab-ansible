@@ -1,0 +1,203 @@
+---
+- name: RedHat | Check System Memory Requirements
+  ansible.builtin.fail:
+    msg: "The server does not have enough memory, 1536MB required"
+  when: ansible_memtotal_mb < 1536
+
+- name: RedHat | Check System CPU Requirements
+  ansible.builtin.fail:
+    msg: "The server does not have enough CPU, 2 vcpus required"
+  when: ansible_processor_vcpus < 1.5
+
+- name: RedHat | Configure Sysctl Values to Let iptables see Bridged Traffic
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+  loop: "{{ sysctl_config }}"
+
+- name: RedHat | Configure the First Control Plane
+  when: "'k8s_first_control_plane' in group_names"
+  block:
+    - name: RedHat | Initialise the Kubernetes Cluster Using Kubeadm {{ k8s_version }}
+      become: true
+      ansible.builtin.command: kubeadm init --kubernetes-version "{{ k8s_version }}" --pod-network-cidr "{{ k8s_pod_network }}" --service-dns-domain "{{ k8s_service_dns }}" --control-plane-endpoint "{{ k8s_ha_dns }}:{{ k8s_api_port }}" --upload-certs
+      args:
+        creates: "{{ k8s_admin_config }}"
+
+    - name: RedHat | Setup Kubeconfig for User {{ k8s_user }}
+      ansible.builtin.file:
+        path: "{{ k8s_user_home }}/.kube"
+        state: directory
+        owner: "{{ k8s_user }}"
+        group: "{{ k8s_user }}"
+        mode: "0750"
+
+    - name: RedHat | Copy {{ k8s_admin_config }}
+      become: true
+      ansible.builtin.copy:
+        src: "{{ k8s_admin_config }}"
+        dest: "{{ k8s_user_home }}/.kube/config"
+        owner: "{{ k8s_user }}"
+        group: "{{ k8s_user }}"
+        mode: "0640"
+        remote_src: true
+
+    - name: RedHat | Download {{ calico_net_url }}
+      ansible.builtin.get_url:
+        url: "{{ calico_net_url }}"
+        dest: "{{ k8s_user_home }}/{{ calico_net_config }}"
+        owner: "{{ k8s_user }}"
+        group: "{{ k8s_user }}"
+        mode: "0640"
+
+    - name: RedHat | Set CALICO_IPV4POOL_CIDR to {{ k8s_pod_network }}
+      ansible.builtin.replace:
+        path: "{{ k8s_user_home }}/{{ calico_net_config }}"
+        regexp: "192.168.0.0/16"
+        replace: "{{ k8s_pod_network }}"
+
+    - name: RedHat | Install Calico Pod Network {{ calico_net_config }}
+      become: false
+      ansible.builtin.command: kubectl apply -f "{{ k8s_user_home }}/{{ calico_net_config }}"
+      register: kubectl_output # Registers the command output.
+      changed_when: kubectl_output.rc != 0 # Uses the return code to define when the task has changed.
+
+    - name: RedHat | Download {{ dashboard_url }}
+      ansible.builtin.get_url:
+        url: "{{ dashboard_url }}"
+        dest: "{{ k8s_user_home }}/{{ dashboard_config }}"
+        owner: "{{ k8s_user }}"
+        group: "{{ k8s_user }}"
+        mode: "0640"
+
+    - name: RedHat | Install K8s Dashboard {{ dashboard_config }}
+      become: false
+      ansible.builtin.command: kubectl apply -f "{{ k8s_user_home }}/{{ dashboard_config }}"
+      register: kubectl_output # Registers the command output.
+      changed_when: kubectl_output.rc != 0 # Uses the return code to define when the task has changed.
+
+    #
+    # Kubernetes Dashboard permissions
+    #
+    - name: RedHat | Run kubectl create serviceaccount dashboard
+      become: false
+      ansible.builtin.command: kubectl -n default create serviceaccount dashboard
+      register: kubectl_output # Registers the command output.
+      changed_when: kubectl_output.rc != 0 # Uses the return code to define when the task has changed.
+      ignore_errors: true
+
+    - name: RedHat | Run kubectl create clusterrolebinding dashboard-admin
+      become: false
+      ansible.builtin.command: kubectl -n default create clusterrolebinding dashboard-admin --clusterrole=cluster-admin --serviceaccount=default:dashboard
+      register: kubectl_output # Registers the command output.
+      changed_when: kubectl_output.rc != 0 # Uses the return code to define when the task has changed.
+      ignore_errors: true
+
+    - name: RedHat | Create cluster role binding cluster-system-anonymous
+      become: false
+      ansible.builtin.command: kubectl create clusterrolebinding cluster-system-anonymous --clusterrole=cluster-admin --user=system:anonymous
+      register: kubectl_output # Registers the command output.
+      changed_when: kubectl_output.rc != 0 # Uses the return code to define when the task has changed.
+      ignore_errors: true
+
+    - name: RedHat | Test K8s Dashboard URL and Wait for HTTP 200
+      ansible.builtin.uri:
+        url: "{{ k8s_dashboard_url }}"
+        status_code: 200
+        validate_certs: false
+      ignore_errors: true
+      register: result_k8s_dashboard_page
+      retries: 20
+      delay: 6
+      until: result_k8s_dashboard_page is succeeded
+
+    - name: RedHat | Print K8s Dashboard URL
+      ansible.builtin.debug:
+        var: k8s_dashboard_url
+
+    - name: RedHat | Create a New Certificate Key
+      become: true
+      ansible.builtin.command: kubeadm init phase upload-certs --upload-certs
+      register: join_certificate_key
+      changed_when: join_certificate_key.rc != 0 # Uses the return code to define when the task has changed.
+
+    - name: RedHat | Generate Master Join Command
+      become: true
+      ansible.builtin.command: kubeadm token create --print-join-command --certificate-key "{{ join_certificate_key.stdout_lines[2] }}"
+      register: join_master_command
+      changed_when: join_master_command.rc != 0 # Uses the return code to define when the task has changed.
+
+    - name: RedHat | Copy Master Join Command to Local File
+      become: false
+      ansible.builtin.copy:
+        content: "{{ join_master_command.stdout_lines[0] }}"
+        dest: "../{{ k8s_token_file_master }}"
+        mode: "0755"
+      delegate_to: localhost
+
+    - name: RedHat | Generate Node Join Command
+      ansible.builtin.command: kubeadm token create --print-join-command
+      register: join_node_command
+      changed_when: join_node_command.rc != 0 # Uses the return code to define when the task has changed.
+
+    - name: RedHat | Copy Node Join Command to Local File
+      become: false
+      ansible.builtin.copy:
+        content: "{{ join_node_command.stdout_lines[0] }}"
+        dest: "../{{ k8s_token_file_node }}"
+        mode: "0755"
+      delegate_to: localhost
+
+
+- name: RedHat | Configure Other Control Planes
+  when: "'k8s_other_control_plane' in group_names"
+  block:
+    - name: RedHat | Copy File to Server Location {{ k8s_token_file_master }}
+      ansible.builtin.copy:
+        src: "../{{ k8s_token_file_master }}"
+        dest: "{{ k8s_user_home }}/{{ k8s_token_file_master }}.sh"
+        owner: "{{ k8s_user }}"
+        group: "{{ k8s_user }}"
+        mode: "0750"
+
+    - name: RedHat | Join the Control Plane to the Cluster Unless File Exists {{ k8s_kubelet_config }}
+      become: true
+      ansible.builtin.command: sh "{{ k8s_user_home }}/{{ k8s_token_file_master }}.sh"
+      args:
+        creates: "{{ k8s_kubelet_config }}"
+
+    - name: RedHat | Setup Kubeconfig for User {{ k8s_user }}
+      ansible.builtin.file:
+        path: "{{ k8s_user_home }}/.kube"
+        state: directory
+        owner: "{{ k8s_user }}"
+        group: "{{ k8s_user }}"
+        mode: "0750"
+
+    - name: RedHat | Copy {{ k8s_admin_config }}
+      become: true
+      ansible.builtin.copy:
+        src: "{{ k8s_admin_config }}"
+        dest: "{{ k8s_user_home }}/.kube/config"
+        owner: "{{ k8s_user }}"
+        group: "{{ k8s_user }}"
+        mode: "0640"
+        remote_src: true
+
+- name: RedHat | Configure Worker Nodes
+  when: "'k8s_node' in group_names"
+  block:
+    - name: RedHat | Copy Token File to Server Location {{ k8s_token_file_node }}
+      ansible.builtin.copy:
+        src: "../{{ k8s_token_file_node }}"
+        dest: "{{ k8s_user_home }}/{{ k8s_token_file_node }}.sh"
+        owner: "{{ k8s_user }}"
+        group: "{{ k8s_user }}"
+        mode: "0750"
+
+    - name: RedHat | Join the Worker Node to the Cluster Unless File Exists {{ k8s_kubelet_config }}
+      become: true
+      ansible.builtin.command: sh "{{ k8s_user_home }}/{{ k8s_token_file_node }}.sh"
+      args:
+        creates: "{{ k8s_kubelet_config }}"

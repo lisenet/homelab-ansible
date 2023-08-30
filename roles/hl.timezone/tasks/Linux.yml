@@ -1,0 +1,4 @@
+---
+- name: Linux | Set Timezone to {{ timezone_value }}
+  community.general.timezone:
+    name: "{{ timezone_value }}"

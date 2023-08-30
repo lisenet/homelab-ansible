@@ -1,0 +1,45 @@
+---
+- name: RedHat | Install Packages
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ packages }}"
+
+- name: RedHat | Start and Enable Service {{ systemd_service }}
+  ansible.builtin.service:
+    name: "{{ systemd_service }}"
+    state: started
+    enabled: true
+
+- name: RedHat | Destroy (stop) Default Network
+  ansible.builtin.command: virsh net-destroy default
+  ignore_errors: true
+  register: virsh_output # Registers the command output.
+  changed_when: virsh_output.rc != 0 # Uses the return code to define when the task has changed.
+  notify:
+    - Restart libvirtd
+
+- name: RedHat | Undefine (permanently remove) Default Network
+  ansible.builtin.command: virsh net-undefine default
+  args:
+    removes: "/var/lib/libvirt/dnsmasq/default.conf"
+  ignore_errors: true
+  register: ignore_errors_register
+  notify:
+    - Restart libvirtd
+
+- name: RedHat | Deploy Network Example Files
+  ansible.builtin.template:
+    src: "{{ item }}"
+    dest: "/etc/sysconfig/network-scripts/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+    force: true
+  loop:
+    - "{{ bridge_net_template }}"
+    - "{{ ethx_net_template }}"
+
+- name: RedHat | Print Message
+  ansible.builtin.debug:
+    msg: "Bridge file /etc/sysconfig/network-scripts/{{ bridge_net_template }} has been deployed but no changes to system networking have been made."

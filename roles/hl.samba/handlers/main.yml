@@ -1,6 +1,5 @@
 ---
-- name: restart smb
-  service: 
+- name: Restart smb
+  ansible.builtin.service:
     name: smb
     state: restarted
-

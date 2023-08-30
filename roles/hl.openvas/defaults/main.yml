@@ -1,3 +1,4 @@
+---
 packages_to_install:
   - epel-release
   - firewalld

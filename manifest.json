@@ -1,6 +1,6 @@
 {
     "name": "homelab-ansible",
-    "version": "2.11.12",
+    "version": "8.2.0",
     "author": "Lisenet",
     "homepage_url": "https://github.com/lisenet/homelab-ansible"
 }

@@ -1,0 +1,54 @@
+---
+- name: RedHat | Include Secure Vars
+  ansible.builtin.include_vars:
+    file: ../defaults/secure.yml
+
+- name: RedHat | Install Packages
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ packages }}"
+
+- name: RedHat | Configure Sysctl Values
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+  loop: "{{ sysctl_config }}"
+
+- name: RedHat | Allow VRRP Traffic to Pass Between the Keepalived Nodes
+  ansible.posix.firewalld:
+    immediate: true
+    permanent: true
+    state: enabled
+    rich_rule: "rule protocol value=vrrp accept"
+
+- name: RedHat | Configure Master Keepalived Server
+  ansible.builtin.template:
+    src: "{{ keepalived_config_file }}.master.j2"
+    dest: "/etc/keepalived/{{ keepalived_config_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+    force: true
+  when: "'dns1' in group_names"
+  notify:
+    - Restart keepalived
+
+- name: RedHat | Configure Slave Keepalived Server
+  ansible.builtin.template:
+    src: "{{ keepalived_config_file }}.slave.j2"
+    dest: "/etc/keepalived/{{ keepalived_config_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+    force: true
+  when: "'dns2' in group_names"
+  notify:
+    - Restart keepalived
+
+- name: RedHat | Start and Enable Service {{ systemd_service }}
+  ansible.builtin.service:
+    name: "{{ systemd_service }}"
+    state: started
+    enabled: true

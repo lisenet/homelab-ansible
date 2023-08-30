@@ -1,3 +1,4 @@
+---
 # Override default setting for homelab environment
 sshd_password_authentication: "yes"
 sshd_permit_root_login: "yes"

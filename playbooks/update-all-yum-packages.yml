@@ -2,10 +2,10 @@
 - name: Upgrade Packages
   hosts: all
   become: true
-  gather_facts: yes
+  gather_facts: true
   tasks:
     - name: RedHat | Upgrade all packages, excluding kernel
-      yum:
+      ansible.builtin.yum:
         name: '*'
         state: latest
         exclude: 'kernel*'

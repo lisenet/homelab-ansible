@@ -1,0 +1,59 @@
+---
+- name: RedHat | Install Packages
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ packages }}"
+
+- name: RedHat | Enable Service in Firewalld {{ firewall_port }}
+  ansible.posix.firewalld:
+    immediate: true
+    service: "{{ firewall_port }}"
+    permanent: true
+    state: enabled
+
+- name: RedHat | Start and Enable Services
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+  loop: "{{ systemd_services }}"
+
+- name: RedHat | Check Samba Ports
+  ansible.builtin.wait_for:
+    host: "{{ ansible_fqdn }}"
+    port: "{{ item }}"
+    timeout: 2
+  loop:
+    - "139"
+    - "445"
+  ignore_errors: true
+  register: ignore_errors_register
+
+- name: RedHat | Set Samba Server to Share All Files and Directories rw (SELinux)
+  ansible.posix.seboolean:
+    name: "{{ item }}"
+    state: true
+    persistent: true
+  loop: "{{ samba_selinux_booleans }}"
+
+- name: RedHat | Create Public Samba Share Directory {{ samba_share_directory }}
+  ansible.builtin.file:
+    path: "{{ samba_share_directory }}"
+    state: directory
+    owner: "{{ samba_guest_account }}"
+    group: "{{ samba_guest_account }}"
+    setype: "public_content_rw_t"
+    mode: "0777"
+
+- name: RedHat | Create Samba Configuration File {{ samba_config_file }}
+  ansible.builtin.template:
+    src: "{{ samba_config_file }}.j2"
+    dest: "/etc/samba/{{ samba_config_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+    force: true
+    validate: "testparm -s %s"
+  notify:
+    - Restart smb

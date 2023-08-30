@@ -1,0 +1,6 @@
+---
+- name: RedHat | Install Packages
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ packages }}"

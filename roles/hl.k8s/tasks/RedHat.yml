@@ -1,0 +1,146 @@
+---
+- name: RedHat | Disable SWAP because K8s up to v1.22 does work with swap enabled (1/2)
+  ansible.builtin.command: swapoff -a
+  when: ansible_swaptotal_mb > 0
+  register: swap_off
+  changed_when: swap_off.rc != 0
+
+- name: RedHat | Remove SWAP from fstab because K8s up to v1.22 does not work with swap enabled (2/2)
+  ansible.posix.mount:
+    name: "{{ item }}"
+    fstype: swap
+    state: absent
+  with_items:
+    - swap
+    - none
+
+- name: RedHat | Add the br_netfilter module
+  community.general.modprobe:
+    name: br_netfilter
+    state: present
+
+- name: RedHat | Configure Sysctl Values
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+  loop: "{{ sysctl_config }}"
+
+- name: RedHat | Remove firewalld/nftables from RHEL 8 and 9
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: absent
+  loop: "{{ packages_to_remove }}"
+  when: (ansible_distribution_major_version == "8") or (ansible_distribution_major_version == "9")
+
+- name: RedHat | Add Kubernetes Repository Sources
+  ansible.builtin.yum_repository:
+    file: "kubernetes"
+    name: "kubernetes"
+    description: "kubernetes"
+    baseurl: "{{ k8s_repository_redhat }}"
+    gpgcheck: true
+    gpgkey: "{{ k8s_gpg_key_redhat }}"
+    enabled: true
+    skip_if_unavailable: true
+
+- name: RedHat | Install Dependencies
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+    allow_downgrade: true
+  loop: "{{ dependencies }}"
+
+- name: RedHat | Install Packages
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+    allow_downgrade: true
+  loop: "{{ packages }}"
+
+- name: RedHat | Print Message About cgroupDriver
+  ansible.builtin.debug:
+    msg: "In K8s v1.22, if the user is not setting the cgroupDriver field under KubeletConfiguration, kubeadm will default it to systemd."
+
+- name: RedHat | Configure Kubelet Eviction Thresholds
+  ansible.builtin.lineinfile:
+    path: "{{ kubelet_file }}"
+    state: present
+    regexp: "^KUBELET_EXTRA_ARGS="
+    line: "KUBELET_EXTRA_ARGS=--eviction-hard=memory.available<256Mi,nodefs.available<1Gi,imagefs.available<1Gi"
+
+- name: RedHat | Start and Enable Service {{ systemd_service }}
+  ansible.builtin.service:
+    name: "{{ systemd_service }}"
+    state: started
+    enabled: true
+
+- name: RedHat | Deploy {{ modules_config_file }}
+  ansible.builtin.template:
+    src: "files/{{ modules_config_file }}"
+    dest: "{{ modules_directory }}/{{ modules_config_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+    force: true
+
+- name: RedHat | Add the ip_tables module
+  community.general.modprobe:
+    name: ip_tables
+    state: present
+
+#
+# Legacy configuration
+# Configure firewall on RHEL 7
+#
+- name: RedHat | Configure firewalld on RHEL 7
+  when: ansible_distribution_major_version == "7"
+  block:
+    - name: RedHat | RHEL7 - Open K8s firewall ports for master
+      ansible.posix.firewalld:
+        immediate: true
+        permanent: true
+        state: enabled
+        port: "{{ item }}/tcp"
+      loop: "{{ k8s_firewall_ports_master }}"
+      when: "'k8s_master' in group_names"
+
+    - name: RedHat | RHEL7 - Open K8s firewall ports for node
+      ansible.posix.firewalld:
+        immediate: true
+        permanent: true
+        state: enabled
+        port: "{{ item }}/tcp"
+      loop: "{{ k8s_firewall_ports_node }}"
+      when: "'k8s_node' in group_names"
+
+    - name: RedHat | RHEL7 - Open K8s firewall ports for CNI
+      ansible.posix.firewalld:
+        immediate: true
+        permanent: true
+        state: enabled
+        port: "{{ item }}/tcp"
+      loop: "{{ k8s_firewall_ports_cni }}"
+
+    - name: RedHat | RHEL7 - Open K8s firewall ports for MetalLB - TCP
+      ansible.posix.firewalld:
+        immediate: true
+        permanent: true
+        state: enabled
+        port: "{{ item }}/tcp"
+      loop: "{{ k8s_firewall_ports_metallb }}"
+
+    - name: RedHat | RHEL7 - Open K8s firewall ports for MetalLB - UDP
+      ansible.posix.firewalld:
+        immediate: true
+        permanent: true
+        state: enabled
+        port: "{{ item }}/udp"
+      loop: "{{ k8s_firewall_ports_metallb }}"
+
+    - name: RedHat | RHEL7 - Enable Firewalld Masquerade
+      ansible.posix.firewalld:
+        immediate: true
+        permanent: true
+        state: enabled
+        masquerade: true

@@ -2,14 +2,14 @@
 - name: Create Users
   hosts: pxe
   remote_user: root
-  gather_facts: yes
+  gather_facts: true
   roles:
     - hl.users
 
 - name: Configure PXE Boot Hosts
   hosts: pxe
   become: true
-  gather_facts: yes
+  gather_facts: true
   roles:
     - hl.pxe-boot-server
     - hl.sshd

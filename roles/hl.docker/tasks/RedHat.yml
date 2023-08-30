@@ -1,0 +1,51 @@
+---
+- name: RedHat | Configure Sysctl Values
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+  loop: "{{ sysctl_config }}"
+
+- name: RedHat | Install Prerequisites Packages
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ prerequisites_packages }}"
+
+- name: RedHat | Add Docker Repository Sources
+  ansible.builtin.yum_repository:
+    file: "docker-ce-stable"
+    name: "docker-ce-stable"
+    description: "Docker CE Stable - $basearch"
+    baseurl: "{{ docker_repository_redhat }}"
+    gpgcheck: true
+    gpgkey: "{{ docker_gpg_key_redhat }}"
+    enabled: true
+
+- name: RedHat | Install Packages
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+    allow_downgrade: true
+  loop: "{{ packages }}"
+
+- name: RedHat | Start and Enable Service {{ systemd_service }}
+  ansible.builtin.service:
+    name: "{{ systemd_service }}"
+    state: started
+    enabled: true
+
+- name: RedHat | Copy File to Use systemd as cGroupDriver {{ docker_daemon_config_file }}
+  ansible.builtin.template:
+    src: "files/{{ docker_daemon_config_file }}"
+    dest: "/etc/docker/{{ docker_daemon_config_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Restart docker
+
+- name: RedHat | Systemd Restart {{ systemd_service }}
+  ansible.builtin.systemd:
+    name: "{{ systemd_service }}"
+    state: restarted

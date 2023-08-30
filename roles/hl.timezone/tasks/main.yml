@@ -1,3 +1,4 @@
 ---
-- include: setup-Linux.yml
+- name: Include playbook
+  ansible.builtin.include: Linux.yml
   when: ansible_system == 'Linux'

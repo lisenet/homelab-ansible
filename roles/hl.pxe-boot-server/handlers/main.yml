@@ -1,15 +1,15 @@
 ---
-- name: vsftpd
-  service:
+- name: Restart vsftpd
+  ansible.builtin.service:
     name: vsftpd
     state: restarted
 
-- name: nfs-server
-  service:
+- name: Restart nfs-server
+  ansible.builtin.service:
     name: nfs-server
     state: restarted
 
-- name: nginx
-  service:
+- name: Restart nginx
+  ansible.builtin.service:
     name: nginx
     state: restarted

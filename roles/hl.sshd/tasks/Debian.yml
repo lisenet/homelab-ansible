@@ -1,0 +1,20 @@
+---
+- name: Debian | Configure OpenSSH Server
+  vars:
+    - sshd_subsystem: "/usr/lib/openssh/sftp-server"
+  block:
+    - name: Debian | Install Packages
+      ansible.builtin.package:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ packages }}"
+
+    - name: Debian | Copy Configuration File {{ sshd_config_file }}
+      ansible.builtin.template:
+        src: "{{ sshd_config_file }}.j2"
+        dest: "/etc/ssh/{{ sshd_config_file }}"
+        owner: root
+        group: root
+        mode: "0600"
+      notify:
+        - Restart sshd

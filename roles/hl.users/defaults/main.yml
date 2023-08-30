@@ -1,3 +1,4 @@
+---
 users:
   - name: ansible
     password: "defined in secure.yml as user_password"

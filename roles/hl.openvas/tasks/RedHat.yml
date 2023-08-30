@@ -1,0 +1,91 @@
+---
+- name: RedHat | OpenVAS requires SELinux to be disabled
+  ansible.builtin.lineinfile:
+    path: /etc/selinux/config
+    regexp: "^SELINUX="
+    line: SELINUX=disabled
+  become: true
+  notify:
+    - Reboot system # Reboot the machine after disabling SELinux
+
+- name: RedHat | Configure Sysctl Values
+  ansible.posix.sysctl:
+    name: vm.overcommit_memory
+    value: "1"
+    state: present
+  become: true
+
+# PowerTools was a carryover from CentOS, which is still the equivalent of CRB in RHEL.
+# CRB will be the repository name going forward in Rocky Linux and other derivatives.
+- name: RedHat | Setup CRB Repository on RHEL9
+  ansible.builtin.template:
+    src: "files/crb-el9.repo"
+    dest: "/etc/yum.repos.d/crb-el9.repo"
+    owner: 0
+    group: 0
+    mode: "0644"
+  become: true
+  when: ansible_distribution_major_version == "9"
+
+- name: RedHat | Setup PowerTools Repository on RHEL8
+  ansible.builtin.template:
+    src: "files/Rocky-PowerTools.repo"
+    dest: "/etc/yum.repos.d/Rocky-PowerTools.repo"
+    owner: 0
+    group: 0
+    mode: "0644"
+  become: true
+  when: ansible_distribution_major_version == "8"
+
+- name: RedHat | Import Atomic GPG Keys
+  ansible.builtin.rpm_key:
+    state: present
+    key: "{{ item }}"
+  become: true
+  loop:
+    - "https://www.atomicorp.com/RPM-GPG-KEY.art.txt"
+    - "https://www.atomicorp.com/RPM-GPG-KEY.atomicorp.txt"
+
+- name: RedHat | Install Atomic rpm From a Remote Repo on Rocky 9
+  ansible.builtin.yum:
+    name: "https://updates.atomicorp.com/channels/atomic/rocky/{{ ansible_distribution_major_version }}/x86_64/RPMS/atomic-release-{{ atomic_release }}.el{{ ansible_distribution_major_version }}.art.noarch.rpm"
+    state: present
+  become: true
+  when: ansible_distribution_major_version == "9"
+
+- name: RedHat | Install Atomic rpm From a Remote Repo on Rocky 8
+  ansible.builtin.yum:
+    name: "https://updates.atomicorp.com/channels/atomic/centos/{{ ansible_distribution_major_version }}/x86_64/RPMS/atomic-release-{{ atomic_release }}.el{{ ansible_distribution_major_version }}.art.noarch.rpm"
+    state: present
+  become: true
+  when: ansible_distribution_major_version == "8"
+
+- name: RedHat | Install Packages
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  become: true
+  loop: "{{ packages_to_install }}"
+
+- name: RedHat | Enable and start Firewalld
+  ansible.builtin.service:
+    name: firewalld
+    state: started
+    enabled: true
+  become: true
+
+- name: RedHat | Enable Port in Firewalld {{ openvas_port }}
+  ansible.posix.firewalld:
+    immediate: true
+    port: "{{ openvas_port }}/{{ openvas_protocol }}"
+    permanent: true
+    state: enabled
+  become: true
+
+- name: RedHat | Print command to setup OpenVAS (this would take two hours, do not run using ansible!)
+  ansible.builtin.debug:
+    msg: gvm-setup
+
+- name: RedHat | Print command to reset gvm admin password
+  ansible.builtin.debug:
+    msg: runuser -u gvm -g gvm -- gvmd --user=admin --new-password=changeme

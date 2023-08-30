@@ -2,14 +2,14 @@
 - name: Create Users
   hosts: admin
   remote_user: root
-  gather_facts: yes
+  gather_facts: true
   roles:
     - hl.users
 
 - name: Configure Admin Hosts
   hosts: admin
   become: true
-  gather_facts: yes
+  gather_facts: true
   roles:
     - hl.sshd
     - hl.resolvconf
@@ -25,4 +25,3 @@
     - hl.postfix
     - hl.chrony
 ...
-

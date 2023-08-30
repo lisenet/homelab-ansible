@@ -6,7 +6,7 @@
     - name: newrelic.newrelic-infra
       vars:
         nrinfragent_state: latest
-        nrinfragent_service_enabled: yes
+        nrinfragent_service_enabled: true
         nrinfragent_service_state: started
         nrinfragent_config:
           license_key: "{{ newrelic_key }}"
@@ -20,8 +20,7 @@
   tasks:
     - name: Linux | Remove Integrations from Monitoring
       # This counts towards infrastructure integrations data ingestion
-      file:
+      ansible.builtin.file:
         path: "/etc/newrelic-infra/integrations.d/"
         state: absent
 ...
-

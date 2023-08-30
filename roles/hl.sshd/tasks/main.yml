@@ -1,6 +1,8 @@
 ---
-- include: setup-RedHat.yml
-  when: (ansible_os_family == 'RedHat') or (ansible_os_family == 'Rocky')
+- name: Include playbook RedHat
+  ansible.builtin.include: RedHat.yml
+  when: ansible_os_family == 'RedHat'
 
-- include: setup-Debian.yml
+- name: Include playbook Debian
+  ansible.builtin.include: Debian.yml
   when: ansible_os_family == 'Debian'

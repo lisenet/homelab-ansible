@@ -1,5 +1,5 @@
 ---
-- name: restart keepalived
-  service: 
+- name: Restart keepalived
+  ansible.builtin.service:
     name: "{{ systemd_service }}"
     state: restarted

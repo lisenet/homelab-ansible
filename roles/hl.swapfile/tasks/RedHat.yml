@@ -1,0 +1,39 @@
+---
+- name: RedHat | Create Swap File {{ swap_file }}
+  ansible.builtin.command: "dd if=/dev/zero of={{ swap_file }} bs=1M count={{ swap_size }}"
+  args:
+    creates: "{{ swap_file }}"
+  notify:
+    - Make swap filesystem
+
+- name: RedHat | Flush Handlers
+  ansible.builtin.meta: flush_handlers
+
+- name: RedHat | Set Swap File Permissions
+  ansible.builtin.file:
+    path: "{{ swap_file }}"
+    state: file
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: RedHat | Add Swap to /etc/fstab
+  ansible.posix.mount:
+    src: "{{ swap_file }}"
+    name: "none"
+    fstype: "swap"
+    opts: "sw,nofail"
+    dump: "0"
+    passno: "0"
+    state: "present"
+
+- name: RedHat | Run swapon -a
+  ansible.builtin.command: swapon -a
+  register: swapon_output # Registers the command output.
+  changed_when: swapon_output.rc != 0 # Uses the return code to define when the task has changed.
+
+- name: RedHat | Set Sysctl vm.swappiness to {{ sysctl_swappiness }}
+  ansible.posix.sysctl:
+    name: vm.swappiness
+    value: "{{ sysctl_swappiness }}"
+    state: present

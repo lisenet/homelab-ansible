@@ -1,0 +1,40 @@
+---
+- name: RedHat | Configure OpenSSH Server
+  vars:
+    - sshd_subsystem: "/usr/libexec/openssh/sftp-server"
+  block:
+    - name: RedHat | Install Packages
+      ansible.builtin.package:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ packages }}"
+
+    - name: RedHat | Disable system-wide crypto policy usage for SSH
+      ansible.builtin.lineinfile:
+        path: /etc/sysconfig/sshd
+        regexp: "^# CRYPTO_POLICY="
+        line: CRYPTO_POLICY=
+      when: ansible_distribution_major_version == "8"
+
+    - name: RedHat | Copy Configuration File {{ sshd_config_file }}
+      ansible.builtin.template:
+        src: "{{ sshd_config_file }}.j2"
+        dest: "/etc/ssh/{{ sshd_config_file }}"
+        owner: root
+        group: root
+        mode: "0600"
+      notify:
+        - Restart sshd
+
+    - name: RedHat | Check Services
+      ansible.builtin.service_facts:
+
+    - name: RedHat | Enable Service in Firewalld {{ firewall_port }}
+      ansible.posix.firewalld:
+        immediate: true
+        service: "{{ firewall_port }}"
+        permanent: true
+        state: enabled
+      when: "'firewalld.service' in ansible_facts.services"
+      ignore_errors: true
+      register: ignore_errors_register

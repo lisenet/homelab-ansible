@@ -2,17 +2,16 @@
 - name: Create Users
   hosts: raspberrypi
   remote_user: root
-  gather_facts: yes
+  gather_facts: true
   roles:
     - hl.users
 
 - name: Configure RaspberryPi Hosts
   hosts: raspberrypi
-  become: yes
-  gather_facts: yes
+  become: true
+  gather_facts: true
   roles:
     - hl.sshd
     - hl.timezone
     - hl.pihole-exporter
 ...
-

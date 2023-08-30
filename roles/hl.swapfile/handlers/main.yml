@@ -1,0 +1,5 @@
+---
+- name: Make swap filesystem
+  ansible.builtin.command: mkswap "{{ swap_file }}"
+  register: mkswap_output # Registers the command output.
+  changed_when: mkswap_output.rc != 0 # Uses the return code to define when the task has changed.
