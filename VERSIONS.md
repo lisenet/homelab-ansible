@@ -6,6 +6,5 @@ Software versions used by this repository:
 | -------------- | --------- |
 | ansible        | 8.2.0     |
 | ansible-core   | 2.15.3    |
-| ansible-lint   | 6.17.2    |
+| ansible-lint   | 6.18.0    |
 | python         | 3.9       |
-
