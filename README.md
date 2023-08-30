@@ -2,7 +2,9 @@
 
 Ansible infrastructure for my homelab.
 
-[![version](https://img.shields.io/github/manifest-json/v/lisenet/homelab-ansible?label=Ansible)](https://github.com/lisenet/homelab-ansible/blob/master/VERSIONS.md)
+[![version](https://img.shields.io/github/manifest-json/v/lisenet/homelab-ansible?label=ansible)](https://github.com/lisenet/homelab-ansible/blob/master/VERSIONS.md)
+[![python](https://img.shields.io/badge/Python-3.9-blue)](https://github.com/lisenet/homelab-ansible/blob/master/VERSIONS.md)
+[![lint](https://img.shields.io/badge/ansible-lint-6.17.2-blue)](https://github.com/lisenet/homelab-ansible/blob/master/VERSIONS.md)
 [![license](https://img.shields.io/github/license/lisenet/homelab-ansible)](https://github.com/lisenet/homelab-ansible/blob/master/LICENSE)
 [![last commit](https://img.shields.io/github/last-commit/lisenet/homelab-ansible)](https://github.com/lisenet/homelab-ansible/commits/master)
 [![commit activity](https://img.shields.io/github/commit-activity/y/lisenet/homelab-ansible)](https://github.com/lisenet/homelab-ansible/commits/master)
@@ -11,60 +13,39 @@ Ansible infrastructure for my homelab.
 
 ## Install Ansible
 
-Install `python3` packages. Choose `apt` for Debian based systems, or `yum` for Red Hat based systems.
+This repository uses Ansible version that requires Python 3.9.
+
+Install required packages.
+
+Use `apt` for Debian based systems:
 
 ```bash
-sudo apt install -y python3 python3-pip
-sudo yum install -y python3 python3-pip
+sudo apt install -y python3.9 python3-pip
 ```
 
-Use `pip` to install the Ansible package of your choice for the current user:
+Use `yum` for Red Hat based systems:
 
 ```bash
-python3 -m pip install --upgrade --user pip
-TMPDIR="${HOME}/tmp" python3 -m pip install --user ansible==4.10
+sudo yum install -y python3.9 python3-pip
 ```
 
-Verify:
+Use `pip` in your selected Python environment to install the Ansible package of your choice for the current user:
 
 ```bash
-python3 -m pip show ansible-core ansible
-Name: ansible-core
-Version: 2.11.12
-Summary: Radically simple IT automation
-Home-page: https://ansible.com/
-Author: Ansible, Inc.
-Author-email: info@ansible.com
-License: GPLv3+
-Requires: cryptography, jinja2, packaging, PyYAML, resolvelib
-Required-by: ansible
----
-Name: ansible
-Version: 4.10.0
-Summary: Radically simple IT automation
-Home-page: https://ansible.com/
-Author: Ansible, Inc.
-Author-email: info@ansible.com
-License: GPLv3+
-Requires: ansible-core
-Required-by:
+TMPDIR="${HOME}/tmp" python3.9 -m pip install --user ansible==8.2.0
 ```
 
-The following collections are required to be installed:
-
-```bash
-ansible-galaxy collection install ansible.posix -p ./collections
-ansible-galaxy collection install community.general -p ./collections
-```
-
-### Ansible-lint and pre-commit
+### Optiuonal: Ansible-lint and pre-commit
 
 Ansible Lint is a command-line tool for linting playbooks, roles and collection.
+
+Note that `ansible-core` 2.12+ was made as a direct dependency with Ansible Lint release v6.0.0. This means that when you install the `ansible-lint` package >=v6.0.0, it also installs `ansible-core` and `ansible` packages as dependencies.
+Package `yamllint` is installed as a dependency as well.
 
 Install packages:
 
 ```bash
-pip3 install ansible-lint yamllint pre-commit
+python3.9 -m pip install --user ansible-lint==6.18.0
 ```
 
 To use Ansible-lint with pre-commit, use the following command to create a pre-commit configuration file:
@@ -72,14 +53,20 @@ To use Ansible-lint with pre-commit, use the following command to create a pre-c
 ```bash
 cat <<EOF > .pre-commit-config.yaml
 - repo: https://github.com/ansible/ansible-lint
-  rev: v5.4.0
+  rev: v6.18.0
   hooks:
     - id: ansible-lint
       files: \.(yaml|yml)$
 EOF
 ```
 
-Enable pre-commit for your git repository:
+Install `pre-commit` package:
+
+```bash
+python3.9 -m pip install --user pre-commit==3.3.3
+```
+
+Enable pre-commit for the git repository:
 
 ```bash
 pre-commit install
