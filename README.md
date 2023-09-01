@@ -3,7 +3,7 @@
 Ansible infrastructure for my homelab.
 
 [![version](https://img.shields.io/github/manifest-json/v/lisenet/homelab-ansible?label=ansible)](https://github.com/lisenet/homelab-ansible/blob/master/VERSIONS.md)
-[![python](https://img.shields.io/badge/Python-3.9-blue)](https://github.com/lisenet/homelab-ansible/blob/master/VERSIONS.md)
+[![python](https://img.shields.io/badge/python-3.9-blue)](https://github.com/lisenet/homelab-ansible/blob/master/VERSIONS.md)
 [![license](https://img.shields.io/github/license/lisenet/homelab-ansible)](https://github.com/lisenet/homelab-ansible/blob/master/LICENSE)
 [![last commit](https://img.shields.io/github/last-commit/lisenet/homelab-ansible)](https://github.com/lisenet/homelab-ansible/commits/master)
 [![commit activity](https://img.shields.io/github/commit-activity/y/lisenet/homelab-ansible)](https://github.com/lisenet/homelab-ansible/commits/master)
@@ -34,7 +34,7 @@ Use `pip` in your selected Python environment to install the Ansible package of 
 TMPDIR="${HOME}/tmp" python3.9 -m pip install --user ansible==8.2.0
 ```
 
-### Optiuonal: Ansible-lint and pre-commit
+### Optional: Ansible-lint and pre-commit
 
 Ansible Lint is a command-line tool for linting playbooks, roles and collection.
 
@@ -155,3 +155,12 @@ Note that user password for PXE boot Kickstart files is set to `packer`.
 ## Homelab Network Diagram
 
 ![Homelab Network Diagram](./images/kubernetes-homelab-diagram.png)
+
+## Support
+
+Please open a [new issue](https://github.com/lisenet/homelab-ansible/issues/new) for bugs or feature requests.
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
+
