@@ -3,7 +3,9 @@
 ## priority of any variables available, and can be easily overridden
 ## by any other variable, including inventory variables.
 
-k8s_version: "1.26.4"
+k8s_version: "1.28.1"
+k8s_repository_redhat: "https://pkgs.k8s.io/core:/stable:/v1.28/rpm/"
+k8s_gpg_key_redhat: "https://pkgs.k8s.io/core:/stable:/v1.28/rpm/repodata/repomd.xml.key"
 
 # nfs-utils is required to configure NFS based Persistent Volumes
 packages:
@@ -27,8 +29,6 @@ modules_config_file: "modules.conf"
 modules_directory: "/etc/modules-load.d"
 
 kubelet_file: "/etc/sysconfig/kubelet"
-k8s_repository_redhat: "https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64"
-k8s_gpg_key_redhat: "https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg"
 
 sysctl_config:
   - name: net.ipv4.ip_forward
