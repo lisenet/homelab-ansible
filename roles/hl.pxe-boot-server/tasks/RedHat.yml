@@ -57,7 +57,6 @@
   loop:
     - "{{ networkboot_directory_rocky9 }}"
     - "{{ networkboot_directory_rocky8 }}"
-    - "{{ networkboot_directory_centos7 }}"
 
 - name: RedHat | Copy Kickstart Files to FTP Directory
   ansible.builtin.template:
@@ -72,7 +71,6 @@
     - "{{ kickstart_file_rocky9_packer }}"
     - "{{ kickstart_file_rocky8_host }}"
     - "{{ kickstart_file_rocky8_packer }}"
-    - "{{ kickstart_file_centos7_packer }}"
 
 #
 # Configure TFTP server
@@ -100,7 +98,6 @@
   loop:
     - "{{ networkboot_directory_rocky9 }}"
     - "{{ networkboot_directory_rocky8 }}"
-    - "{{ networkboot_directory_centos7 }}"
     - "{{ networkboot_directory_ubuntu1804server }}"
     - "{{ networkboot_directory_ubuntu1804desktop }}"
     - "{{ networkboot_directory_ubuntu2004server }}"
