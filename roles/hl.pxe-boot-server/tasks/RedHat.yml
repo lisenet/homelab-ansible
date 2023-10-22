@@ -111,6 +111,12 @@
     mode: "0644"
     directory_mode: "0755"
 
+- name: RedHat | Set Permission on {{ tftp_directory }}
+  ansible.builtin.file:
+    path: "{{ tftp_directory }}"
+    state: directory
+    mode: "0755"
+
 #
 # Configure NFS server
 # Ubuntu 18.04 LTS Desktop uses casper to boot into Live DVD mode.
