@@ -1,0 +1,14 @@
+[dell-system-update_independent]
+name=dell-system-update_independent
+baseurl=http://linux.dell.com/repo/hardware/dsu/os_independent/
+gpgcheck=1
+gpgkey=https://linux.dell.com/repo/pgp_pubkeys/0x756ba70b1019ced6.asc https://linux.dell.com/repo/pgp_pubkeys/0x1285491434D8786F.asc https://linux.dell.com/repo/pgp_pubkeys/0xca77951d23b66a9d.asc https://linux.dell.com/repo/pgp_pubkeys/0x3CA66B4946770C59.asc 
+enabled=1
+exclude=dell-system-update*.i386
+
+[dell-system-update_dependent]
+name=dell-system-update_dependent
+mirrorlist=http://linux.dell.com/repo/hardware/dsu/mirrors.cgi?osname=el$releasever&basearch=$basearch&native=1
+gpgcheck=1
+gpgkey=https://linux.dell.com/repo/pgp_pubkeys/0x756ba70b1019ced6.asc https://linux.dell.com/repo/pgp_pubkeys/0x1285491434D8786F.asc https://linux.dell.com/repo/pgp_pubkeys/0xca77951d23b66a9d.asc https://linux.dell.com/repo/pgp_pubkeys/0x3CA66B4946770C59.asc 
+enabled=1

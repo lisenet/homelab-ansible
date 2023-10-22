@@ -1,0 +1,16 @@
+---
+## Default variables for the role. These variables have the lowest
+## priority of any variables available, and can be easily overridden
+## by any other variable, including inventory variables.
+
+packages:
+  - tar
+
+prometheus_user: "prometheus"
+
+# This exporter wraps the "omreport" command from Dell OMSA.
+# If you can't run omreport on your system, the exporter won't export any metrics.
+dellhw_exporter_port: "9137"
+dellhw_exporter_url: "https://github.com/galexrt/dellhw_exporter/releases/download/v1.12.1/dellhw_exporter-1.12.1.linux-amd64.tar.gz"
+dellhw_exporter_binary: "dellhw_exporter"
+dellhw_exporter_systemd_service: "dellhw_exporter.service"

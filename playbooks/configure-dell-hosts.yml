@@ -1,0 +1,9 @@
+---
+- name: Configure Dell Hosts
+  hosts: dell
+  become: true
+  gather_facts: true
+  roles:
+    - hl.dell-omsa
+    - hl.dellhw-exporter
+...

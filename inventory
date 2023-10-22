@@ -15,6 +15,9 @@
 10.11.1.22
 10.11.1.23
 
+[dell:children]
+kvm
+
 [admin:children]
 dns1
 dns2
