@@ -34,7 +34,7 @@ Use `pip` in your selected Python environment to install the Ansible package of 
 TMPDIR="${HOME}/tmp" python3.11 -m pip install --user ansible==9.3.0
 ```
 
-### Optiuonal: Ansible-lint and pre-commit
+### Optional: Ansible-lint and pre-commit
 
 Ansible Lint is a command-line tool for linting playbooks, roles and collection.
 
