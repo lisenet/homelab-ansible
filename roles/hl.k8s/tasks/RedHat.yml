@@ -35,9 +35,9 @@
 
 - name: RedHat | Add Kubernetes Repository Sources
   ansible.builtin.yum_repository:
-    file: "kubernetes"
-    name: "kubernetes"
-    description: "kubernetes"
+    file: "kubernetes-{{ k8s_version.split('.')[0] }}.{{ k8s_version.split('.')[1] }}"
+    name: "kubernetes-{{ k8s_version.split('.')[0] }}.{{ k8s_version.split('.')[1] }}"
+    description: "kubernetes-{{ k8s_version.split('.')[0] }}.{{ k8s_version.split('.')[1] }}"
     baseurl: "{{ k8s_repository_redhat }}"
     gpgcheck: true
     gpgkey: "{{ k8s_gpg_key_redhat }}"
