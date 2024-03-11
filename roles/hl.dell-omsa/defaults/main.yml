@@ -1,0 +1,18 @@
+---
+## Default variables for the role. These variables have the lowest
+## priority of any variables available, and can be easily overridden
+## by any other variable, including inventory variables.
+
+packages:
+  - srvadmin-base
+  - srvadmin-server-cli
+
+systemd_service:
+  - dsm_sa_datamgrd
+  - dsm_sa_eventmgrd
+
+rpm_gpg_keys:
+  - "https://linux.dell.com/repo/pgp_pubkeys/0x756ba70b1019ced6.asc"
+  - "https://linux.dell.com/repo/pgp_pubkeys/0x1285491434D8786F.asc"
+  - "https://linux.dell.com/repo/pgp_pubkeys/0xca77951d23b66a9d.asc"
+  - "https://linux.dell.com/repo/pgp_pubkeys/0x3CA66B4946770C59.asc"

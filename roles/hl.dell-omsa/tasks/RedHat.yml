@@ -1,0 +1,35 @@
+---
+#
+# Configure Dell OpenManage Server Administrator
+# https://linux.dell.com/repo/hardware/omsa.html
+#
+- name: RedHat | Setup dell-system-update Repository
+  ansible.builtin.template:
+    src: "files/dell-system-update.repo"
+    dest: "/etc/yum.repos.d/dell-system-update.repo"
+    owner: 0
+    group: 0
+    mode: "0644"
+  become: true
+
+- name: RedHat | Import RPM GPG Keys from URL
+  ansible.builtin.rpm_key:
+    state: present
+    key: "{{ item }}"
+  loop: "{{ rpm_gpg_keys }}"
+  become: true
+
+- name: RedHat | Install Packages
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ packages }}"
+  become: true
+
+- name: RedHat | Start and Enable OMSA Service
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+  loop: "{{ systemd_service }}"
+  become: true

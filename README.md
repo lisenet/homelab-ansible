@@ -131,6 +131,12 @@ ansible-playbook ./playbooks/configure-k8s-cluster.yml
 ansible-playbook ./playbooks/configure-openvas-hosts.yml
 ```
 
+### Configure Dell Hosts
+
+```bash
+ansible-playbook ./playbooks/configure-dell-hosts.yml
+```
+
 ### Optional: Configure Hosts File
 
 This is optional because of the local DNS server:
