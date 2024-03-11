@@ -10,6 +10,17 @@ Ansible infrastructure for my homelab.
 [![issues](https://img.shields.io/github/issues/lisenet/homelab-ansible)](https://github.com/lisenet/homelab-ansible/issues)
 [![pull_requests_closed](https://img.shields.io/github/issues-pr-closed/lisenet/homelab-ansible)](https://github.com/lisenet/homelab-ansible/pulls)
 
+## Version Table
+
+Software versions used by this repository:
+
+| Package        | Version   |
+| -------------- | --------- |
+| ansible        | 9.3.0     |
+| ansible-core   | 2.16.4    |
+| ansible-lint   | 6.22.0    |
+| python         | 3.11      |
+
 ## Install Ansible
 
 This repository uses Ansible version that requires Python 3.11.
