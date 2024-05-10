@@ -6,6 +6,7 @@
 packages:
   - curl
   - epel-release
+  - glibc-langpack-en
   - htop
   - iotop
   - policycoreutils-devel

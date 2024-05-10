@@ -20,7 +20,6 @@
     - hl.handle-lid-switch
     - hl.wakeonlan
     - hl.libvirt
-    - hl.staticroute
   vars:
     sysctl_values:
       - name: net.ipv4.ip_forward
