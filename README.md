@@ -36,7 +36,7 @@ sudo apt install -y python3.11 python3.11-pip
 Use `yum` for Red Hat based systems:
 
 ```bash
-sudo yum install -y python3.11 python3.11-pip
+sudo yum install -y python3.11 python3.11-pip python3.11-netaddr
 ```
 
 Use `pip` in your selected Python environment to install the Ansible package of your choice for the current user:
