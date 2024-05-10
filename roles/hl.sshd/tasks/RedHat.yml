@@ -29,10 +29,10 @@
     - name: RedHat | Check Services
       ansible.builtin.service_facts:
 
-    - name: RedHat | Enable Service in Firewalld {{ firewall_port }}
+    - name: RedHat | Enable Service in Firewalld {{ firewall_service }}
       ansible.posix.firewalld:
         immediate: true
-        service: "{{ firewall_port }}"
+        service: "{{ firewall_service }}"
         permanent: true
         state: enabled
       when: "'firewalld.service' in ansible_facts.services"
