@@ -7,7 +7,7 @@ packages:
   - openssh-server
 
 systemd_service: "sshd"
-firewall_port: "ssh"
+firewall_service: "ssh"
 
 sshd_config_file: "sshd_config"
 

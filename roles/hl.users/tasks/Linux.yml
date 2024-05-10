@@ -70,3 +70,12 @@
     state: present
     user: root
     key: "{{ lookup('file', 'files/id_rsa_' + 'root' + '.pub') }}"
+
+- name: Linux | Allow the ansible User to Run Any Commands
+  community.general.sudoers:
+    name: 10_ansible
+    state: present
+    user: ansible
+    runas: root
+    nopassword: true
+    commands: ALL

@@ -22,7 +22,7 @@ global_defs {
 {% if keepalived_with_haproxy == "true" %}
 # Script used to check if HAProxy is running
 vrrp_script check_haproxy {
-    script "killall -0 haproxy" # check the haproxy process
+    script "/usr/bin/killall -0 haproxy" # check the haproxy process
     interval 2 # every 2 seconds
     weight 2 # add 2 points if OK
 }

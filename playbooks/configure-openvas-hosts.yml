@@ -16,5 +16,6 @@
     - hl.timezone
     - hl.hardening
     - hl.common
+    - hl.node-exporter
     - hl.openvas
 ...

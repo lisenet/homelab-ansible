@@ -1,8 +1,8 @@
 ---
 - name: Include playbook RedHat
-  ansible.builtin.include: RedHat.yml
+  ansible.builtin.include_tasks: RedHat.yml
   when: ansible_os_family == 'RedHat'
 
 - name: Include playbook Debian
-  ansible.builtin.include: Debian.yml
+  ansible.builtin.include_tasks: Debian.yml
   when: ansible_os_family == 'Debian'

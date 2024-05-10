@@ -3,38 +3,49 @@
 Ansible infrastructure for my homelab.
 
 [![version](https://img.shields.io/github/manifest-json/v/lisenet/homelab-ansible?label=ansible)](https://github.com/lisenet/homelab-ansible/blob/master/VERSIONS.md)
-[![python](https://img.shields.io/badge/Python-3.9-blue)](https://github.com/lisenet/homelab-ansible/blob/master/VERSIONS.md)
+[![python](https://img.shields.io/badge/Python-3.11-blue)](https://github.com/lisenet/homelab-ansible/blob/master/VERSIONS.md)
 [![license](https://img.shields.io/github/license/lisenet/homelab-ansible)](https://github.com/lisenet/homelab-ansible/blob/master/LICENSE)
 [![last commit](https://img.shields.io/github/last-commit/lisenet/homelab-ansible)](https://github.com/lisenet/homelab-ansible/commits/master)
 [![commit activity](https://img.shields.io/github/commit-activity/y/lisenet/homelab-ansible)](https://github.com/lisenet/homelab-ansible/commits/master)
 [![issues](https://img.shields.io/github/issues/lisenet/homelab-ansible)](https://github.com/lisenet/homelab-ansible/issues)
 [![pull_requests_closed](https://img.shields.io/github/issues-pr-closed/lisenet/homelab-ansible)](https://github.com/lisenet/homelab-ansible/pulls)
 
+## Version Table
+
+Software versions used by this repository:
+
+| Package        | Version   |
+| -------------- | --------- |
+| ansible        | 9.3.0     |
+| ansible-core   | 2.16.4    |
+| ansible-lint   | 6.22.0    |
+| python         | 3.11      |
+
 ## Install Ansible
 
-This repository uses Ansible version that requires Python 3.9.
+This repository uses Ansible version that requires Python 3.11.
 
 Install required packages.
 
 Use `apt` for Debian based systems:
 
 ```bash
-sudo apt install -y python3.9 python3-pip
+sudo apt install -y python3.11 python3.11-pip
 ```
 
 Use `yum` for Red Hat based systems:
 
 ```bash
-sudo yum install -y python3.9 python3-pip
+sudo yum install -y python3.11 python3.11-pip python3.11-netaddr
 ```
 
 Use `pip` in your selected Python environment to install the Ansible package of your choice for the current user:
 
 ```bash
-TMPDIR="${HOME}/tmp" python3.9 -m pip install --user ansible==8.2.0
+TMPDIR="${HOME}/tmp" python3.11 -m pip install --user ansible==9.3.0
 ```
 
-### Optiuonal: Ansible-lint and pre-commit
+### Optional: Ansible-lint and pre-commit
 
 Ansible Lint is a command-line tool for linting playbooks, roles and collection.
 
@@ -44,7 +55,7 @@ Package `yamllint` is installed as a dependency as well.
 Install packages:
 
 ```bash
-python3.9 -m pip install --user ansible-lint==6.18.0
+python3.11 -m pip install --user ansible-lint==6.22.0
 ```
 
 To use Ansible-lint with pre-commit, use the following command to create a pre-commit configuration file:
@@ -52,7 +63,7 @@ To use Ansible-lint with pre-commit, use the following command to create a pre-c
 ```bash
 cat <<EOF > .pre-commit-config.yaml
 - repo: https://github.com/ansible/ansible-lint
-  rev: v6.18.0
+  rev: v6.22.0
   hooks:
     - id: ansible-lint
       files: \.(yaml|yml)$
@@ -62,7 +73,7 @@ EOF
 Install `pre-commit` package:
 
 ```bash
-python3.9 -m pip install --user pre-commit==3.3.3
+python3.11 -m pip install --user pre-commit==3.3.3
 ```
 
 Enable pre-commit for the git repository:

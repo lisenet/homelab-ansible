@@ -18,7 +18,6 @@ packages_to_remove:
   - aic94xx-firmware
 
 services_to_disable:
-  - tuned
   - kdump
 
 modules_to_disable:
@@ -36,7 +35,6 @@ modules_to_disable:
   - freevxfs
   - jffs2
   - hfsplus
-  - squashfs
 
 malware_scanners_to_install:
   - rkhunter
