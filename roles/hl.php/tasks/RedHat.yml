@@ -1,0 +1,31 @@
+---
+- name: RedHat | Install Remi RPM from a Remote Repo {{ remi_repository_url }}
+  ansible.builtin.dnf:
+    name: "{{ remi_repository_url }}/{{ remi_package_name }}"
+    state: present
+
+- name: RedHat | Install a Modularity Appstream with Defined Stream php:remi-{{ php_version }}
+  ansible.builtin.dnf:
+    name: "@php:remi-{{ php_version }}"
+    state: present
+
+- name: RedHat | Install PHP Packages
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ packages }}"
+
+- name: RedHat | Ensure PHP Directories Exist
+  ansible.builtin.file:
+    path: "{{ php_upload_tmp_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: RedHat | Copy php.ini Template File
+  ansible.builtin.template:
+    src: "php.ini.j2"
+    dest: "/etc/php.ini"
+    owner: root
+    group: root
+    mode: "0644"
+  when: php_use_managed_ini
