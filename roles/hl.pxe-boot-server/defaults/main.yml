@@ -108,8 +108,8 @@ pxe_boot_media:
       - initrd
       - vmlinuz
   - name: "rocky8"
-    iso_url: "https://download.rockylinux.org/pub/rocky/8/isos/x86_64/Rocky-8.8-x86_64-dvd1.iso"
-    iso_sha256: "7b8bdfe189cf24ae5c2d6a88f7a0b5f3012d23f9332c47943d538b4bc03a3704"
+    iso_url: "https://download.rockylinux.org/pub/rocky/8/isos/x86_64/Rocky-8.9-x86_64-dvd1.iso"
+    iso_sha256: "1abe38fd11279879e3e7658ef748c1ef06ee763351a53bb424020ec053c50d0b"
     source_directory: "{{ ftp_directory }}/pxe/{{ networkboot_directory_rocky8 }}/"
     netboot_directory: "{{ tftp_directory }}/networkboot/{{ networkboot_directory_rocky8 }}/"
     setype: "public_content_t"
@@ -118,8 +118,8 @@ pxe_boot_media:
       - initrd.img
       - vmlinuz
   - name: "rocky9"
-    iso_url: "https://download.rockylinux.org/pub/rocky/9/isos/x86_64/Rocky-9.2-x86_64-dvd.iso"
-    iso_sha256: "cd43bb2671472471b1fc0a7a30113dfc9a56831516c46f4dbd12fb43bb4286d2"
+    iso_url: "https://download.rockylinux.org/pub/rocky/9/isos/x86_64/Rocky-9.3-x86_64-dvd.iso"
+    iso_sha256: "82441c7c9630b313d4183106231b08e192382bb6c7827e62acd467a749f030b9"
     source_directory: "{{ ftp_directory }}/pxe/{{ networkboot_directory_rocky9 }}/"
     netboot_directory: "{{ tftp_directory }}/networkboot/{{ networkboot_directory_rocky9 }}/"
     setype: "public_content_t"
@@ -130,7 +130,7 @@ pxe_boot_media:
 
 # These are used for Packer
 packer_media:
-  - iso_url: "https://download.rockylinux.org/pub/rocky/9/isos/x86_64/Rocky-9.2-x86_64-boot.iso"
-    iso_sha256: "11e42da96a7b336de04e60d05e54a22999c4d7f3e92c19ebf31f9c71298f5b42"
-  - iso_url: "https://download.rockylinux.org/pub/rocky/8/isos/x86_64/Rocky-8.8-x86_64-boot.iso"
-    iso_sha256: "96c9d96c33ebacc8e909dcf8abf067b6bb30588c0c940a9c21bb9b83f3c99868"
+  - iso_url: "https://download.rockylinux.org/pub/rocky/9/isos/x86_64/Rocky-9.3-x86_64-boot.iso"
+    iso_sha256: "eb096f0518e310f722d5ebd4c69f0322df4fc152c6189f93c5c797dc25f3d2e1"
+  - iso_url: "https://download.rockylinux.org/pub/rocky/8/isos/x86_64/Rocky-8.9-x86_64-boot.iso"
+    iso_sha256: "88baefca6f0e78b53613773954e0d7c2d8d28ad863f40623db75c40f505b5105"
