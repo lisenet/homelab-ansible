@@ -1,0 +1,185 @@
+---
+- name: RedHat | Check Services
+  ansible.builtin.service_facts:
+
+
+- name: RedHat | Configure Sysctl Value for IP Forwarding
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: "1"
+    state: present
+    sysctl_set: true
+
+- name: RedHat | Install OpenVPN Packages
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ packages }}" 
+
+- name: RedHat | EasyRSA Initialise the PKI Directory
+  ansible.builtin.command: "/usr/share/easy-rsa/3/easyrsa --batch init-pki"
+  args:
+    chdir: "{{ openvpn_config_dir }}"
+    creates: "{{ openvpn_pki_dir }}/openssl-easyrsa.cnf"
+
+- name: RedHat | EasyRSA Create a New CA
+  ansible.builtin.command: "/usr/share/easy-rsa/3/easyrsa --batch build-ca nopass"
+  args:
+    chdir: "{{ openvpn_config_dir }}"
+    creates: "{{ openvpn_pki_dir }}/ca.crt"
+
+- name: RedHat | EasyRSA Build Server
+  ansible.builtin.command: "/usr/share/easy-rsa/3/easyrsa --batch --days=3650 build-server-full server nopass"
+  args:
+    chdir: "{{ openvpn_config_dir }}"
+    creates: "{{ openvpn_pki_dir }}/issued/server.crt"
+
+- name: RedHat | EasyRSA Build Client 
+  ansible.builtin.command: "/usr/share/easy-rsa/3/easyrsa --batch --days=3650 build-client-full client nopass"
+  args:
+    chdir: "{{ openvpn_config_dir }}"
+    creates: "{{ openvpn_pki_dir }}/issued/client.crt"
+
+- name: RedHat | EasyRSA Generate DH
+  ansible.builtin.command: "/usr/share/easy-rsa/3/easyrsa --batch gen-dh"
+  args:
+    chdir: "{{ openvpn_config_dir }}"
+    creates: "{{ openvpn_pki_dir }}/dh.pem"
+
+- name: RedHat | EasyRSA Generate CRL for Client/Server Certificates Revocation
+  ansible.builtin.command: "/usr/share/easy-rsa/3/easyrsa --batch --days=3650 gen-crl"
+  args:
+    chdir: "{{ openvpn_config_dir }}"
+    creates: "{{ openvpn_pki_dir }}/crl.pem"
+
+- name: RedHat | Generate tls-crypt Key
+  ansible.builtin.command: "openvpn --genkey --secret tc.key"
+  args:
+    chdir: "{{ openvpn_pki_dir }}"
+    creates: "{{ openvpn_pki_dir }}/tc.key"
+
+- name: RedHat | Ensure OpenVPN Directories Exist with Correct Permissions
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: openvpn
+    mode: "0750"
+  loop:
+    - "{{ openvpn_pki_dir }}"
+    - "{{ openvpn_config_dir }}/client"
+    - "{{ openvpn_config_dir }}/server"
+
+- name: RedHat | Copy OpenVPN Server Configuration
+  ansible.builtin.template:
+    src: server.conf.j2
+    dest: "{{ openvpn_config_dir }}/server/server.conf"
+    owner: root
+    group: openvpn
+    mode: "0640"
+
+- name: RedHat | Copy OpenVPN Logrotate Configuration
+  ansible.builtin.template:
+    src: logrotate.openvpn.j2
+    dest: "{{ openvpn_logrotate_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: RedHat | Remove suppress-timestamps Parameter from OpenVPN Service
+  ansible.builtin.replace:
+    path: "/lib/systemd/system/openvpn-server@.service"
+    regexp: '--suppress-timestamps'
+    replace: ''
+
+- name: RedHat | Enable OpenVPN Service
+  ansible.builtin.systemd:
+    name: openvpn-server@server
+    enabled: true
+    daemon_reload: true
+    state: started
+
+- name: RedHat | Enable Masquerading in Firewalld
+  ansible.posix.firewalld:
+    masquerade: true
+    immediate: true
+    permanent: true
+    state: enabled
+  when: "'firewalld.service' in ansible_facts.services"
+
+- name: RedHat | Add OpenVPN Port to Firewalld
+  ansible.posix.firewalld:
+    port: "{{ openvpn_port }}/{{ openvpn_protocol }}"
+    immediate: true
+    permanent: true
+    state: enabled
+  when: "'firewalld.service' in ansible_facts.services"
+
+- name: RedHat | Create OpenVPN Client Configuration File
+  ansible.builtin.template:
+    src: client.conf.j2
+    dest: "{{ openvpn_config_dir }}/client.conf"
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: RedHat | Retrieve Server's Public IP
+  ansible.builtin.uri:
+    url: https://ip.lisenet.com
+    method: GET
+    return_content: true
+  register: public_ip
+  until: public_ip.status == 200
+  retries: 12
+  delay: 5
+
+- name: RedHat | Insert CA to Client Config
+  ansible.builtin.lineinfile:
+    path: "{{ openvpn_config_dir }}/client.conf"
+    regex: "^remote PLACEHOLDER"
+    line: "remote {{ public_ip['content'] }}"
+    state: present
+
+- name: RedHat | Fetch CA File Content from Remote
+  ansible.builtin.slurp:
+    src: "{{ openvpn_pki_dir }}/ca.crt"
+  register: ca_file
+
+- name: RedHat | Insert CA to Client Config
+  ansible.builtin.lineinfile:
+    path: "{{ openvpn_config_dir }}/client.conf"
+    line: "<ca>\n{{ ca_file['content'] | b64decode }}</ca>"
+    state: present
+
+- name: RedHat | Fetch Cert File Content from Remote
+  ansible.builtin.slurp:
+    src: "{{ openvpn_pki_dir }}/issued/client.crt"
+  register: crt_file
+
+- name: RedHat | Insert Cert to Client Config
+  ansible.builtin.lineinfile:
+    path: "{{ openvpn_config_dir }}/client.conf"
+    line: "<cert>\n{{ crt_file['content'] | b64decode }}</cert>"
+    state: present
+
+- name: RedHat | Fetch Key File Content from Remote
+  ansible.builtin.slurp:
+    src: "{{ openvpn_pki_dir }}/private/client.key"
+  register: key_file
+
+- name: RedHat | Insert Key to Client Config
+  ansible.builtin.lineinfile:
+    path: "{{ openvpn_config_dir }}/client.conf"
+    line: "<key>\n{{ key_file['content'] | b64decode }}</key>"
+    state: present
+
+- name: RedHat | Fetch TLS File Content from Remote
+  ansible.builtin.slurp:
+    src: "{{ openvpn_pki_dir }}/tc.key"
+  register: tls_crypt_file
+
+- name: RedHat | Insert TLS to Client Config
+  ansible.builtin.lineinfile:
+    path: "{{ openvpn_config_dir }}/client.conf"
+    line: "<tls-crypt>\n{{ tls_crypt_file['content'] | b64decode }}</tls-crypt>"
+    state: present

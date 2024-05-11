@@ -1,0 +1,22 @@
+---
+## Default variables for the role. These variables have the lowest
+## priority of any variables available, and can be easily overridden
+## by any other variable, including inventory variables.
+
+packages:
+  - openvpn
+  - pkcs11-helper
+  - easy-rsa
+
+# Server and client config must match
+openvpn_port: "11194"
+openvpn_protocol: "udp"
+openvpn_subnet: "10.8.0.0/24"
+openvpn_cipher: "AES-256-GCM"
+openvpn_max_clients: "5"
+
+openvpn_config_dir: "/etc/openvpn"
+openvpn_pki_dir: "/etc/openvpn/pki"
+
+openvpn_logrotate_template: "templates/openvpn.logrotate.j2"
+openvpn_logrotate_file: "/etc/logrotate.d/openvpn"
