@@ -2,8 +2,8 @@
 
 Ansible infrastructure for my homelab.
 
-[![version](https://img.shields.io/github/manifest-json/v/lisenet/homelab-ansible?label=ansible)](https://github.com/lisenet/homelab-ansible/blob/master/VERSIONS.md)
-[![python](https://img.shields.io/badge/Python-3.11-blue)](https://github.com/lisenet/homelab-ansible/blob/master/VERSIONS.md)
+[![version](https://img.shields.io/github/manifest-json/v/lisenet/homelab-ansible?label=ansible)](https://github.com/lisenet/homelab-ansible/blob/master/README.md#version-table)
+[![python](https://img.shields.io/badge/Python-3.11-blue)](https://github.com/lisenet/homelab-ansible/blob/master/README.md#version-table)
 [![license](https://img.shields.io/github/license/lisenet/homelab-ansible)](https://github.com/lisenet/homelab-ansible/blob/master/LICENSE)
 [![last commit](https://img.shields.io/github/last-commit/lisenet/homelab-ansible)](https://github.com/lisenet/homelab-ansible/commits/master)
 [![commit activity](https://img.shields.io/github/commit-activity/y/lisenet/homelab-ansible)](https://github.com/lisenet/homelab-ansible/commits/master)
