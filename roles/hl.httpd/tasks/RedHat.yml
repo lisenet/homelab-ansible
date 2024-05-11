@@ -1,0 +1,64 @@
+---
+- name: RedHat | Install Packages for Apache
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ packages }}"
+
+- name: RedHat | Copy Template File {{ httpd_conf_file }}
+  ansible.builtin.template:
+    src: "{{ httpd_conf_file }}.j2"
+    dest: "{{ httpd_conf_dir }}/conf/{{ httpd_conf_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+    force: true
+  when: httpd_use_managed_conf
+
+- name: RedHat | Copy Module Configuration Files to {{ httpd_modules_dir }}
+  ansible.builtin.template:
+    src: "files/{{ item }}"
+    dest: "{{ httpd_modules_dir }}/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+    force: true
+  when: httpd_use_managed_modules_conf
+  loop:
+    - "00-base.conf"
+    - "00-dav.conf"
+    - "00-optional.conf"
+    - "00-proxy.conf"
+    - "10-proxy_h2.conf"
+
+- name: RedHat | Disable Alias /icons/
+  ansible.builtin.replace:
+    path: "{{ httpd_conf_dir }}/conf.d/autoindex.conf"
+    regexp: "^Alias"
+    replace: "#Alias"
+  notify:
+    - Restart httpd
+
+- name: RedHat | Disable Welcome Page
+  ansible.builtin.copy:
+    content: ""
+    dest: "{{ httpd_conf_dir }}/conf.d/welcome.conf"
+    owner: 0
+    group: 0
+    mode: "0644"
+  notify:
+    - Restart httpd
+
+- name: RedHat | Enable Ports in Firewalld
+  ansible.posix.firewalld:
+    immediate: true
+    port: "{{ item }}/tcp"
+    permanent: true
+    state: enabled
+  loop: "{{ firewall_ports }}"
+
+- name: RedHat | Start and Enable Service {{ systemd_service }}
+  ansible.builtin.service:
+    name: "{{ systemd_service }}"
+    state: started
+    enabled: true
