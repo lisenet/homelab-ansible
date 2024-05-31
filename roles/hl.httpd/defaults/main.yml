@@ -1,0 +1,32 @@
+---
+## Default variables for the role. These variables have the lowest
+## priority of any variables available, and can be easily overridden
+## by any other variable, including inventory variables.
+
+packages:
+  - httpd
+  - mod_ssl
+  - mod_security
+
+systemd_service: "httpd"
+firewall_ports:
+  - 80
+  - 443
+
+httpd_conf_dir: "/etc/httpd"
+httpd_conf_file: "httpd.conf"
+httpd_modules_dir: "/etc/httpd/conf.modules.d"
+
+# If this is set to false, none of the following options will have any effect.
+# Any and all changes to /etc/httpd/conf/httpd.conf will be your responsibility.
+httpd_use_managed_conf: true
+httpd_use_managed_modules_conf: true
+
+httpd_server_admin: "root@localhost"
+httpd_document_root: "/var/www/html"
+
+httpd_enable_sendfile: "Off"
+httpd_server_signature: "Off"
+httpd_server_tokens: "Prod"
+httpd_trace_enable: "Off"
+httpd_extended_status: "On"

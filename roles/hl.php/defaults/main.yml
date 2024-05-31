@@ -1,0 +1,56 @@
+---
+## Default variables for the role. These variables have the lowest
+## priority of any variables available, and can be easily overridden
+## by any other variable, including inventory variables.
+
+remi_repository_url: "https://rpms.remirepo.net/enterprise"
+remi_package_name: "remi-release-{{ ansible_distribution_major_version }}.rpm"
+php_version: "8.2"
+
+packages:
+  - php
+  - phg-gd
+  - php-imagick
+  - php-intl
+  - php-mysqlnd
+  - php-zip
+
+# If this is set to false, none of the following options will have any effect.
+# Any and all changes to /etc/php.ini will be your responsibility.
+php_use_managed_ini: true
+
+# Language options
+php_disable_functions: "exec,system,shell_exec,passthru,pcntl_alarm,pcntl_fork,pcntl_waitpid,pcntl_wait,pcntl_wifexited,pcntl_wifstopped,pcntl_wifsignaled,pcntl_wexitstatus,pcntl_wtermsig,pcntl_wstopsig,pcntl_signal,pcntl_signal_dispatch,pcntl_get_last_error,pcntl_strerror,pcntl_sigprocmask,pcntl_sigwaitinfo,pcntl_sigtimedwait,pcntl_exec,pcntl_getpriority,pcntl_setpriority,"
+php_disable_classes: ""
+
+# Miscellaneous
+php_expose_php: "Off"
+
+# Resource limits
+php_max_execution_time: "30"
+php_max_input_time: "60"
+php_max_input_vars: "1000"
+php_memory_limit: "128M"
+
+# Error handling and logging
+php_display_errors: "Off"
+php_display_startup_errors: "Off"
+php_log_errors: "On"
+php_report_memleaks: "Off"
+php_html_errors: "On"
+php_error_log: "/var/log/php_errors.log"
+
+# Data handling
+php_post_max_size: "8M"
+
+# File uploads
+php_file_uploads: "On"
+php_upload_tmp_dir: "/var/www/html/php_temp_dir"
+php_upload_max_filesize: "8M"
+php_max_file_uploads: "2"
+
+# Fopen wrappers
+php_allow_url_fopen: "On"
+
+# Module settings
+php_date_timezone: "Europe/London"

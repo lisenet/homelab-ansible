@@ -29,6 +29,7 @@ skip_list:
   - package-latest # We want the latest packages installed on servers.
   - role-name # Exclude role name checking because they contain a dot.
   - yaml[line-length]
+  - yaml[truthy]
 
 # Ansible-lint does not automatically load rules that have the 'opt-in' tag.
 # You must enable opt-in rules by listing each rule 'id' below.

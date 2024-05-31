@@ -1,0 +1,38 @@
+---
+- name: RedHat | Install Packages
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ packages }}"
+
+- name: RedHat | Start and Enable Service {{ systemd_service }}
+  ansible.builtin.service:
+    name: "{{ systemd_service }}"
+    state: started
+    enabled: true
+
+- name: RedHat | Enable Classic Snap Support
+  ansible.builtin.file:
+    src: /var/lib/snapd/snap
+    dest: /snap
+    state: link
+
+# Install a snap with classic confinement
+- name: RedHat | Install Certbot with Option --classic
+  community.general.snap:
+    name: certbot
+    classic: true
+
+- name: RedHat | Ensure the Certbot Command Can be Run
+  ansible.builtin.file:
+    src: /snap/bin/certbot
+    dest: /usr/bin/certbot
+    state: link
+
+- name: RedHat | Install Certbot DNS Plugin
+  community.general.snap:
+    name: "{{ certbot_dns_plugin }}"
+
+- name: RedHat | Certbot Command to Obtain a Wildcard Certificate
+  ansible.builtin.debug:
+    msg: "certbot certonly --email root@localhost --agree-tos --no-eff-email --dns-cloudflare --dns-cloudflare-credentials /root/.cloudflare.ini --dns-cloudflare-propagation-seconds 60 -d lisenet.com -d *.lisenet.com"

@@ -1,0 +1,67 @@
+---
+- name: RedHat | Import MySQL GPG Key from a URL
+  ansible.builtin.rpm_key:
+    state: present
+    key: "{{ item }}"
+  loop: "{{ mysql_gpg_keys }}"
+
+- name: RedHat | Add MySQL Repositories into the Same File (1/3)
+  ansible.builtin.yum_repository:
+    name: mysql80-community
+    description: "MySQL 8.0 Community Server"
+    file: mysql-community
+    baseurl: "http://repo.mysql.com/yum/mysql-8.0-community/el/8/$basearch/"
+    gpgkey: "https://repo.mysql.com/RPM-GPG-KEY-mysql-2023"
+    gpgcheck: yes
+    enabled: yes
+  when: ansible_distribution_major_version == "8"
+
+- name: RedHat | Add MySQL Repositories into the Same File (2/3)
+  ansible.builtin.yum_repository:
+    name: mysql-connectors-community
+    description: "MySQL Connectors Community"
+    file: mysql-community
+    baseurl: "http://repo.mysql.com/yum/mysql-connectors-community/el/8/$basearch/"
+    gpgkey: "https://repo.mysql.com/RPM-GPG-KEY-mysql-2023"
+    gpgcheck: yes
+    enabled: yes
+  when: ansible_distribution_major_version == "8"
+
+- name: RedHat | Add MySQL Repositories into the Same File (3/3)
+  ansible.builtin.yum_repository:
+    name: mysql-tools-community
+    description: "MySQL Tools Community"
+    file: mysql-community
+    baseurl: "http://repo.mysql.com/yum/mysql-tools-community/el/8/$basearch/"
+    gpgkey: "https://repo.mysql.com/RPM-GPG-KEY-mysql-2023"
+    gpgcheck: yes
+    enabled: yes
+  when: ansible_distribution_major_version == "8"
+
+- name: RedHat | Disable the Default MySQL Module on EL8
+  ansible.builtin.command: yum module disable -y mysql
+  when: ansible_distribution_major_version == "8"
+  register: module_disable
+  changed_when: module_disable.rc != 0
+
+- name: RedHat | Install Packages
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ packages }}"
+
+- name: RedHat | Copy my.cnf Global MySQL Configuration
+  ansible.builtin.template:
+    src: my.cnf.j2
+    dest: "{{ mysql_config_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+    force: true
+  notify: Restart mysqld
+
+- name: RedHat | Enable MySQL Service
+  ansible.builtin.systemd:
+    name: "{{ systemd_service }}"
+    enabled: true
+    state: started
