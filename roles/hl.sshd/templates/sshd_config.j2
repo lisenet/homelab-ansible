@@ -29,7 +29,7 @@ LogLevel {{ sshd_log_level }}
 
 # Authentication:
 
-#LoginGraceTime 2m
+LoginGraceTime 0
 PermitRootLogin {{ sshd_permit_root_login }}
 #StrictModes yes
 MaxAuthTries {{ sshd_max_auth_tries }}
