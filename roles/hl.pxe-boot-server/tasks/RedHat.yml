@@ -98,8 +98,6 @@
   loop:
     - "{{ networkboot_directory_rocky9 }}"
     - "{{ networkboot_directory_rocky8 }}"
-    - "{{ networkboot_directory_ubuntu1804server }}"
-    - "{{ networkboot_directory_ubuntu1804desktop }}"
     - "{{ networkboot_directory_ubuntu2004server }}"
     - "{{ networkboot_directory_ubuntu2004desktop }}"
 
@@ -143,8 +141,6 @@
     state: directory
     mode: "0755"
   loop:
-    - "{{ networkboot_directory_ubuntu1804server }}"
-    - "{{ networkboot_directory_ubuntu1804desktop }}"
     - "{{ networkboot_directory_ubuntu2004server }}"
     - "{{ networkboot_directory_ubuntu2004desktop }}"
 
@@ -214,24 +210,6 @@
   loop_control:
     loop_var: outer_item
   when: download_pxe_boot_media | bool
-
-- name: RedHat | Copy Kickstart File for Ubuntu 18.04 Server
-  ansible.builtin.template:
-    src: "{{ kickstart_file_ubuntu1804server }}.j2"
-    dest: "{{ nfs_directory }}/{{ networkboot_directory_ubuntu1804server }}/preseed/{{ kickstart_file_ubuntu1804server }}"
-    owner: root
-    group: root
-    mode: "0644"
-    force: true
-
-- name: RedHat | Copy Kickstart File for Ubuntu 18.04 Desktop
-  ansible.builtin.template:
-    src: "{{ kickstart_file_ubuntu1804desktop }}.j2"
-    dest: "{{ nfs_directory }}/{{ networkboot_directory_ubuntu1804desktop }}/preseed/{{ kickstart_file_ubuntu1804desktop }}"
-    owner: root
-    group: root
-    mode: "0644"
-    force: true
 
 - name: RedHat | Copy Kickstart File for Ubuntu 20.04 Server
   ansible.builtin.template:

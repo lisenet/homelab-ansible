@@ -43,15 +43,11 @@ kickstart_file_rocky9_host: "rocky9-host-ks.cfg"
 kickstart_file_rocky9_packer: "rocky9-packer-ks.cfg"
 kickstart_file_rocky8_host: "rocky8-host-ks.cfg"
 kickstart_file_rocky8_packer: "rocky8-packer-ks.cfg"
-kickstart_file_ubuntu1804server: "ubuntu1804-server.seed"
-kickstart_file_ubuntu1804desktop: "ubuntu1804-desktop.seed"
 kickstart_file_ubuntu2004server: "ubuntu2004-server.seed"
 kickstart_file_ubuntu2004desktop: "ubuntu2004-desktop.seed"
 
 networkboot_directory_rocky9: "Rocky9"
 networkboot_directory_rocky8: "Rocky8"
-networkboot_directory_ubuntu1804server: "Ubuntu1804Server"
-networkboot_directory_ubuntu1804desktop: "Ubuntu1804Desktop"
 networkboot_directory_ubuntu2004server: "Ubuntu2004Server"
 networkboot_directory_ubuntu2004desktop: "Ubuntu2004Desktop"
 
@@ -60,33 +56,11 @@ download_pxe_boot_media: true
 download_packer_media: true
 
 # The kernel and initrd files from the Bionic netboot.tar.gz archive
-ubuntu_netboot_linux: "http://archive.ubuntu.com/ubuntu/dists/bionic-updates/main/installer-amd64/current/images/netboot/ubuntu-installer/amd64/linux"
-ubuntu_netboot_initrd: "http://archive.ubuntu.com/ubuntu/dists/bionic-updates/main/installer-amd64/current/images/netboot/ubuntu-installer/amd64/initrd.gz"
 ubuntu_2004_netboot_linux: "http://archive.ubuntu.com/ubuntu/dists/focal-updates/main/installer-amd64/current/legacy-images/netboot/ubuntu-installer/amd64/linux"
 ubuntu_2004_netboot_initrd: "http://archive.ubuntu.com/ubuntu/dists/focal-updates/main/installer-amd64/current/legacy-images/netboot/ubuntu-installer/amd64/initrd.gz"
 
 # These are used for PXE boot
 pxe_boot_media:
-  - name: "ubuntu1804server"
-    iso_url: "https://releases.ubuntu.com/18.04/ubuntu-18.04.6-live-server-amd64.iso"
-    iso_sha256: "6c647b1ab4318e8c560d5748f908e108be654bad1e165f7cf4f3c1fc43995934"
-    source_directory: "{{ nfs_directory }}/{{ networkboot_directory_ubuntu1804server }}/"
-    netboot_directory: "{{ tftp_directory }}/networkboot/{{ networkboot_directory_ubuntu1804server }}/"
-    setype: "nfs_t"
-    mounted_src: "/mnt/casper"
-    pxeboot_files:
-      - initrd
-      - vmlinuz
-  - name: "ubuntu1804desktop"
-    iso_url: "https://releases.ubuntu.com/18.04/ubuntu-18.04.6-desktop-amd64.iso"
-    iso_sha256: "f730be589aa1ba923ebe6eca573fa66d09ba14c4c104da2c329df652d42aff11"
-    source_directory: "{{ nfs_directory }}/{{ networkboot_directory_ubuntu1804desktop }}/"
-    netboot_directory: "{{ tftp_directory }}/networkboot/{{ networkboot_directory_ubuntu1804desktop }}/"
-    setype: "nfs_t"
-    mounted_src: "/mnt/casper"
-    pxeboot_files:
-      - initrd
-      - vmlinuz
   - name: "ubuntu2004server"
     iso_url: "https://releases.ubuntu.com/20.04/ubuntu-20.04.5-live-server-amd64.iso"
     iso_sha256: "5035be37a7e9abbdc09f0d257f3e33416c1a0fb322ba860d42d74aa75c3468d4"
