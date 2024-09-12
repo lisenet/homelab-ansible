@@ -108,8 +108,8 @@ pxe_boot_media:
       - initrd
       - vmlinuz
   - name: "rocky8"
-    iso_url: "https://download.rockylinux.org/pub/rocky/8/isos/x86_64/Rocky-8.9-x86_64-dvd1.iso"
-    iso_sha256: "1abe38fd11279879e3e7658ef748c1ef06ee763351a53bb424020ec053c50d0b"
+    iso_url: "https://download.rockylinux.org/pub/rocky/8/isos/x86_64/Rocky-8.10-x86_64-dvd1.iso"
+    iso_sha256: "642ada8a49dbeca8cca6543b31196019ee3d649a0163b5db0e646c7409364eeb"
     source_directory: "{{ ftp_directory }}/pxe/{{ networkboot_directory_rocky8 }}/"
     netboot_directory: "{{ tftp_directory }}/networkboot/{{ networkboot_directory_rocky8 }}/"
     setype: "public_content_t"
@@ -118,8 +118,8 @@ pxe_boot_media:
       - initrd.img
       - vmlinuz
   - name: "rocky9"
-    iso_url: "https://download.rockylinux.org/pub/rocky/9/isos/x86_64/Rocky-9.3-x86_64-dvd.iso"
-    iso_sha256: "82441c7c9630b313d4183106231b08e192382bb6c7827e62acd467a749f030b9"
+    iso_url: "https://download.rockylinux.org/pub/rocky/9/isos/x86_64/Rocky-9.4-x86_64-dvd.iso"
+    iso_sha256: "e20445907daefbfcdb05ba034e9fc4cf91e0e8dc164ebd7266ffb8fdd8ea99e7"
     source_directory: "{{ ftp_directory }}/pxe/{{ networkboot_directory_rocky9 }}/"
     netboot_directory: "{{ tftp_directory }}/networkboot/{{ networkboot_directory_rocky9 }}/"
     setype: "public_content_t"
@@ -130,7 +130,7 @@ pxe_boot_media:
 
 # These are used for Packer
 packer_media:
-  - iso_url: "https://download.rockylinux.org/pub/rocky/9/isos/x86_64/Rocky-9.3-x86_64-boot.iso"
-    iso_sha256: "eb096f0518e310f722d5ebd4c69f0322df4fc152c6189f93c5c797dc25f3d2e1"
-  - iso_url: "https://download.rockylinux.org/pub/rocky/8/isos/x86_64/Rocky-8.9-x86_64-boot.iso"
-    iso_sha256: "88baefca6f0e78b53613773954e0d7c2d8d28ad863f40623db75c40f505b5105"
+  - iso_url: "https://download.rockylinux.org/pub/rocky/9/isos/x86_64/Rocky-9.4-x86_64-boot.iso"
+    iso_sha256: "c7e95e3dba88a1f68fff8b7d4e66adf6f76ac4fba2e246a83c46ab79574c78a8"
+  - iso_url: "https://download.rockylinux.org/pub/rocky/8/isos/x86_64/Rocky-8.10-x86_64-boot.iso"
+    iso_sha256: "203744a255ea6579e49ca7f7f0f17e2fda94e50945d8183a254490e454c7c5b4"
