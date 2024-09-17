@@ -20,9 +20,3 @@ label Install Ubuntu 20.04 LTS Server
 label Install Ubuntu 20.04 LTS Desktop
   kernel /networkboot/{{ networkboot_directory_ubuntu2004desktop }}/linux
   append initrd=/networkboot/{{ networkboot_directory_ubuntu2004desktop }}/initrd.gz ks=nfs:{{ ansible_default_ipv4.address }}:/var/nfs/{{ networkboot_directory_ubuntu2004desktop }}/preseed/{{ kickstart_file_ubuntu2004desktop }} ---
-label Install Ubuntu 18.04 LTS Server
-  kernel /networkboot/{{ networkboot_directory_ubuntu1804server }}/linux
-  append initrd=/networkboot/{{ networkboot_directory_ubuntu1804server }}/initrd.gz ks=nfs:{{ ansible_default_ipv4.address }}:/var/nfs/{{ networkboot_directory_ubuntu1804server }}/preseed/{{ kickstart_file_ubuntu1804server }} ---
-label Install Ubuntu 18.04 LTS Desktop
-  kernel /networkboot/{{ networkboot_directory_ubuntu1804desktop }}/linux
-  append initrd=/networkboot/{{ networkboot_directory_ubuntu1804desktop }}/initrd.gz ks=nfs:{{ ansible_default_ipv4.address }}:/var/nfs/{{ networkboot_directory_ubuntu1804desktop }}/preseed/{{ kickstart_file_ubuntu1804desktop }} ---
