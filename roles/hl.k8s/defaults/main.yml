@@ -3,7 +3,7 @@
 ## priority of any variables available, and can be easily overridden
 ## by any other variable, including inventory variables.
 
-k8s_version: "1.29.2"
+k8s_version: "1.31.6"
 k8s_repository_redhat: "https://pkgs.k8s.io/core:/stable:/v{{ k8s_version.split('.')[0] }}.{{ k8s_version.split('.')[1] }}/rpm/"
 k8s_gpg_key_redhat: "https://pkgs.k8s.io/core:/stable:/v{{ k8s_version.split('.')[0] }}.{{ k8s_version.split('.')[1] }}/rpm/repodata/repomd.xml.key"
 
@@ -16,7 +16,7 @@ packages:
   - nfs-utils
 
 dependencies:
-  - kubernetes-cni-1.3.0-*
+  - kubernetes-cni-1.5.1-*
   - kubelet-{{ k8s_version }}*
 
 systemd_service: "kubelet"

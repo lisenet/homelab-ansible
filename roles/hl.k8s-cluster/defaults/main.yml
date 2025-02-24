@@ -3,9 +3,9 @@
 ## priority of any variables available, and can be easily overridden
 ## by any other variable, including inventory variables.
 
-calico_version: "3.27.2"
+calico_version: "3.29.2"
 k8s_dashboard_version: "2.7.0"
-k8s_version: "1.29.2"
+k8s_version: "1.31.6"
 k8s_pod_network: "192.168.0.0/16"
 k8s_ha_dns: "kubelb.hl.test"
 k8s_api_port: "6443"
