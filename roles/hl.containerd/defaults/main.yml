@@ -7,7 +7,7 @@ prerequisites_packages:
   - yum-utils
 
 packages:
-  - containerd.io-1.6.20-3.1.el{{ ansible_distribution_major_version }}.x86_64
+  - containerd.io-1.7.25-3.1.el{{ ansible_distribution_major_version }}.x86_64
 
 systemd_service: "containerd"
 
