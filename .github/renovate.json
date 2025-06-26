@@ -2,6 +2,5 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "branchPrefix": "renovate-",
   "branchPrefixOld": "renovate-",
-  "prHourlyLimit": 1,
-  "reviewers": ["lisenet"]
+  "prHourlyLimit": 1
 }
