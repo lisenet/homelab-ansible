@@ -16,9 +16,9 @@ Software versions used by this repository:
 
 | Package        | Version   |
 | -------------- | --------- |
-| ansible        | 11.2.0    |
-| ansible-core   | 2.18.2    |
-| ansible-lint   | 25.1.3    |
+| ansible        | 9.13.0    |
+| ansible-core   | 2.16.14   |
+| ansible-lint   | 25.6.1    |
 | python         | 3.11      |
 
 ## Install Ansible
@@ -42,7 +42,7 @@ sudo yum install -y python3.11 python3.11-pip python3.11-netaddr
 Use `pip` in your selected Python environment to install the Ansible package of your choice for the current user:
 
 ```bash
-TMPDIR="${HOME}/tmp" python3.11 -m pip install --user ansible==11.2.0
+TMPDIR="${HOME}/tmp" python3.11 -m pip install --user ansible==9.13.0 passlib
 ```
 
 ### Optional: Ansible-lint and pre-commit
@@ -55,7 +55,7 @@ Package `yamllint` is installed as a dependency as well.
 Install packages:
 
 ```bash
-python3.11 -m pip install --user ansible-lint==25.1.3
+python3.11 -m pip install --user ansible-lint==25.6.1
 ```
 
 To use Ansible-lint with pre-commit, use the following command to create a pre-commit configuration file:
@@ -63,7 +63,7 @@ To use Ansible-lint with pre-commit, use the following command to create a pre-c
 ```bash
 cat <<EOF > .pre-commit-config.yaml
 - repo: https://github.com/ansible/ansible-lint
-  rev: v25.11.3
+  rev: v25.6.1
   hooks:
     - id: ansible-lint
       files: \.(yaml|yml)$
